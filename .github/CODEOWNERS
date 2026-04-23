@@ -1,0 +1,18 @@
+# Global Owners
+* @project-lead
+
+# Backend Module
+/src/backend/ @backend-lead @senior-backend-dev
+
+# Frontend Module
+/src/frontend/ @frontend-lead @senior-frontend-dev
+
+# ML/AI Module
+/src/ml/ @ml-lead @data-scientist
+
+# Infrastructure
+/infra/ @devops-lead
+/docker/ @devops-lead
+
+# Documentation
+/docs/ @tech-writer @project-lead

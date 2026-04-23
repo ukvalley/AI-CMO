@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-cmo-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-ai_cmo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-ai_cmo}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-cmo-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ai-cmo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai-cmo-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: ai-cmo-backend
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://${DB_USER:-ai_cmo}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-ai_cmo}
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./src/backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ai-cmo-network
+
+  # ML Service
+  ml:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ml
+    container_name: ai-cmo-ml
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src/ml:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - ai-cmo-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ai-cmo-network:
+    driver: bridge
