@@ -18,7 +18,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  type LucideIcon,
+  LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -44,7 +44,7 @@ interface BreadcrumbItem {
 // BREADCRUMB GENERATOR
 // ============================================
 
-const generateBreadcrumbs = (pathname: string): BreadcrumbItem[] = {
+const generateBreadcrumbs = (pathname: string) => {
   const segments = pathname.split('/').filter(Boolean);
   const breadcrumbs: BreadcrumbItem[] = [{ label: 'Home', href: '/dashboard' }];
 

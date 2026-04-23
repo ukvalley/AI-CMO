@@ -41,7 +41,7 @@ export const Tabs: React.FC<TabsProps> = ({
   size = 'md',
   className,
 }) => {
-  const tabRefs = React.useRef<(Map<string, HTMLButtonElement>>(new Map());
+  const tabRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {

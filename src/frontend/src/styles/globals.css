@@ -149,7 +149,7 @@
 
   .card {
     @apply bg-white rounded-lg shadow-soft-md;
-    @apply transition-shadow duration-200 ease-default;
+    @apply transition-shadow duration-200 ease-in-out;
   }
 
   .card-hover:hover {

@@ -11,7 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'AI CMO - Marketing Dashboard',
   description: 'AI-powered Chief Marketing Officer platform for campaign management and analytics',
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
