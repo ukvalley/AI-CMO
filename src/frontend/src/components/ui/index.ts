@@ -12,3 +12,4 @@ export { Avatar, AvatarGroup } from './Avatar';
 export { Modal } from './Modal';
 export { Dropdown } from './Dropdown';
 export { Tabs, TabPanel } from './Tabs';
+export { Tooltip, IconButton } from './Tooltip';

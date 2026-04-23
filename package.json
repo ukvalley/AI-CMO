@@ -19,8 +19,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "typecheck": "tsc --noEmit",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "prepare": "husky install"
+    "docker:down": "docker-compose down"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

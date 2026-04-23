@@ -23,6 +23,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   size?: InputSize;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  required?: boolean;
 }
 
 // ============================================
@@ -61,6 +62,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       leftIcon,
       rightIcon,
       disabled,
+      required,
       className,
       id,
       ...props
@@ -83,6 +85,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
           >
             {label}
+            {required && <span className="text-error-600 ml-0">*</span>}
           </label>
         )}
 
