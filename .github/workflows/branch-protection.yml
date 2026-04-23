@@ -1,0 +1,29 @@
+name: Branch Protection
+
+on:
+  pull_request:
+    branches: [main, dev]
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-branch-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        run: |
+          echo "Source branch: ${{ github.head_ref }}"
+          echo "Target branch: ${{ github.base_ref }}"
+
+      - name: Block direct push to main
+        if: github.base_ref == 'main' && github.head_ref != 'dev' && !startsWith(github.head_ref, 'hotfix/') && !startsWith(github.head_ref, 'release/')
+        run: |
+          echo "ERROR: PRs to main must come from dev, hotfix/*, or release/* branches"
+          exit 1
+
+      - name: Validate branch naming
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! $BRANCH =~ ^(feature|bugfix|hotfix|release|docs)/.*$ ]] && [[ $BRANCH != "dev" ]]; then
+            echo "WARNING: Branch '$BRANCH' does not follow naming convention"
+            echo "Expected patterns: feature/*, bugfix/*, hotfix/*, release/*, docs/*"
+          fi
