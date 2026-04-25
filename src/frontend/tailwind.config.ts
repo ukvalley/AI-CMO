@@ -38,7 +38,12 @@ const config: Config = {
 
       // Shadows (Soft UI)
       boxShadow: {
-        ...shadows,
+        sm: shadows.sm,
+        DEFAULT: shadows.DEFAULT,
+        md: shadows.md,
+        lg: shadows.lg,
+        xl: shadows.xl,
+        inner: shadows.inner,
         'soft-sm': shadows.soft.sm,
         'soft-md': shadows.soft.md,
         'soft-lg': shadows.soft.lg,

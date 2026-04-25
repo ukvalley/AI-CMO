@@ -35,11 +35,11 @@ export interface CardProps {
 }
 
 // Input props
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   helperText?: string;
-  size?: Size;
+  inputSize?: Size;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
