@@ -1,7 +1,7 @@
 /**
  * Sidebar Component (Organism)
  *
- * Navigation sidebar with collapsible menu, nested items, and mobile drawer.
+ * Navigation sidebar with collapsible menu, module groups, and mobile drawer.
  */
 
 'use client';
@@ -12,11 +12,6 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/cn';
 import {
   LayoutDashboard,
-  BarChart3,
-  Users,
-  Megaphone,
-  Sparkles,
-  Settings,
   ChevronRight,
   ChevronDown,
   X,
@@ -24,19 +19,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
+import { MODULES, GROUPS, getModulesByGroup } from '@/lib/modules';
+import { useCompanyStore, useAuthStore, useTaskStore } from '@/stores';
+import * as Icons from 'lucide-react';
 
 // ============================================
 // TYPES
 // ============================================
-
-interface NavItem {
-  id: string;
-  label: string;
-  href: string;
-  icon: LucideIcon;
-  badge?: number;
-  children?: NavItem[];
-}
 
 interface SidebarProps {
   collapsed: boolean;
@@ -46,164 +35,7 @@ interface SidebarProps {
 }
 
 // ============================================
-// NAVIGATION DATA
-// ============================================
-
-const navItems: NavItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    id: 'analytics',
-    label: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-    badge: 3,
-  },
-  {
-    id: 'campaigns',
-    label: 'Campaigns',
-    href: '/campaigns',
-    icon: Megaphone,
-    children: [
-      { id: 'all-campaigns', label: 'All Campaigns', href: '/campaigns', icon: Megaphone },
-      { id: 'create', label: 'Create New', href: '/campaigns/create', icon: Megaphone },
-      { id: 'templates', label: 'Templates', href: '/campaigns/templates', icon: Megaphone },
-    ],
-  },
-  {
-    id: 'audience',
-    label: 'Audience',
-    href: '/audience',
-    icon: Users,
-  },
-  {
-    id: 'ai-insights',
-    label: 'AI Insights',
-    href: '/ai-insights',
-    icon: Sparkles,
-    badge: 12,
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    href: '/settings',
-    icon: Settings,
-    children: [
-      { id: 'general', label: 'General', href: '/settings', icon: Settings },
-      { id: 'integrations', label: 'Integrations', href: '/settings/integrations', icon: Settings },
-      { id: 'billing', label: 'Billing', href: '/settings/billing', icon: Settings },
-    ],
-  },
-];
-
-// ============================================
-// SIDEBAR NAV ITEM COMPONENT
-// ============================================
-
-const SidebarNavItem: React.FC<{
-  item: NavItem;
-  collapsed: boolean;
-  depth?: number;
-}> = ({ item, collapsed, depth = 0 }) => {
-  const pathname = usePathname();
-  const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
-  const hasChildren = item.children && item.children.length > 0;
-  const [expanded, setExpanded] = React.useState(isActive);
-
-  const Icon = item.icon;
-
-  // If sidebar is collapsed and has children, don't show children
-  const showChildren = hasChildren && expanded && !collapsed;
-
-  if (collapsed && depth > 0) return null;
-
-  return (
-    <div className={depth > 0 ? 'ml-2' : ''}>
-      {hasChildren ? (
-        // Parent item with children
-        <>
-          <button
-            onClick={() => !collapsed && setExpanded(!expanded)}
-            className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-lg',
-              'text-sm font-medium transition-colors duration-200',
-              'hover:bg-neutral-100',
-              isActive
-                ? 'text-primary-700 bg-primary-50'
-                : 'text-neutral-600 hover:text-neutral-900',
-              collapsed && 'justify-center'
-            )}
-          >
-            <Icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-primary-600')} />
-            {!collapsed && (
-              <>
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-                <ChevronDown
-                  className={cn(
-                    'w-4 h-4 transition-transform duration-200',
-                    expanded && 'rotate-180'
-                  )}
-                />
-              </>
-            )}
-          </button>
-
-          {/* Children */}
-          {showChildren && (
-            <div className="mt-1 space-y-0.5 animate-fade-in">
-              {item.children.map((child) => (
-                <SidebarNavItem
-                  key={child.id}
-                  item={child}
-                  collapsed={collapsed}
-                  depth={depth + 1}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        // Regular item
-        <Link
-          href={item.href}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded-lg',
-            'text-sm font-medium transition-colors duration-200',
-            'hover:bg-neutral-100',
-            isActive
-              ? 'text-primary-700 bg-primary-50'
-              : 'text-neutral-600 hover:text-neutral-900',
-            collapsed && 'justify-center'
-          )}
-        >
-          <Icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-primary-600')} />
-          {!collapsed && (
-            <>
-              <span className="flex-1">{item.label}</span>
-              {item.badge && (
-                <span className="px-1.5 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </>
-          )}
-        </Link>
-      )}
-    </div>
-  );
-};
-
-// ============================================
-// MAIN SIDEBAR COMPONENT
+// SIDEBAR
 // ============================================
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -212,6 +44,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   onMobileClose,
 }) => {
+  const pathname = usePathname();
+  const { user } = useAuthStore();
+  const { runningTaskCount } = useTaskStore();
+  const { getActiveCompany, companies, setActiveCompany } = useCompanyStore();
+  const activeCompany = getActiveCompany();
+  const [expandedGroups, setExpandedGroups] = React.useState<string[]>(GROUPS.map(g => g.id));
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -226,25 +73,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={cn(
           'fixed left-0 top-0 bottom-0 z-50',
-          'bg-white border-r border-neutral-200',
+          'bg-slate-900 border-r border-slate-800',
           'flex flex-col',
           'transition-all duration-300 ease-in-out',
           // Mobile
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           // Desktop
           'lg:translate-x-0',
-          collapsed ? 'lg:w-16' : 'lg:w-64',
-          'w-64'
+          collapsed ? 'lg:w-20' : 'lg:w-72',
+          'w-72'
         )}
       >
         {/* Logo Area */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-100">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">AI</span>
             </div>
             {!collapsed && (
-              <span className="font-semibold text-lg text-neutral-900">CMO</span>
+              <span className="font-semibold text-lg text-white">CMO</span>
             )}
           </Link>
 
@@ -253,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             variant="ghost"
             size="sm"
             onClick={onMobileClose}
-            className="lg:hidden"
+            className="lg:hidden text-slate-400"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -261,51 +108,136 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Desktop Toggle */}
           <button
             onClick={onToggle}
-            className="hidden lg:flex items-center justify-center w-6 h-6 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
+            className="hidden lg:flex items-center justify-center w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"
           >
             <ChevronRight
               className={cn(
-                'w-4 h-4 text-neutral-500 transition-transform duration-300',
+                'w-4 h-4 text-slate-400 transition-transform duration-300',
                 !collapsed && 'rotate-180'
               )}
             />
           </button>
         </div>
 
+        {/* Company Switcher */}
+        {!collapsed && companies.length > 0 && (
+          <div className="px-4 py-3 border-b border-slate-800">
+            <label className="text-xs text-slate-500 uppercase tracking-wide mb-2 block">
+              Active Company
+            </label>
+            <select
+              value={activeCompany?.id || ''}
+              onChange={(e) => setActiveCompany(e.target.value)}
+              className="w-full bg-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-purple-500"
+            >
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-1">
-          {navItems.map((item) => (
-            <SidebarNavItem
-              key={item.id}
-              item={item}
-              collapsed={collapsed}
-            />
-          ))}
+        <nav className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-4">
+          {/* Dashboard */}
+          <Link
+            href="/dashboard"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 rounded-lg',
+              'text-sm font-medium transition-colors duration-200',
+              'hover:bg-slate-800',
+              pathname === '/dashboard'
+                ? 'text-purple-400 bg-purple-500/10 border-l-2 border-purple-500'
+                : 'text-slate-300 hover:text-white',
+              collapsed && 'justify-center'
+            )}
+          >
+            <LayoutDashboard className={cn('w-5 h-5 flex-shrink-0', pathname === '/dashboard' && 'text-purple-400')} />
+            {!collapsed && <span>Dashboard</span>}
+          </Link>
+
+          {/* Module Groups */}
+          {!collapsed && GROUPS.map((group) => {
+            const groupModules = getModulesByGroup(group.id).filter(m => m.status === 'active');
+            if (groupModules.length === 0) return null;
+            const isExpanded = expandedGroups.includes(group.id);
+
+            return (
+              <div key={group.id}>
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide hover:text-slate-300 transition-colors"
+                >
+                  <span>{group.name}</span>
+                  <ChevronDown
+                    className={cn(
+                      'w-3 h-3 transition-transform',
+                      isExpanded && 'rotate-180'
+                    )}
+                  />
+                </button>
+
+                {isExpanded && (
+                  <div className="space-y-1 mt-1">
+                    {groupModules.map((module) => {
+                      const Icon = (Icons[module.icon as keyof typeof Icons] as LucideIcon) || Icons.Circle;
+                      const isActive = pathname === module.path || pathname?.startsWith(module.path + '/');
+                      const hasBadge = module.badge === 'tasks' && runningTaskCount > 0;
+
+                      return (
+                        <Link
+                          key={module.id}
+                          href={module.path}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2 rounded-lg',
+                            'text-sm transition-colors duration-200',
+                            'hover:bg-slate-800',
+                            isActive
+                              ? 'text-purple-400 bg-purple-500/10 border-l-2 border-purple-500'
+                              : 'text-slate-400 hover:text-slate-200'
+                          )}
+                        >
+                          <Icon className={cn('w-4 h-4 flex-shrink-0', isActive && 'text-purple-400')} />
+                          <span className="flex-1 truncate">{module.name}</span>
+                          {hasBadge && (
+                            <span className="px-1.5 py-0.5 text-xs bg-purple-500 text-white rounded-full">
+                              {runningTaskCount}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* User Section (Bottom) */}
-        <div className="p-3 border-t border-neutral-100">
+        <div className="p-3 border-t border-slate-800">
           <Link
-            href="/profile"
+            href="/settings"
             className={cn(
               'flex items-center gap-3 p-2 rounded-lg',
-              'hover:bg-neutral-100 transition-colors',
+              'hover:bg-slate-800 transition-colors',
               collapsed && 'justify-center'
             )}
           >
             <Avatar
-              src=""
-              fallback="Alex Morgan"
+              src={user?.avatar || ''}
+              fallback={user?.name || 'User'}
               size="sm"
-              status="online"
             />
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-neutral-900 truncate">
-                  Alex Morgan
+                <p className="text-sm font-medium text-slate-200 truncate">
+                  {user?.name || 'Guest'}
                 </p>
-                <p className="text-xs text-neutral-500 truncate">
-                  alex@company.com
+                <p className="text-xs text-slate-500 truncate capitalize">
+                  {user?.role || 'Viewer'}
                 </p>
               </div>
             )}

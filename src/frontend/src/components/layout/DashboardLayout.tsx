@@ -1,7 +1,7 @@
 /**
  * Dashboard Layout (Template)
  *
- * Main application layout combining sidebar, header, and content area.
+ * Main application layout combining sidebar, header, AI chat panel, and content area.
  * Responsive with mobile drawer support.
  */
 
@@ -11,6 +11,8 @@ import React from 'react';
 import { cn } from '@/utils/cn';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { AIChatPanel } from '../ai/AIChatPanel';
+import { useChatStore } from '@/stores';
 
 // ============================================
 // TYPES
@@ -27,13 +29,14 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { isOpen: chatOpen } = useChatStore();
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
   const openMobileMenu = () => setMobileMenuOpen(true);
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-slate-950">
       {/* Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -48,12 +51,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         collapsed={sidebarCollapsed}
       />
 
+      {/* AI Chat Panel */}
+      <AIChatPanel />
+
       {/* Main Content */}
       <main
         className={cn(
           'pt-16 min-h-screen transition-all duration-300',
-          'lg:pl-64',
-          sidebarCollapsed && 'lg:pl-16'
+          // Sidebar offset
+          'lg:pl-72',
+          sidebarCollapsed && 'lg:pl-20',
+          // Chat panel offset
+          chatOpen && 'lg:pr-80'
         )}
       >
         <div className="p-4 lg:p-8">

@@ -42,7 +42,6 @@ const usToUkSpelling: Record<string, string> = {
   authorizes: 'authorises',
   authorized: 'authorised',
   authorization: 'authorisation',
-  authorize: 'authorise',
   customize: 'customise',
   customizes: 'customises',
   customized: 'customised',

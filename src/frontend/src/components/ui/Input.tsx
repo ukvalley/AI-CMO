@@ -16,11 +16,11 @@ import { AlertCircle } from 'lucide-react';
 
 type InputSize = 'sm' | 'md' | 'lg';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   helperText?: string;
-  size?: InputSize;
+  inputSize?: InputSize;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   required?: boolean;
@@ -58,7 +58,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       label,
       error,
       helperText,
-      size = 'md',
+      inputSize: size = 'md',
       leftIcon,
       rightIcon,
       disabled,

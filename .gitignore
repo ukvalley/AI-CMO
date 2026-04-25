@@ -44,3 +44,6 @@ coverage/
 # Misc
 *.seed
 *.pid.lock
+
+# Next.js
+.next/
