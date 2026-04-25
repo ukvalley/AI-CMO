@@ -28,35 +28,35 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 // ============================================
-// VARIANT STYLES
+// VARIANT STYLES - Dark Theme
 // ============================================
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: `
-    bg-primary-600 text-white
-    hover:bg-primary-700 hover:shadow-md
-    active:bg-primary-800
+    bg-primary-500 text-white
+    hover:bg-primary-600 hover:shadow-md
+    active:bg-primary-700
     focus:ring-primary-500
-    shadow-sm
+    shadow-sm shadow-primary-500/20
   `,
   secondary: `
-    bg-white text-neutral-900
-    border border-neutral-200
-    hover:bg-neutral-50 hover:border-neutral-300 hover:shadow-sm
-    active:bg-neutral-100
+    bg-slate-800 text-slate-200
+    border border-slate-700
+    hover:bg-slate-700 hover:border-slate-600 hover:shadow-sm
+    active:bg-slate-600
     focus:ring-primary-500
   `,
   ghost: `
-    bg-transparent text-neutral-700
-    hover:bg-neutral-100 hover:text-neutral-900
-    active:bg-neutral-200
-    focus:ring-neutral-400
+    bg-transparent text-slate-400
+    hover:bg-slate-800 hover:text-slate-200
+    active:bg-slate-700
+    focus:ring-slate-500
   `,
   danger: `
-    bg-error-600 text-white
-    hover:bg-error-700 hover:shadow-md
-    active:bg-error-800
-    focus:ring-error-500
+    bg-red-500 text-white
+    hover:bg-red-600 hover:shadow-md
+    active:bg-red-700
+    focus:ring-red-500
     shadow-sm
   `,
 };
@@ -120,7 +120,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           // Base styles
           'inline-flex items-center justify-center',
           'font-medium transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-offset-2',
+          'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
           'rounded-md cursor-pointer',
 

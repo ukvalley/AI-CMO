@@ -80,20 +80,20 @@ export function ModulePage<T extends { id: string }>({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {viewMode !== 'list' && (
-            <Button variant="ghost" size="sm" onClick={handleBack} className="text-neutral-500">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="text-slate-400 hover:text-slate-200">
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-semibold text-neutral-900">
+            <h1 className="text-2xl font-semibold text-white">
               {viewMode === 'form' && selectedItem
                 ? `Edit ${module?.name.slice(0, -1) || 'Item'}`
                 : viewMode === 'form'
                 ? `Add ${module?.name.slice(0, -1) || 'Item'}`
                 : module?.name}
             </h1>
-            {viewMode === 'list' && <p className="text-sm text-neutral-500 mt-0.5">{module?.description}</p>}
+            {viewMode === 'list' && <p className="text-sm text-slate-400 mt-0.5">{module?.description}</p>}
           </div>
         </div>
 
