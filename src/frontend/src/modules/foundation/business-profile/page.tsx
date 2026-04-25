@@ -168,12 +168,12 @@ export default function BusinessProfilePage() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center">
+        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20">
           <Building2 className="w-8 h-8 text-white" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">Business Profile</h1>
-          <p className="text-neutral-500">
+          <h1 className="text-3xl font-bold text-white">Business Profile</h1>
+          <p className="text-slate-400">
             Define your company's identity, mission, and online presence
           </p>
         </div>
@@ -206,7 +206,7 @@ export default function BusinessProfilePage() {
       )}
 
       {/* Form */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
         <UniversalForm
           fields={formFields}
           initialData={(profile || {}) as unknown as Record<string, unknown>}
@@ -232,16 +232,16 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-4">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
-          <Icon className="w-5 h-5 text-primary-600" />
+        <div className="w-10 h-10 bg-primary-500/10 rounded-lg flex items-center justify-center">
+          <Icon className="w-5 h-5 text-primary-400" />
         </div>
         <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide">
+          <p className="text-xs text-slate-500 uppercase tracking-wide">
             {label}
           </p>
-          <p className="font-semibold text-neutral-900">{value}</p>
+          <p className="font-semibold text-slate-200">{value}</p>
         </div>
       </div>
     </div>

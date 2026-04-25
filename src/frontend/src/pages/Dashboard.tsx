@@ -31,21 +31,21 @@ function StatCard({
   color?: 'primary' | 'success' | 'warning' | 'info';
 }) {
   const colorClasses = {
-    primary: 'bg-primary-50 text-primary-600',
-    success: 'bg-green-50 text-green-600',
-    warning: 'bg-yellow-50 text-yellow-600',
-    info: 'bg-blue-50 text-blue-600',
+    primary: 'bg-primary-500/10 text-primary-400',
+    success: 'bg-green-500/10 text-green-400',
+    warning: 'bg-yellow-500/10 text-yellow-400',
+    info: 'bg-blue-500/10 text-blue-400',
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-4">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
       <div className="flex items-center gap-3">
         <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', colorClasses[color])}>
           <Icon className="w-5 h-5" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-neutral-900">{value}</p>
-          <p className="text-xs text-neutral-500">{label}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          <p className="text-xs text-slate-400">{label}</p>
         </div>
       </div>
     </div>
@@ -69,7 +69,7 @@ function ModuleCard({
   return (
     <Link
       href={module.path}
-      className="group block bg-white rounded-xl border border-neutral-200 p-4 hover:border-primary-300 hover:shadow-md transition-all"
+      className="group block bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 hover:border-primary-500/50 hover:bg-slate-800 transition-all"
     >
       <div className="flex items-start gap-3">
         <div
@@ -80,20 +80,20 @@ function ModuleCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-neutral-900 group-hover:text-primary-600 transition-colors">
+            <h3 className="font-medium text-slate-200 group-hover:text-primary-300 transition-colors">
               {module.name}
             </h3>
             {itemCount > 0 && (
-              <span className="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">
                 {itemCount}
               </span>
             )}
           </div>
-          <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{module.description}</p>
+          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{module.description}</p>
           {module.hasAI && (
             <div className="flex items-center gap-1 mt-2">
-              <Icons.Sparkles className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] text-purple-600">AI-powered</span>
+              <Icons.Sparkles className="w-3 h-3 text-primary-400" />
+              <span className="text-[10px] text-primary-400">AI-powered</span>
             </div>
           )}
         </div>
@@ -142,8 +142,8 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Dashboard</h1>
-            <p className="text-neutral-500 mt-1">
+            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+            <p className="text-slate-400 mt-1">
               Welcome back{user?.name ? `, ${user.name}` : ''}! Manage your marketing across all modules.
             </p>
           </div>
@@ -216,8 +216,8 @@ export default function Dashboard() {
                     className="w-2 h-6 rounded-full"
                     style={{ backgroundColor: group.color }}
                   />
-                  <h2 className="text-lg font-semibold text-neutral-900">{group.name}</h2>
-                  <span className="text-sm text-neutral-500">
+                  <h2 className="text-lg font-semibold text-white">{group.name}</h2>
+                  <span className="text-sm text-slate-400">
                     ({groupModules.length} modules)
                   </span>
                 </div>

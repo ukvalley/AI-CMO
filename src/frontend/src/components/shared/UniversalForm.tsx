@@ -177,8 +177,8 @@ export function UniversalForm<T extends Record<string, unknown>>({
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
       {hasErrors && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-700">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+          <p className="text-sm text-red-400">
             Please fix the errors below before submitting.
           </p>
         </div>
@@ -191,9 +191,9 @@ export function UniversalForm<T extends Record<string, unknown>>({
 
           return (
             <div key={field.key} className={cn(field.colSpan === 2 && 'md:col-span-2')}>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                {field.required && <span className="text-red-400 ml-0.5">*</span>}
               </label>
 
               {(field.type === 'text' ||
@@ -205,7 +205,11 @@ export function UniversalForm<T extends Record<string, unknown>>({
                   value={String(value || '')}
                   onChange={(e) => handleChange(field.key, e.target.value)}
                   placeholder={field.placeholder}
-                  className={cn(error && 'border-red-500 focus:border-red-500')}
+                  className={cn(
+                    'bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500',
+                    'focus:border-primary-500 focus:ring-primary-500/20',
+                    error && 'border-red-500 focus:border-red-500'
+                  )}
                 />
               )}
 
@@ -222,7 +226,11 @@ export function UniversalForm<T extends Record<string, unknown>>({
                   placeholder={field.placeholder}
                   min={field.min}
                   max={field.max}
-                  className={cn(error && 'border-red-500 focus:border-red-500')}
+                  className={cn(
+                    'bg-slate-800 border-slate-700 text-slate-200',
+                    'focus:border-primary-500 focus:ring-primary-500/20',
+                    error && 'border-red-500 focus:border-red-500'
+                  )}
                 />
               )}
 
@@ -234,9 +242,11 @@ export function UniversalForm<T extends Record<string, unknown>>({
                     placeholder={field.placeholder}
                     rows={field.rows || 4}
                     className={cn(
-                      'w-full px-3 py-2 rounded-lg border bg-white',
+                      'w-full px-3 py-2 rounded-lg border bg-slate-800 text-slate-200',
+                      'placeholder:text-slate-500',
                       'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
                       'transition-all duration-200 resize-y',
+                      'border-slate-700',
                       error && 'border-red-500 focus:border-red-500',
                       field.aiGenerate && 'pr-12'
                     )}
@@ -246,7 +256,7 @@ export function UniversalForm<T extends Record<string, unknown>>({
                       type="button"
                       onClick={() => handleAiGenerate(field)}
                       disabled={aiGenerating[field.key]}
-                      className="absolute right-2 top-2 p-1.5 rounded-md bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors"
+                      className="absolute right-2 top-2 p-1.5 rounded-md bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 transition-colors"
                     >
                       {aiGenerating[field.key] ? (
                         <span className="animate-spin">✦</span>
@@ -264,24 +274,25 @@ export function UniversalForm<T extends Record<string, unknown>>({
                     value={String(value || '')}
                     onChange={(e) => handleChange(field.key, e.target.value)}
                     className={cn(
-                      'w-full px-3 py-2 rounded-lg border bg-white appearance-none',
+                      'w-full px-3 py-2 rounded-lg border appearance-none',
+                      'bg-slate-800 text-slate-200 border-slate-700',
                       'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
                       error && 'border-red-500 focus:border-red-500'
                     )}
                   >
-                    <option value="">Select {field.label}</option>
+                    <option value="" className="bg-slate-800">Select {field.label}</option>
                     {field.options?.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
+                      <option key={opt.value} value={opt.value} className="bg-slate-800">
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
               )}
 
               {field.type === 'multiselect' && (
-                <div className="flex flex-wrap gap-2 p-2 border rounded-lg bg-white">
+                <div className="flex flex-wrap gap-2 p-2 border rounded-lg bg-slate-800 border-slate-700">
                   {field.options?.map((opt) => {
                     const selected = ((value as string[]) || []).includes(opt.value);
                     return (
@@ -298,8 +309,8 @@ export function UniversalForm<T extends Record<string, unknown>>({
                         className={cn(
                           'px-3 py-1 rounded-full text-sm transition-colors',
                           selected
-                            ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                            : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
+                            ? 'bg-primary-500/20 text-primary-300 border border-primary-500/50'
+                            : 'bg-slate-700 text-slate-400 border border-slate-600 hover:border-slate-500'
                         )}
                       >
                         {selected && <Check className="w-3 h-3 inline mr-1" />}
@@ -316,7 +327,7 @@ export function UniversalForm<T extends Record<string, unknown>>({
                   onClick={() => handleChange(field.key, !value)}
                   className={cn(
                     'relative inline-flex h-6 w-11 rounded-full transition-colors',
-                    value ? 'bg-primary-500' : 'bg-neutral-200'
+                    value ? 'bg-primary-500' : 'bg-slate-700'
                   )}
                 >
                   <span
@@ -335,13 +346,13 @@ export function UniversalForm<T extends Record<string, unknown>>({
                     type="color"
                     value={String(value || '#7C6BF0')}
                     onChange={(e) => handleChange(field.key, e.target.value)}
-                    className="w-10 h-10 rounded-lg border cursor-pointer"
+                    className="w-10 h-10 rounded-lg border border-slate-700 cursor-pointer bg-slate-800"
                   />
                   <Input
                     value={String(value || '')}
                     onChange={(e) => handleChange(field.key, e.target.value)}
                     placeholder="#7C6BF0"
-                    className="flex-1"
+                    className="flex-1 bg-slate-800 border-slate-700 text-slate-200"
                   />
                 </div>
               )}
@@ -351,7 +362,11 @@ export function UniversalForm<T extends Record<string, unknown>>({
                   type="date"
                   value={String(value || '')}
                   onChange={(e) => handleChange(field.key, e.target.value)}
-                  className={cn(error && 'border-red-500 focus:border-red-500')}
+                  className={cn(
+                    'bg-slate-800 border-slate-700 text-slate-200',
+                    'focus:border-primary-500 focus:ring-primary-500/20',
+                    error && 'border-red-500 focus:border-red-500'
+                  )}
                 />
               )}
 
@@ -374,11 +389,13 @@ export function UniversalForm<T extends Record<string, unknown>>({
                           }}
                           className={cn(
                             'w-full px-2 py-1.5 text-xs rounded border',
+                            'bg-slate-800 text-slate-200 placeholder:text-slate-500',
                             'focus:outline-none focus:border-primary-500',
-                            hasValue && 'border-green-300 bg-green-50'
+                            'border-slate-700',
+                            hasValue && 'border-primary-500/50 bg-primary-500/10'
                           )}
                         />
-                        <span className="text-[10px] text-neutral-500 block mt-0.5">
+                        <span className="text-[10px] text-slate-500 block mt-0.5">
                           {platform.label}
                         </span>
                       </div>
@@ -388,16 +405,16 @@ export function UniversalForm<T extends Record<string, unknown>>({
               )}
 
               {field.helperText && !error && (
-                <p className="mt-1 text-xs text-neutral-500">{field.helperText}</p>
+                <p className="mt-1 text-xs text-slate-500">{field.helperText}</p>
               )}
 
-              {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+              {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
             </div>
           );
         })}
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t">
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
             {cancelLabel}

@@ -10,46 +10,47 @@
 // ============================================
 
 export const colors = {
-  // Primary Brand Colors
+  // Primary Brand Colors - Purple for AI CMO
   primary: {
-    50: '#eff6ff',
-    100: '#dbeafe',
-    200: '#bfdbfe',
-    300: '#93c5fd',
-    400: '#60a5fa',
-    500: '#3b82f6',  // Primary brand color
-    600: '#2563eb',
-    700: '#1d4ed8',
-    800: '#1e40af',
-    900: '#1e3a8a',
+    50: '#f5f3ff',
+    100: '#ede9fe',
+    200: '#ddd6fe',
+    300: '#c4b5fd',
+    400: '#a78bfa',
+    500: '#7C6BF0',  // Primary brand color - Purple
+    600: '#6d5ce6',
+    700: '#5d4bd1',
+    800: '#4c3db5',
+    900: '#3d2f99',
   },
 
   // Secondary Accent
   secondary: {
-    50: '#fdf4ff',
-    100: '#fae8ff',
-    200: '#f5d0fe',
-    300: '#f0abfc',
-    400: '#e879f9',
-    500: '#d946ef',  // Secondary accent
-    600: '#c026d3',
-    700: '#a21caf',
-    800: '#86198f',
-    900: '#701a75',
+    50: '#f0f9ff',
+    100: '#e0f2fe',
+    200: '#bae6fd',
+    300: '#7dd3fc',
+    400: '#38bdf8',
+    500: '#0ea5e9',  // Secondary accent - Sky blue
+    600: '#0284c7',
+    700: '#0369a1',
+    800: '#075985',
+    900: '#0c4a6e',
   },
 
-  // Neutral Scale (Gray)
+  // Neutral Scale (Slate for Dark Theme)
   neutral: {
-    50: '#fafafa',   // Background tertiary
-    100: '#f5f5f5',  // Background secondary
-    200: '#e5e5e5',  // Border light
-    300: '#d4d4d4',  // Border
-    400: '#a3a3a3',  // Placeholder text
-    500: '#737373',  // Secondary text
-    600: '#525252',  // Body text secondary
-    700: '#404040',  // Body text
-    800: '#262626',  // Heading text
-    900: '#171717',  // Primary text
+    50: '#f8fafc',   // Lightest - for light mode
+    100: '#f1f5f9',
+    200: '#e2e8f0',
+    300: '#cbd5e1',
+    400: '#94a3b8',  // Muted text
+    500: '#64748b',  // Secondary text
+    600: '#475569',  // Disabled
+    700: '#334155',  // Borders dark mode
+    800: '#1e293b',  // Card backgrounds
+    900: '#0f172a',  // Main dark background
+    950: '#020617',  // Deepest background
   },
 
   // Semantic Colors
@@ -77,12 +78,12 @@ export const colors = {
     700: '#b91c1c',
   },
 
-  // Background Layers
+  // Background Layers - Dark Theme
   background: {
-    primary: '#ffffff',
-    secondary: '#fafafa',
-    tertiary: '#f5f5f5',
-    subtle: '#f3f4f6',
+    primary: '#0f172a',      // Main background (slate-900)
+    secondary: '#1e293b',   // Card background (slate-800)
+    tertiary: '#334155',     // Elevated surfaces (slate-700)
+    subtle: '#475569',       // Subtle backgrounds (slate-600)
   },
 } as const;
 

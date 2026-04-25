@@ -109,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Backdrop */}
       <div
         className={cn(
-          'absolute inset-0 bg-black/40',
+          'absolute inset-0 bg-black/60',
           'backdrop-blur-sm',
           'animate-fade-in'
         )}
@@ -120,8 +120,8 @@ export const Modal: React.FC<ModalProps> = ({
         ref={contentRef}
         className={cn(
           'relative z-10 w-full',
-          'bg-white rounded-xl',
-          'shadow-2xl',
+          'bg-slate-800 rounded-xl border border-slate-700',
+          'shadow-2xl shadow-black/50',
           'animate-scale-in',
           sizeStyles[size]
         )}
@@ -131,12 +131,12 @@ export const Modal: React.FC<ModalProps> = ({
           <div className="flex items-start justify-between p-6 pb-0">
             <div className="flex-1 pr-4">
               {title && (
-                <h2 className="text-xl font-semibold text-neutral-900">
+                <h2 className="text-xl font-semibold text-white">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-neutral-500">
+                <p className="mt-1 text-sm text-slate-400">
                   {description}
                 </p>
               )}
@@ -147,7 +147,7 @@ export const Modal: React.FC<ModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="flex-shrink-0 -mr-2"
+                className="flex-shrink-0 -mr-2 text-slate-400 hover:text-slate-200"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
@@ -161,7 +161,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
             {footer}
           </div>
         )}

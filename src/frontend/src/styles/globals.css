@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ============================================
-   GLOBAL STYLES
+   GLOBAL STYLES - Dark Theme Default
    ============================================ */
 
 @layer base {
@@ -12,55 +12,32 @@
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
 
-    /* CSS variables for dynamic theming */
-    --background: 255 255 255;
-    --foreground: 23 23 23;
-    --card: 255 255 255;
-    --card-foreground: 23 23 23;
-    --popover: 255 255 255;
-    --popover-foreground: 23 23 23;
-    --primary: 59 130 246;
+    /* CSS variables for dark theming (default) */
+    --background: 15 23 42;           /* slate-900 */
+    --foreground: 248 250 252;        /* slate-50 */
+    --card: 30 41 59;                  /* slate-800 */
+    --card-foreground: 248 250 252;   /* slate-50 */
+    --popover: 30 41 59;              /* slate-800 */
+    --popover-foreground: 248 250 252;/* slate-50 */
+    --primary: 124 107 240;           /* primary-500 - Purple */
     --primary-foreground: 255 255 255;
-    --secondary: 245 245 245;
-    --secondary-foreground: 64 64 64;
-    --muted: 245 245 245;
-    --muted-foreground: 115 115 115;
-    --accent: 245 245 245;
-    --accent-foreground: 64 64 64;
-    --destructive: 239 68 68;
+    --secondary: 51 65 85;            /* slate-700 */
+    --secondary-foreground: 248 250 252;
+    --muted: 51 65 85;                /* slate-700 */
+    --muted-foreground: 148 163 184;  /* slate-400 */
+    --accent: 51 65 85;               /* slate-700 */
+    --accent-foreground: 248 250 252;
+    --destructive: 239 68 68;         /* red-500 */
     --destructive-foreground: 255 255 255;
-    --border: 229 229 229;
-    --input: 229 229 229;
-    --ring: 59 130 246;
+    --border: 51 65 85;               /* slate-700 */
+    --input: 51 65 85;                /* slate-700 */
+    --ring: 124 107 240;              /* primary-500 */
     --radius: 0.5rem;
-  }
-
-  /* Dark mode variables */
-  .dark {
-    --background: 10 10 10;
-    --foreground: 245 245 245;
-    --card: 23 23 23;
-    --card-foreground: 245 245 245;
-    --popover: 23 23 23;
-    --popover-foreground: 245 245 245;
-    --primary: 59 130 246;
-    --primary-foreground: 255 255 255;
-    --secondary: 38 38 38;
-    --secondary-foreground: 245 245 245;
-    --muted: 38 38 38;
-    --muted-foreground: 163 163 163;
-    --accent: 38 38 38;
-    --accent-foreground: 245 245 245;
-    --destructive: 220 38 38;
-    --destructive-foreground: 255 255 255;
-    --border: 64 64 64;
-    --input: 64 64 64;
-    --ring: 59 130 246;
   }
 
   /* Base styles */
   * {
-    @apply border-neutral-200;
+    @apply border-slate-700;
   }
 
   html {
@@ -69,7 +46,7 @@
   }
 
   body {
-    @apply bg-background-primary text-neutral-900;
+    @apply bg-slate-950 text-slate-200;
     @apply font-sans text-base leading-normal;
     font-feature-settings: inherit;
     text-rendering: optimizeLegibility;
@@ -79,12 +56,12 @@
 
   /* Focus visible styles */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-background-primary;
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-900;
   }
 
   /* Selection styles */
   ::selection {
-    @apply bg-primary-100 text-primary-900;
+    @apply bg-primary-500/30 text-white;
   }
 }
 
@@ -94,53 +71,53 @@
      ============================================ */
 
   .heading-1 {
-    @apply text-4xl font-bold tracking-tight text-neutral-900;
+    @apply text-4xl font-bold tracking-tight text-white;
     @apply lg:text-5xl;
     line-height: 1.1;
   }
 
   .heading-2 {
-    @apply text-3xl font-semibold tracking-tight text-neutral-900;
+    @apply text-3xl font-semibold tracking-tight text-white;
     @apply lg:text-4xl;
     line-height: 1.15;
   }
 
   .heading-3 {
-    @apply text-2xl font-semibold tracking-tight text-neutral-900;
+    @apply text-2xl font-semibold tracking-tight text-white;
     @apply lg:text-3xl;
     line-height: 1.2;
   }
 
   .heading-4 {
-    @apply text-xl font-semibold tracking-tight text-neutral-900;
+    @apply text-xl font-semibold tracking-tight text-white;
     @apply lg:text-2xl;
     line-height: 1.25;
   }
 
   .heading-5 {
-    @apply text-lg font-semibold text-neutral-900;
+    @apply text-lg font-semibold text-white;
     line-height: 1.3;
   }
 
   .heading-6 {
-    @apply text-base font-semibold text-neutral-900;
+    @apply text-base font-semibold text-white;
     line-height: 1.35;
   }
 
   .body-large {
-    @apply text-lg text-neutral-700 leading-relaxed;
+    @apply text-lg text-slate-300 leading-relaxed;
   }
 
   .body-default {
-    @apply text-base text-neutral-700 leading-normal;
+    @apply text-base text-slate-300 leading-normal;
   }
 
   .body-small {
-    @apply text-sm text-neutral-600 leading-normal;
+    @apply text-sm text-slate-400 leading-normal;
   }
 
   .caption {
-    @apply text-xs text-neutral-500 uppercase tracking-wider font-medium;
+    @apply text-xs text-slate-500 uppercase tracking-wider font-medium;
   }
 
   /* ============================================
@@ -148,12 +125,12 @@
      ============================================ */
 
   .card {
-    @apply bg-white rounded-lg shadow-soft-md;
-    @apply transition-shadow duration-200 ease-in-out;
+    @apply bg-slate-800/50 rounded-lg border border-slate-700;
+    @apply transition-all duration-200 ease-in-out;
   }
 
   .card-hover:hover {
-    @apply shadow-soft-lg;
+    @apply border-slate-600;
   }
 
   /* ============================================
@@ -169,36 +146,35 @@
 
   .btn-primary {
     @apply btn;
-    @apply bg-primary-600 text-white;
-    @apply hover:bg-primary-700;
+    @apply bg-primary-500 text-white;
+    @apply hover:bg-primary-600;
     @apply focus:ring-primary-500;
-    @apply active:bg-primary-800;
-    @apply shadow-sm hover:shadow-md;
+    @apply active:bg-primary-700;
+    @apply shadow-sm hover:shadow-md shadow-primary-500/20;
   }
 
   .btn-secondary {
     @apply btn;
-    @apply bg-white text-neutral-900 border border-neutral-200;
-    @apply hover:bg-neutral-50 hover:border-neutral-300;
+    @apply bg-slate-800 text-slate-200 border border-slate-700;
+    @apply hover:bg-slate-700 hover:border-slate-600;
     @apply focus:ring-primary-500;
-    @apply active:bg-neutral-100;
-    @apply shadow-sm;
+    @apply active:bg-slate-600;
   }
 
   .btn-ghost {
     @apply btn;
-    @apply text-neutral-700 bg-transparent;
-    @apply hover:bg-neutral-100 hover:text-neutral-900;
-    @apply focus:ring-neutral-400;
-    @apply active:bg-neutral-200;
+    @apply text-slate-400 bg-transparent;
+    @apply hover:bg-slate-800 hover:text-slate-200;
+    @apply focus:ring-slate-500;
+    @apply active:bg-slate-700;
   }
 
   .btn-danger {
     @apply btn;
-    @apply bg-error-600 text-white;
-    @apply hover:bg-error-700;
-    @apply focus:ring-error-500;
-    @apply active:bg-error-800;
+    @apply bg-red-500 text-white;
+    @apply hover:bg-red-600;
+    @apply focus:ring-red-500;
+    @apply active:bg-red-700;
   }
 
   /* ============================================
@@ -207,15 +183,15 @@
 
   .input {
     @apply w-full px-3 py-2;
-    @apply bg-white border border-neutral-300 rounded-md;
-    @apply text-neutral-900 placeholder-neutral-400;
+    @apply bg-slate-800 border border-slate-700 rounded-md;
+    @apply text-slate-200 placeholder-slate-500;
     @apply transition-colors duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-    @apply disabled:bg-neutral-50 disabled:text-neutral-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+    @apply disabled:bg-slate-900 disabled:text-slate-500;
   }
 
   .input-error {
-    @apply border-error-300 focus:ring-error-500 focus:border-error-500;
+    @apply border-red-500/50 focus:ring-red-500/20 focus:border-red-500;
   }
 
   /* ============================================
@@ -227,7 +203,7 @@
   }
 
   .page-wrapper {
-    @apply min-h-screen bg-neutral-50;
+    @apply min-h-screen bg-slate-950;
   }
 
   .content-area {
@@ -239,11 +215,11 @@
      ============================================ */
 
   .skeleton {
-    @apply bg-neutral-200 rounded;
+    @apply bg-slate-700 rounded;
     background-image: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.1),
       transparent
     );
     background-size: 200% 100%;
@@ -256,7 +232,7 @@
 
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -269,12 +245,12 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(148, 163, 184, 0.3);
     border-radius: 3px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(148, 163, 184, 0.5);
   }
 }
 

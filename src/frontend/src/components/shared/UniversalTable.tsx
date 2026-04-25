@@ -151,7 +151,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex-1 w-full sm:w-auto">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input
               placeholder={searchPlaceholder}
               value={searchQuery}
@@ -159,17 +159,17 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-10 w-full sm:w-80"
+              className="pl-10 w-full sm:w-80 bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500">
+          <span className="text-sm text-slate-400">
             {processedData.length} {moduleName.toLowerCase()}
           </span>
           {(Object.keys(activeFilters).length > 0 || searchQuery) && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-neutral-500">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-400 hover:text-slate-200">
               Clear filters
             </Button>
           )}
@@ -189,8 +189,8 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                     className={cn(
                       'px-3 py-1.5 rounded-full text-sm transition-colors border',
                       isActive
-                        ? 'bg-primary-100 border-primary-300 text-primary-700'
-                        : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                        ? 'bg-primary-500/20 border-primary-500/50 text-primary-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
                     )}
                   >
                     {option.label}
@@ -205,18 +205,18 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200">
+      <div className="overflow-x-auto rounded-lg border border-slate-700">
         <table className="w-full">
-          <thead className="bg-neutral-50 border-b border-neutral-200">
+          <thead className="bg-slate-800/80 border-b border-slate-700">
             <tr>
               {showRowNumbers && (
-                <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 w-12">#</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 w-12">#</th>
               )}
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    'px-4 py-3 text-left text-xs font-medium text-neutral-500',
+                    'px-4 py-3 text-left text-xs font-medium text-slate-400',
                     col.width && `w-${col.width}`
                   )}
                   style={{ width: col.width }}
@@ -224,7 +224,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                   <div
                     className={cn(
                       'flex items-center gap-1',
-                      col.sortable && 'cursor-pointer hover:text-neutral-700'
+                      col.sortable && 'cursor-pointer hover:text-slate-200'
                     )}
                     onClick={() => col.sortable && handleSort(col.key)}
                   >
@@ -236,11 +236,11 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                 </th>
               ))}
               {(onEdit || onDelete || actions) && (
-                <th className="px-4 py-3 text-right text-xs font-medium text-neutral-500 w-24">Actions</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 w-24">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-slate-700">
             {paginatedData.length === 0 ? (
               <tr>
                 <td
@@ -249,10 +249,10 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                     (showRowNumbers ? 1 : 0) +
                     (onEdit || onDelete || actions ? 1 : 0)
                   }
-                  className="px-4 py-12 text-center text-neutral-500"
+                  className="px-4 py-12 text-center text-slate-400"
                 >
                   <div className="flex flex-col items-center gap-2">
-                    <Filter className="w-8 h-8 text-neutral-300" />
+                    <Filter className="w-8 h-8 text-slate-600" />
                     <p>No {moduleName.toLowerCase()} found</p>
                     {(searchQuery || Object.keys(activeFilters).length > 0) && (
                       <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -267,14 +267,14 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                 <tr
                   key={item.id}
                   className={cn(
-                    'hover:bg-neutral-50 transition-colors',
-                    index % 2 === 1 && 'bg-neutral-50/50',
+                    'hover:bg-slate-800/50 transition-colors',
+                    index % 2 === 1 && 'bg-slate-800/30',
                     onRowClick && 'cursor-pointer'
                   )}
                   onClick={() => onRowClick?.(item)}
                 >
                   {showRowNumbers && (
-                    <td className="px-4 py-3 text-sm text-neutral-500">
+                    <td className="px-4 py-3 text-sm text-slate-500">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
                   )}
@@ -282,7 +282,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                     <td
                       key={col.key}
                       className={cn(
-                        'px-4 py-3 text-sm',
+                        'px-4 py-3 text-sm text-slate-200',
                         col.align === 'center' && 'text-center',
                         col.align === 'right' && 'text-right'
                       )}
@@ -302,7 +302,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-slate-400 hover:text-white"
                             onClick={(e) => {
                               e.stopPropagation();
                               onEdit(item);
@@ -315,7 +315,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 text-red-500 hover:text-red-600"
+                            className="h-8 w-8 text-red-400 hover:text-red-300"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteConfirm(item);
@@ -336,7 +336,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-neutral-500">
+          <div className="text-sm text-slate-400">
             Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
             {Math.min(currentPage * itemsPerPage, processedData.length)} of{' '}
             {processedData.length} results
@@ -350,7 +350,7 @@ export function UniversalTable<T extends { id: string } & Record<string, unknown
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-neutral-600">
+            <span className="text-sm text-slate-400">
               Page {currentPage} of {totalPages}
             </span>
             <Button

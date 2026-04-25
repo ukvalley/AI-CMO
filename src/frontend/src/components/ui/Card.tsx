@@ -66,8 +66,8 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          // Base styles
-          'bg-white rounded-lg',
+          // Base styles - Dark theme
+          'bg-slate-800/50 backdrop-blur-sm rounded-lg',
           'transition-all duration-200',
 
           // Padding
@@ -77,10 +77,10 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           shadowStyles[shadow],
 
           // Border
-          border && 'border border-neutral-200',
+          border && 'border border-slate-700',
 
           // Hover effect
-          hover && 'hover:shadow-soft-lg hover:-translate-y-0.5 cursor-pointer',
+          hover && 'hover:shadow-soft-lg hover:-translate-y-0.5 cursor-pointer hover:border-slate-600',
 
           className
         )}
@@ -122,12 +122,12 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
     >
       <div className="flex-1 min-w-0">
         {title && (
-          <h3 className="text-lg font-semibold text-neutral-900 truncate">
+          <h3 className="text-lg font-semibold text-white truncate">
             {title}
           </h3>
         )}
         {subtitle && (
-          <p className="text-sm text-neutral-500 mt-0.5">{subtitle}</p>
+          <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>
         )}
         {children}
       </div>
@@ -179,7 +179,7 @@ export const CardFooter: React.FC<CardFooterProps> = ({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 mt-4 pt-4 border-t border-neutral-100',
+        'flex items-center gap-3 mt-4 pt-4 border-t border-slate-700',
         alignStyles[align],
         className
       )}
