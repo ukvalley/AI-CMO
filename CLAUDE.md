@@ -8,10 +8,13 @@
 
 **AI CMO** is a modular AI-powered Chief Marketing Officer platform with 60+ modules organized into 8 groups.
 
-- **Tech Stack**: Next.js 14 + TypeScript + Tailwind CSS + Zustand
+- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS + Zustand
+- **Backend**: Node.js + Express + MongoDB + Redis
+- **Database**: MongoDB (document store for flexible schema)
+- **Cache**: Redis (session + response caching)
 - **Design**: Dark theme with purple accent (#7C6BF0)
 - **Architecture**: Modular with shared components
-- **Data**: Auto-save with 2-second delay via window.storage
+- **Data**: API sync with localStorage fallback + auto-save
 
 ---
 
@@ -19,19 +22,34 @@
 
 ```
 /Users/umeshkhivasara/AI CMO/
-├── src/frontend/
-│   ├── src/
-│   │   ├── app/                    # Next.js routes (pages)
-│   │   │   ├── layout.tsx          # Root layout with dark theme
-│   │   │   ├── page.tsx            # Redirects to /dashboard
-│   │   │   ├── dashboard/
-│   │   │   ├── login/
-│   │   │   ├── register/
-│   │   │   ├── business-profile/   # Route wrapper
-│   │   │   ├── founders/           # Route wrapper
-│   │   │   └── employees/          # Route wrapper
-│   │   │
-│   │   ├── modules/                # ALL MODULES GO HERE
+├── src/
+│   ├── frontend/                   # Next.js frontend application
+│   │   ├── src/
+│   │   │   ├── app/                # Next.js routes (pages)
+│   │   │   ├── modules/            # Module implementations
+│   │   │   ├── components/         # React components
+│   │   │   ├── stores/             # Zustand state management
+│   │   │   ├── services/           # API services
+│   │   │   └── types/              # TypeScript definitions
+│   │   └── package.json
+│   │
+│   ├── backend/                    # Express + MongoDB backend API
+│   │   ├── src/
+│   │   │   ├── models/             # Mongoose models
+│   │   │   ├── routes/             # API routes
+│   │   │   ├── middleware/         # Auth, error handling
+│   │   │   └── utils/              # Database, Redis helpers
+│   │   └── package.json
+│   │
+│   └── ml/                         # Python ML service (future)
+│
+├── docker/                         # Docker configurations
+│   ├── Dockerfile.backend
+│   ├── Dockerfile.frontend
+│   ├── Dockerfile.ml
+│   └── mongo-init.js               # MongoDB schema init
+│
+├── docker-compose.yml              # Full stack orchestration
 │   │   │   └── foundation/         # Group: Foundation modules
 │   │   │       ├── business-profile/page.tsx
 │   │   │       ├── founders/page.tsx
@@ -370,7 +388,98 @@ const stats = getStats();
 
 ---
 
-## 8. AI ENGINE INSTRUCTIONS
+## 8. BACKEND API ARCHITECTURE
+
+### Tech Stack
+- **Runtime**: Node.js 20 + Express
+- **Database**: MongoDB 7.0 with Mongoose ODM
+- **Cache**: Redis 7 (sessions, rate limiting, response caching)
+- **Auth**: JWT tokens with bcrypt password hashing
+- **Real-time**: WebSocket for live updates
+
+### Running the Full Stack
+```bash
+# Start all services (MongoDB, Redis, Backend, Frontend)
+docker-compose up -d
+
+# Or start individually:
+# MongoDB only
+docker run -d -p 27017:27017 --name mongodb mongo:7.0
+
+# Redis only
+docker run -d -p 6379:6379 --name redis redis:7-alpine
+
+# Backend (from /src/backend)
+cd src/backend
+npm install
+npm run dev
+
+# Frontend (from /src/frontend)
+cd src/frontend
+npm run dev
+```
+
+### API Structure
+```
+/api/auth          # Login, register, me, switch-company
+/api/companies     # CRUD for companies
+/api/users         # User management
+/api/business-profiles  # Business profile CRUD
+/api/products      # Products + categories CRUD
+/api/founders      # Founders CRUD
+/api/employees     # Employees CRUD
+/api/icps          # ICPs CRUD
+/api/personas      # Personas CRUD
+/api/competitors   # Competitors CRUD
+/api/module-data   # Generic module data store
+/api/chat          # AI chat sessions
+/api/tasks         # Background tasks
+/api/ai            # AI generation (Claude API)
+```
+
+### Environment Variables
+```bash
+# Copy and fill in values
+cp .env.example .env
+
+# Required:
+MONGODB_URI=mongodb://ai_cmo:password@localhost:27017/ai_cmo?authSource=admin
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your-super-secret-key
+CLAUDE_API_KEY=sk-ant-api03-...
+```
+
+### MongoDB Collections
+- `companies` - Company documents
+- `users` - User accounts with password hashes
+- `businessprofiles` - One per company
+- `products` + `productcategories` - Product catalog
+- `founders` - Founder profiles with assets
+- `employees` - Team members
+- `icps` + `personas` - Customer profiles
+- `competitors` - Competitive analysis
+- `chatsessions` - AI chat history
+- `backgroundtasks` - Bulk generation jobs
+
+### Frontend API Integration
+The frontend uses `/src/frontend/src/services/api.ts`:
+```typescript
+import { productApi, authApi, companyApi } from '@/services/api';
+
+// In a component:
+const { data, error } = await productApi.getAll(companyId);
+const { data, error } = await authApi.login({ email, password });
+```
+
+### Switching Between API and LocalStorage
+The data store automatically falls back to localStorage when:
+1. No auth token exists (demo mode)
+2. Backend API is unreachable
+3. `NEXT_PUBLIC_API_URL` is not set
+
+---
+
+## 9. AI ENGINE INSTRUCTIONS
 
 When working on this project, AI assistants must:
 
@@ -386,11 +495,12 @@ When working on this project, AI assistants must:
 ### AI Workflow for New Module
 1. Read module registry to understand existing modules
 2. Read entities.ts to see available interfaces
-3. Create module page in `/src/modules/[group]/[name]/page.tsx`
-4. Create route wrapper in `/src/app/[name]/page.tsx`
-5. Add module to registry in `/src/lib/modules.ts`
-6. Add type to entities.ts
-7. Add data key to dataStore.ts
+3. **Create Mongoose model** in `/src/backend/src/models/[ModuleName].ts`
+4. **Create API routes** in `/src/backend/src/routes/[module].ts`
+5. Create module page in `/src/modules/[group]/[name]/page.tsx`
+6. Create route wrapper in `/src/app/[name]/page.tsx`
+7. Add API service in `/src/frontend/src/services/api.ts`
+8. Add type to entities.ts (frontend)
 
 ---
 

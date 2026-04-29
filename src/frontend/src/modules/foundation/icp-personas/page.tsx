@@ -6,12 +6,13 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Target, UserCircle, Users } from 'lucide-react';
 import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
-import { useDataStore } from '@/stores';
+import { icpApi, personaApi } from '@/services/api';
+import { useAuthStore } from '@/stores';
 import type { ICP, Persona } from '@/types/entities';
 import { Button } from '@/components/ui/Button';
 
@@ -185,12 +186,107 @@ function usePersonaFormFields(icps: ICP[]): FormField[] {
 
 export default function IcpPersonasPage() {
   const [activeTab, setActiveTab] = useState<'icps' | 'personas'>('icps');
-  const { getItems, updateItem, deleteItem } = useDataStore();
-  const icps = getItems('icps') as ICP[];
-  const personas = getItems('personas') as Persona[];
+  const { user } = useAuthStore();
+  const companyId = user?.activeCompanyId;
+
+  const [icps, setIcps] = useState<ICP[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from API
+  useEffect(() => {
+    if (!companyId) {
+      setIcps([]);
+      setPersonas([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      setIsLoading(true);
+      const [icpsRes, personasRes] = await Promise.all([
+        icpApi.getAll(companyId),
+        personaApi.getAll(companyId),
+      ]);
+      if (icpsRes.data) setIcps(icpsRes.data);
+      if (personasRes.data) setPersonas(personasRes.data);
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [companyId]);
 
   const personaColumns = usePersonaColumns(icps);
   const personaFormFields = usePersonaFormFields(icps);
+
+  // ICP Handlers
+  const handleIcpCreate = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
+    const response = await icpApi.create({
+      ...data,
+      companyId,
+      isActive: true,
+    });
+
+    if (response.data) {
+      setIcps((prev) => [...prev, response.data as ICP]);
+    }
+  };
+
+  const handleIcpUpdate = async (id: string, data: Partial<ICP>) => {
+    const response = await icpApi.update(id, data);
+    if (response.data) {
+      setIcps((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, ...response.data } : i))
+      );
+    }
+  };
+
+  const handleIcpDelete = async (id: string) => {
+    const response = await icpApi.delete(id);
+    if (!response.error) {
+      setIcps((prev) => prev.filter((i) => i.id !== id));
+    }
+  };
+
+  // Persona Handlers
+  const handlePersonaCreate = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
+    const response = await personaApi.create({
+      ...data,
+      companyId,
+    });
+
+    if (response.data) {
+      setPersonas((prev) => [...prev, response.data as Persona]);
+    }
+  };
+
+  const handlePersonaUpdate = async (id: string, data: Partial<Persona>) => {
+    const response = await personaApi.update(id, data);
+    if (response.data) {
+      setPersonas((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...response.data } : p))
+      );
+    }
+  };
+
+  const handlePersonaDelete = async (id: string) => {
+    const response = await personaApi.delete(id);
+    if (!response.error) {
+      setPersonas((prev) => prev.filter((p) => p.id !== id));
+    }
+  };
+
+  if (!companyId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">Please select a company to view ICPs & Personas.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -229,16 +325,9 @@ export default function IcpPersonasPage() {
           columns={icpColumns}
           fields={icpFormFields}
           data={icps}
-          onCreate={(data) => {
-            const { addItem } = useDataStore.getState();
-            addItem('icps', { ...data, isActive: true } as Omit<ICP, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>);
-          }}
-          onUpdate={(id, data) => {
-            updateItem('icps', id, data);
-          }}
-          onDelete={(id) => {
-            deleteItem('icps', id);
-          }}
+          onCreate={handleIcpCreate}
+          onUpdate={handleIcpUpdate}
+          onDelete={handleIcpDelete}
         />
       ) : (
         <>
@@ -260,16 +349,9 @@ export default function IcpPersonasPage() {
               columns={personaColumns}
               fields={personaFormFields}
               data={personas}
-              onCreate={(data) => {
-                const { addItem } = useDataStore.getState();
-                addItem('personas', data as Omit<Persona, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>);
-              }}
-              onUpdate={(id, data) => {
-                updateItem('personas', id, data);
-              }}
-              onDelete={(id) => {
-                deleteItem('personas', id);
-              }}
+              onCreate={handlePersonaCreate}
+              onUpdate={handlePersonaUpdate}
+              onDelete={handlePersonaDelete}
             />
           )}
         </>

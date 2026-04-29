@@ -1,8 +1,7 @@
 /**
  * Login Page
  *
- * User authentication with Email ID and Password.
- * Follows Common Defect Prevention Guide standards.
+ * User authentication with backend API integration.
  */
 
 'use client';
@@ -11,12 +10,13 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/utils/cn';
-import { UILabels, formatMessage } from '@/utils/spelling';
+import { UILabels } from '@/utils/spelling';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Logo } from '@/components/ui/Logo';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '@/stores';
 
 // ============================================
 // COMPONENT
@@ -24,13 +24,15 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
 export default function Login() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { login, isLoading, error: authError } = useAuthStore();
+
   const [showPassword, setShowPassword] = React.useState(false);
   const [rememberMe, setRememberMe] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [loginError, setLoginError] = React.useState<string | null>(null);
 
   const [formData, setFormData] = React.useState({
-    emailId: '',
+    email: '',
     password: '',
   });
 
@@ -38,10 +40,10 @@ export default function Login() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.emailId.trim()) {
-      newErrors.emailId = `${UILabels.emailId} is required.`;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailId)) {
-      newErrors.emailId = `Please enter a valid ${UILabels.emailId}.`;
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email.';
     }
 
     if (!formData.password) {
@@ -55,22 +57,33 @@ export default function Login() {
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
 
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    const result = await login(formData.email, formData.password);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    if (result.success) {
+      // Check if user has companies
+      const { user } = useAuthStore.getState();
+      if (user?.companyIds && user.companyIds.length > 0) {
+        router.push('/dashboard');
+      } else {
+        // Redirect to company creation if no companies
+        router.push('/companies');
+      }
+    } else {
+      setLoginError(result.error || 'Login failed');
+    }
+  };
 
-    // TODO: Replace with actual authentication
-    console.log('Login:', { ...formData, rememberMe });
-
-    setIsLoading(false);
-
-    // Show success and redirect
-    alert(formatMessage('Logged in successfully'));
-    router.push('/dashboard');
+  // Demo login (for development)
+  const handleDemoLogin = async () => {
+    setLoginError(null);
+    const result = await login('', '');
+    if (result.success) {
+      router.push('/dashboard');
+    }
   };
 
   return (
@@ -90,20 +103,28 @@ export default function Login() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {(loginError || authError) && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-400">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm">{loginError || authError}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email ID Field */}
+            {/* Email Field */}
             <Input
-              id="emailId"
-              label={UILabels.emailId}
+              id="email"
+              label="Email"
               type="email"
-              placeholder="Enter Email ID"
+              placeholder="Enter your email"
               required
               leftIcon={<Mail className="w-4 h-4 text-slate-500" />}
-              value={formData.emailId}
+              value={formData.email}
               onChange={(e) =>
-                setFormData({ ...formData, emailId: e.target.value })
+                setFormData({ ...formData, email: e.target.value })
               }
-              error={errors.emailId}
+              error={errors.email}
               autoComplete="email"
               className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
             />
@@ -114,7 +135,7 @@ export default function Login() {
                 id="password"
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter Password"
+                placeholder="Enter your password"
                 required
                 leftIcon={<Lock className="w-4 h-4 text-slate-500" />}
                 rightIcon={
@@ -172,6 +193,20 @@ export default function Login() {
               {UILabels.logIn}
             </Button>
           </form>
+
+          {/* Demo Mode Button */}
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onClick={handleDemoLogin}
+              disabled={isLoading}
+            >
+              Try Demo (No Login Required)
+            </Button>
+          </div>
 
           {/* Register Link */}
           <div className="mt-6 text-center">

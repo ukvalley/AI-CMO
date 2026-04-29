@@ -6,12 +6,13 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
-import { useDataStore } from '@/stores';
+import { TableColumn } from '@/components/shared/UniversalTable';
+import { employeeApi } from '@/services/api';
+import { useAuthStore } from '@/stores';
 import type { Employee, Department, EmployeeLevel } from '@/types/entities';
-import { TableColumn } from '@/components/shared';
 
 // ============================================
 // TABLE COLUMNS
@@ -111,8 +112,66 @@ const formFields: FormField[] = [
 // ============================================
 
 export default function EmployeesPage() {
-  const { getItems, updateItem, deleteItem } = useDataStore();
-  const employees = getItems('employees') as Employee[];
+  const { user } = useAuthStore();
+  const companyId = user?.activeCompanyId;
+
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from API
+  useEffect(() => {
+    if (!companyId) {
+      setEmployees([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      setIsLoading(true);
+      const response = await employeeApi.getAll(companyId);
+      if (response.data) setEmployees(response.data);
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [companyId]);
+
+  const handleCreate = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
+    const response = await employeeApi.create({
+      ...data,
+      companyId,
+    });
+
+    if (response.data) {
+      setEmployees((prev) => [...prev, response.data as Employee]);
+    }
+  };
+
+  const handleUpdate = async (id: string, data: Partial<Employee>) => {
+    const response = await employeeApi.update(id, data);
+    if (response.data) {
+      setEmployees((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, ...response.data } : e))
+      );
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const response = await employeeApi.delete(id);
+    if (!response.error) {
+      setEmployees((prev) => prev.filter((e) => e.id !== id));
+    }
+  };
+
+  if (!companyId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">Please select a company to view employees.</p>
+      </div>
+    );
+  }
 
   return (
     <ModulePage
@@ -120,16 +179,9 @@ export default function EmployeesPage() {
       columns={columns}
       fields={formFields}
       data={employees}
-      onCreate={(data) => {
-        const { addItem } = useDataStore.getState();
-        addItem('employees', data);
-      }}
-      onUpdate={(id, data) => {
-        updateItem('employees', id, data);
-      }}
-      onDelete={(id) => {
-        deleteItem('employees', id);
-      }}
+      onCreate={handleCreate}
+      onUpdate={handleUpdate}
+      onDelete={handleDelete}
     />
   );
 }

@@ -6,12 +6,13 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
-import { useDataStore } from '@/stores';
+import { TableColumn } from '@/components/shared/UniversalTable';
+import { founderApi } from '@/services/api';
+import { useAuthStore } from '@/stores';
 import type { Founder, ResponsibilityArea, AssetType } from '@/types/entities';
-import { TableColumn } from '@/components/shared';
 
 // ============================================
 // TABLE COLUMNS
@@ -80,8 +81,66 @@ const formFields: FormField[] = [
 // ============================================
 
 export default function FoundersPage() {
-  const { getItems, addItem, updateItem, deleteItem } = useDataStore();
-  const founders = getItems('founders') as Founder[];
+  const { user } = useAuthStore();
+  const companyId = user?.activeCompanyId;
+
+  const [founders, setFounders] = useState<Founder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from API
+  useEffect(() => {
+    if (!companyId) {
+      setFounders([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      setIsLoading(true);
+      const response = await founderApi.getAll(companyId);
+      if (response.data) setFounders(response.data);
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [companyId]);
+
+  const handleCreate = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
+    const response = await founderApi.create({
+      ...data,
+      companyId,
+    });
+
+    if (response.data) {
+      setFounders((prev) => [...prev, response.data as Founder]);
+    }
+  };
+
+  const handleUpdate = async (id: string, data: Partial<Founder>) => {
+    const response = await founderApi.update(id, data);
+    if (response.data) {
+      setFounders((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, ...response.data } : f))
+      );
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const response = await founderApi.delete(id);
+    if (!response.error) {
+      setFounders((prev) => prev.filter((f) => f.id !== id));
+    }
+  };
+
+  if (!companyId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">Please select a company to view founders.</p>
+      </div>
+    );
+  }
 
   return (
     <ModulePage
@@ -89,16 +148,9 @@ export default function FoundersPage() {
       columns={columns}
       fields={formFields}
       data={founders}
-      onCreate={(data) => {
-        const { addItem } = useDataStore.getState();
-        addItem('founders', data);
-      }}
-      onUpdate={(id, data) => {
-        updateItem('founders', id, data);
-      }}
-      onDelete={(id) => {
-        deleteItem('founders', id);
-      }}
+      onCreate={handleCreate}
+      onUpdate={handleUpdate}
+      onDelete={handleDelete}
     />
   );
 }

@@ -1,18 +1,20 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: ai-cmo-db
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: ai-cmo-mongodb
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-ai_cmo}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-      POSTGRES_DB: ${DB_NAME:-ai_cmo}
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER:-ai_cmo}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${DB_NAME:-ai_cmo}
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - ai-cmo-network
 
@@ -20,6 +22,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: ai-cmo-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -33,38 +36,70 @@ services:
       context: .
       dockerfile: docker/Dockerfile.backend
     container_name: ai-cmo-backend
+    restart: unless-stopped
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://${DB_USER:-ai_cmo}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-ai_cmo}
+      - PORT=3001
+      - MONGODB_URI=mongodb://${DB_USER:-ai_cmo}:${DB_PASSWORD:-password}@mongodb:27017/${DB_NAME:-ai_cmo}?authSource=admin
       - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - JWT_EXPIRES_IN=7d
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
     ports:
       - "3001:3001"
     volumes:
-      - ./src/backend:/app
+      - ./src/backend:/app/src
       - /app/node_modules
     depends_on:
-      - postgres
+      - mongodb
       - redis
     networks:
       - ai-cmo-network
 
-  # ML Service
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: ../../docker/Dockerfile.frontend
+    container_name: ai-cmo-frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - ai-cmo-network
+
+  # ML Service (Python/FastAPI for AI)
   ml:
     build:
       context: .
       dockerfile: docker/Dockerfile.ml
     container_name: ai-cmo-ml
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MONGODB_URI=mongodb://${DB_USER:-ai_cmo}:${DB_PASSWORD:-password}@mongodb:27017/${DB_NAME:-ai_cmo}?authSource=admin
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     ports:
       - "5000:5000"
     volumes:
       - ./src/ml:/app
-    environment:
-      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongodb
     networks:
       - ai-cmo-network
 
 volumes:
-  postgres_data:
+  mongodb_data:
   redis_data:
 
 networks:
