@@ -157,10 +157,9 @@ function useFormFields(categories: ProductCategory[]): FormField[] {
     {
       key: 'features',
       label: 'Key Features',
-      type: 'textarea',
-      rows: 3,
-      helperText: 'Enter each feature on a new line',
-      aiGenerate: true,
+      type: 'tags',
+      placeholder: 'Add a feature and press Enter',
+      helperText: 'Press Enter or comma to add a feature',
       colSpan: 2,
     },
     {
@@ -219,14 +218,9 @@ export default function ProductsPage() {
   const handleCreate = async (data: Record<string, unknown>) => {
     if (!companyId) return;
 
-    const featuresText = data.features as string;
-    const features = featuresText
-      ? featuresText.split('\n').filter((f) => f.trim() !== '')
-      : [];
-
+    // Features is already an array from tags input
     const response = await productApi.create({
       ...data,
-      features,
       companyId,
     });
 
@@ -236,11 +230,7 @@ export default function ProductsPage() {
   };
 
   const handleUpdate = async (id: string, data: Partial<Product>) => {
-    const featuresText = data.features as unknown as string;
-    if (typeof featuresText === 'string') {
-      data.features = featuresText.split('\n').filter((f) => f.trim() !== '');
-    }
-
+    // Features is already an array from tags input
     const response = await productApi.update(id, data);
 
     if (response.data) {
