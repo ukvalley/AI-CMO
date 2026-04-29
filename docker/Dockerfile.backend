@@ -1,16 +1,24 @@
+# AI CMO Backend Dockerfile
 FROM node:20-alpine
 
+# Set working directory
 WORKDIR /app
 
 # Install dependencies
-COPY package*.json ./
+COPY src/backend/package.json src/backend/package-lock.json* ./
 RUN npm ci
 
-# Copy source
-COPY . .
+# Copy tsconfig
+COPY src/backend/tsconfig.json ./
+
+# Copy source code
+COPY src/backend/src ./src
+
+# Build TypeScript
+RUN npm run build
 
 # Expose port
 EXPOSE 3001
 
-# Start development server
-CMD ["npm", "run", "dev"]
+# Start server
+CMD ["npm", "start"]

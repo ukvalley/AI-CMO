@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/cn';
 import {
   LayoutDashboard,
+  Building2,
   ChevronRight,
   ChevronDown,
   X,
@@ -156,6 +157,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <LayoutDashboard className={cn('w-5 h-5 flex-shrink-0', pathname === '/dashboard' && 'text-purple-400')} />
             {!collapsed && <span>Dashboard</span>}
+          </Link>
+
+          {/* Companies */}
+          <Link
+            href="/companies"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 rounded-lg',
+              'text-sm font-medium transition-colors duration-200',
+              'hover:bg-slate-800',
+              pathname === '/companies'
+                ? 'text-purple-400 bg-purple-500/10 border-l-2 border-purple-500'
+                : 'text-slate-300 hover:text-white',
+              collapsed && 'justify-center'
+            )}
+          >
+            <Building2 className={cn('w-5 h-5 flex-shrink-0', pathname === '/companies' && 'text-purple-400')} />
+            {!collapsed && <span>Companies</span>}
           </Link>
 
           {/* Module Groups */}

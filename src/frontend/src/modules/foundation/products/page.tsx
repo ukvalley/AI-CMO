@@ -6,11 +6,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
-import { useDataStore } from '@/stores';
+import { productApi, categoryApi } from '@/services/api';
+import { useAuthStore } from '@/stores';
 import type { Product, ProductCategory, ProductStatus, AudienceType } from '@/types/entities';
 import { formatCurrency } from '@/utils/spelling';
 
@@ -179,34 +180,90 @@ function useFormFields(categories: ProductCategory[]): FormField[] {
 // ============================================
 
 export default function ProductsPage() {
-  const { getItems, updateItem, deleteItem } = useDataStore();
-  const products = getItems('products') as Product[];
-  const categories = getItems('productCategories') as ProductCategory[];
+  const { user } = useAuthStore();
+  const companyId = user?.activeCompanyId;
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from API
+  useEffect(() => {
+    if (!companyId) {
+      setProducts([]);
+      setCategories([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      setIsLoading(true);
+
+      const [productsRes, categoriesRes] = await Promise.all([
+        productApi.getAll(companyId),
+        categoryApi.getAll(companyId),
+      ]);
+
+      if (productsRes.data) setProducts(productsRes.data);
+      if (categoriesRes.data) setCategories(categoriesRes.data);
+
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [companyId]);
 
   const columns = useColumns(categories);
   const formFields = useFormFields(categories);
 
-  // Transform features textarea to array on submit
-  const handleCreate = (data: Record<string, unknown>) => {
-    const { addItem } = useDataStore.getState();
+  const handleCreate = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
     const featuresText = data.features as string;
     const features = featuresText
       ? featuresText.split('\n').filter((f) => f.trim() !== '')
       : [];
 
-    addItem('products', {
+    const response = await productApi.create({
       ...data,
       features,
-    } as Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>);
+      companyId,
+    });
+
+    if (response.data) {
+      setProducts((prev) => [...prev, response.data as Product]);
+    }
   };
 
-  const handleUpdate = (id: string, data: Partial<Product>) => {
+  const handleUpdate = async (id: string, data: Partial<Product>) => {
     const featuresText = data.features as unknown as string;
     if (typeof featuresText === 'string') {
       data.features = featuresText.split('\n').filter((f) => f.trim() !== '');
     }
-    updateItem('products', id, data);
+
+    const response = await productApi.update(id, data);
+
+    if (response.data) {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...response.data } : p))
+      );
+    }
   };
+
+  const handleDelete = async (id: string) => {
+    const response = await productApi.delete(id);
+    if (!response.error) {
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    }
+  };
+
+  if (!companyId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">Please select a company to view products.</p>
+      </div>
+    );
+  }
 
   return (
     <ModulePage
@@ -216,7 +273,7 @@ export default function ProductsPage() {
       data={products}
       onCreate={handleCreate}
       onUpdate={handleUpdate}
-      onDelete={(id) => deleteItem('products', id)}
+      onDelete={handleDelete}
     />
   );
 }

@@ -6,11 +6,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
-import { useDataStore } from '@/stores';
+import { competitorApi } from '@/services/api';
+import { useAuthStore } from '@/stores';
 import type { Competitor, ThreatLevel } from '@/types/entities';
 import { Globe, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
 
@@ -146,8 +147,66 @@ const formFields: FormField[] = [
 // ============================================
 
 export default function CompetitorsPage() {
-  const { getItems, updateItem, deleteItem } = useDataStore();
-  const competitors = getItems('competitors') as Competitor[];
+  const { user } = useAuthStore();
+  const companyId = user?.activeCompanyId;
+
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from API
+  useEffect(() => {
+    if (!companyId) {
+      setCompetitors([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      setIsLoading(true);
+      const response = await competitorApi.getAll(companyId);
+      if (response.data) setCompetitors(response.data);
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [companyId]);
+
+  const handleCreate = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
+    const response = await competitorApi.create({
+      ...data,
+      companyId,
+    });
+
+    if (response.data) {
+      setCompetitors((prev) => [...prev, response.data as Competitor]);
+    }
+  };
+
+  const handleUpdate = async (id: string, data: Partial<Competitor>) => {
+    const response = await competitorApi.update(id, data);
+    if (response.data) {
+      setCompetitors((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...response.data } : c))
+      );
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const response = await competitorApi.delete(id);
+    if (!response.error) {
+      setCompetitors((prev) => prev.filter((c) => c.id !== id));
+    }
+  };
+
+  if (!companyId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">Please select a company to view competitors.</p>
+      </div>
+    );
+  }
 
   return (
     <ModulePage
@@ -155,16 +214,9 @@ export default function CompetitorsPage() {
       columns={columns}
       fields={formFields}
       data={competitors}
-      onCreate={(data) => {
-        const { addItem } = useDataStore.getState();
-        addItem('competitors', data as Omit<Competitor, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>);
-      }}
-      onUpdate={(id, data) => {
-        updateItem('competitors', id, data);
-      }}
-      onDelete={(id) => {
-        deleteItem('competitors', id);
-      }}
+      onCreate={handleCreate}
+      onUpdate={handleUpdate}
+      onDelete={handleDelete}
     />
   );
 }

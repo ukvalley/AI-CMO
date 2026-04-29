@@ -6,13 +6,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Calendar, Users, DollarSign, Globe } from 'lucide-react';
-import { ModulePage } from '@/components/shared';
 import { UniversalForm, FormField } from '@/components/shared/UniversalForm';
-import { useDataStore } from '@/stores';
+import { businessProfileApi } from '@/services/api';
+import { useAuthStore } from '@/stores';
 import type { BusinessProfile, Industry, BusinessStage } from '@/types/entities';
-import { cn } from '@/utils/cn';
 
 // ============================================
 // FORM FIELDS
@@ -143,26 +142,75 @@ const formFields: FormField[] = [
 // ============================================
 
 export default function BusinessProfilePage() {
-  const { getItems, setItems } = useDataStore();
-  const profiles = getItems('businessProfiles') as BusinessProfile[];
+  const { user } = useAuthStore();
+  const companyId = user?.activeCompanyId;
 
-  const handleSubmit = (data: Record<string, unknown>) => {
-    if (profiles.length > 0) {
-      // Update existing
-      const updated = profiles.map((p) =>
-        p.id === profiles[0].id
-          ? { ...p, ...data, updatedAt: new Date().toISOString() }
-          : p
-      );
-      setItems('businessProfiles', updated);
-    } else {
-      // Create new
-      const { addItem } = useDataStore.getState();
-      addItem('businessProfiles', data as Omit<BusinessProfile, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>);
+  const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load profile from API
+  useEffect(() => {
+    if (!companyId) {
+      setProfile(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadProfile = async () => {
+      setIsLoading(true);
+      const response = await businessProfileApi.getByCompany(companyId);
+      if (response.data) {
+        setProfile(response.data);
+      }
+      setIsLoading(false);
+    };
+
+    loadProfile();
+  }, [companyId]);
+
+  const handleSubmit = async (data: Record<string, unknown>) => {
+    if (!companyId) return;
+
+    setIsSaving(true);
+
+    try {
+      if (profile) {
+        // Update existing
+        const response = await businessProfileApi.update(profile.id, data);
+        if (response.data) {
+          setProfile(response.data as BusinessProfile);
+        }
+      } else {
+        // Create new
+        const response = await businessProfileApi.create({
+          ...data,
+          companyId,
+        });
+        if (response.data) {
+          setProfile(response.data as BusinessProfile);
+        }
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const profile = profiles[0];
+  if (!companyId) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-400">Please select a company to view business profile.</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
