@@ -26,7 +26,8 @@ export type FieldType =
   | 'toggle'
   | 'radio'
   | 'color'
-  | 'social-grid';
+  | 'social-grid'
+  | 'tags';
 
 export interface FieldOption {
   value: string;
@@ -321,6 +322,14 @@ export function UniversalForm<T extends Record<string, unknown>>({
                 </div>
               )}
 
+              {field.type === 'tags' && (
+                <TagsInput
+                  value={(value as string[]) || []}
+                  onChange={(tags) => handleChange(field.key, tags)}
+                  placeholder={field.placeholder || 'Add a feature...'}
+                />
+              )}
+
               {field.type === 'toggle' && (
                 <button
                   type="button"
@@ -425,5 +434,69 @@ export function UniversalForm<T extends Record<string, unknown>>({
         </Button>
       </div>
     </form>
+  );
+}
+
+// ============================================
+// TAGS INPUT COMPONENT
+// ============================================
+
+interface TagsInputProps {
+  value: string[];
+  onChange: (tags: string[]) => void;
+  placeholder?: string;
+}
+
+function TagsInput({ value, onChange, placeholder }: TagsInputProps) {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag();
+    } else if (e.key === 'Backspace' && inputValue === '' && value.length > 0) {
+      removeTag(value[value.length - 1]);
+    }
+  };
+
+  const addTag = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed && !value.includes(trimmed)) {
+      onChange([...value, trimmed]);
+      setInputValue('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    onChange(value.filter((tag) => tag !== tagToRemove));
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2 p-2 border rounded-lg bg-slate-800 border-slate-700 min-h-[42px]">
+      {value.map((tag) => (
+        <span
+          key={tag}
+          className="inline-flex items-center gap-1 px-2 py-1 bg-primary-500/20 text-primary-300 text-sm rounded-full border border-primary-500/50"
+        >
+          {tag}
+          <button
+            type="button"
+            onClick={() => removeTag(tag)}
+            className="hover:text-primary-400 transition-colors"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={addTag}
+        placeholder={value.length === 0 ? placeholder : ''}
+        className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-slate-200 placeholder:text-slate-500 text-sm"
+      />
+    </div>
   );
 }
