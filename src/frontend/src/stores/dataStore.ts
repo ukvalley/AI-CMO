@@ -18,6 +18,7 @@ import type {
   Brand,
   BrandAsset,
   Stationery,
+  WebsiteProject,
   WebsitePage,
   Blog,
   Newsletter,
@@ -67,6 +68,7 @@ interface ModuleData {
   stationery: Stationery[];
 
   // Content
+  websiteProject: WebsiteProject | null;
   websitePages: WebsitePage[];
   blogs: Blog[];
   newsletters: Newsletter[];
@@ -126,6 +128,7 @@ const createEmptyModuleData = (): ModuleData => ({
   brand: null,
   brandAssets: [],
   stationery: [],
+  websiteProject: null,
   websitePages: [],
   blogs: [],
   newsletters: [],
