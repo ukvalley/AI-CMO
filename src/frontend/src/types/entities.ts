@@ -473,6 +473,20 @@ export interface WebsiteProject extends BaseEntity {
 }
 
 // ============================================
+// BLOG SYSTEM (20-module tracker for /blogs)
+// Reuses the WebsiteSection* shapes — same data primitives.
+// ============================================
+
+export interface BlogSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // BRAND ASSETS
 // ============================================
 

@@ -21,6 +21,7 @@ import type {
   WebsiteProject,
   WebsitePage,
   Blog,
+  BlogSystem,
   Newsletter,
   FAQ,
   ContentItem,
@@ -70,6 +71,7 @@ interface ModuleData {
   // Content
   websiteProject: WebsiteProject | null;
   websitePages: WebsitePage[];
+  blogSystem: BlogSystem | null;
   blogs: Blog[];
   newsletters: Newsletter[];
   faqs: FAQ[];
@@ -130,6 +132,7 @@ const createEmptyModuleData = (): ModuleData => ({
   stationery: [],
   websiteProject: null,
   websitePages: [],
+  blogSystem: null,
   blogs: [],
   newsletters: [],
   faqs: [],
