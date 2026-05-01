@@ -23,6 +23,7 @@ import type {
   Blog,
   BlogSystem,
   LandingPageSystem,
+  SeoSystem,
   Newsletter,
   FAQ,
   ContentItem,
@@ -90,6 +91,7 @@ interface ModuleData {
   books: Book[];
 
   // Marketing
+  seoSystem: SeoSystem | null;
   seoPages: SEOPage[];
   ads: Ad[];
   prItems: PRItem[];
@@ -148,6 +150,7 @@ const createEmptyModuleData = (): ModuleData => ({
   videoContent: [],
   banners: [],
   books: [],
+  seoSystem: null,
   seoPages: [],
   ads: [],
   prItems: [],

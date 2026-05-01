@@ -500,6 +500,19 @@ export interface LandingPageSystem extends BaseEntity {
 }
 
 // ============================================
+// SEO SYSTEM (15-module tracker for /seo)
+// ============================================
+
+export interface SeoSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // BRAND ASSETS
 // ============================================
 
