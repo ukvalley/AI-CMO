@@ -22,6 +22,7 @@ import type {
   WebsitePage,
   Blog,
   BlogSystem,
+  LandingPageSystem,
   Newsletter,
   FAQ,
   ContentItem,
@@ -80,6 +81,7 @@ interface ModuleData {
   testimonials: Testimonial[];
 
   // Sales
+  landingPageSystem: LandingPageSystem | null;
   landingPages: LandingPage[];
   salesScripts: SalesScript[];
   salesCollateral: SalesCollateral[];
@@ -139,6 +141,7 @@ const createEmptyModuleData = (): ModuleData => ({
   contentItems: [],
   stories: [],
   testimonials: [],
+  landingPageSystem: null,
   landingPages: [],
   salesScripts: [],
   salesCollateral: [],

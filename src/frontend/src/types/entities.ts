@@ -487,6 +487,19 @@ export interface BlogSystem extends BaseEntity {
 }
 
 // ============================================
+// LANDING PAGE SYSTEM (19-module tracker for /landing-pages)
+// ============================================
+
+export interface LandingPageSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // BRAND ASSETS
 // ============================================
 
