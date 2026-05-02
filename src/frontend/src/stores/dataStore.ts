@@ -24,6 +24,7 @@ import type {
   BlogSystem,
   LandingPageSystem,
   SeoSystem,
+  HrSystem,
   Newsletter,
   FAQ,
   ContentItem,
@@ -106,6 +107,7 @@ interface ModuleData {
   sops: SOP[];
 
   // Ops
+  hrSystem: HrSystem | null;
   jobPostings: JobPosting[];
   legalDocuments: LegalDocument[];
 }
@@ -161,6 +163,7 @@ const createEmptyModuleData = (): ModuleData => ({
   membershipPlans: [],
   referralProgrammes: [],
   sops: [],
+  hrSystem: null,
   jobPostings: [],
   legalDocuments: [],
 });
