@@ -49,6 +49,7 @@ import type {
   SOP,
   Event,
   LegalDocument,
+  UserSopTemplate,
 } from '@/types/entities';
 
 // ============================================
@@ -105,6 +106,7 @@ interface ModuleData {
   membershipPlans: MembershipPlan[];
   referralProgrammes: ReferralProgramme[];
   sops: SOP[];
+  userSopTemplates: UserSopTemplate[];
 
   // Ops
   hrSystem: HrSystem | null;
@@ -164,6 +166,7 @@ const createEmptyModuleData = (): ModuleData => ({
   referralProgrammes: [],
   sops: [],
   hrSystem: null,
+  userSopTemplates: [],
   jobPostings: [],
   legalDocuments: [],
 });

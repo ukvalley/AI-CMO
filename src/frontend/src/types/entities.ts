@@ -1081,13 +1081,22 @@ export interface MembershipPlan extends BaseEntity {
 
 export type ReferralRewardType = 'cash' | 'credit' | 'discount' | 'free-month' | 'gift' | 'points' | 'tiered' | 'custom';
 
+export type ReferralStatus = 'draft' | 'active' | 'paused' | 'ended';
+
 export interface ReferralProgramme extends BaseEntity {
   name: string;
+  status: ReferralStatus;
   rewardType: ReferralRewardType;
   referrerReward?: string;
   refereeReward?: string;
   mechanics?: string;
+  eligibility?: string;
+  terms?: string;
+  referralCodeFormat?: string;
+  validFrom?: string;
+  validUntil?: string;
   fullDocument?: string;
+  tags?: string[];
 }
 
 // ============================================
@@ -1143,9 +1152,135 @@ export interface Competitor extends BaseEntity {
 // SOPs
 // ============================================
 
-export interface SOP extends BaseEntity {
-  name: string;
+export type SOPStatus = 'draft' | 'in_review' | 'approved' | 'published' | 'archived';
+export type SOPPriority = 'low' | 'medium' | 'high' | 'critical';
+export type SOPAccessLevel = 'public' | 'internal' | 'confidential' | 'restricted';
+
+export type SOPCategory =
+  | 'Operations'
+  | 'Sales'
+  | 'HR'
+  | 'IT'
+  | 'Finance'
+  | 'Marketing'
+  | 'Customer Service'
+  | 'Quality'
+  | 'Safety'
+  | 'Compliance'
+  | 'Legal'
+  | 'Healthcare'
+  | 'Hospitality'
+  | 'Manufacturing';
+
+export type SOPSectionType =
+  | 'richText'
+  | 'table'
+  | 'steps'
+  | 'image'
+  | 'fileList'
+  | 'versionHistory'
+  | 'signatures';
+
+export interface SOPTableColumn {
+  key: string;
+  label: string;
+}
+
+export interface SOPSectionDef {
+  key: string;
+  label: string;
+  type: SOPSectionType;
+  required?: boolean;
+  systemGenerated?: boolean;
+  placeholder?: string;
+  tableColumns?: SOPTableColumn[];
+}
+
+export interface SOPHeader {
+  sopNumber: string;
+  versionLabel: string;
+  date: string;
+  department: string;
+}
+
+export interface SOPImageContent {
+  url: string;
+  caption?: string;
+}
+
+export interface SOPFileEntry {
+  url: string;
+  filename: string;
+  size?: number;
+}
+
+export type SOPSectionContent =
+  | string
+  | Record<string, string>[]
+  | SOPImageContent
+  | SOPFileEntry[];
+
+export interface SOPContent {
+  header: SOPHeader;
+  sections: Record<string, SOPSectionContent>;
+}
+
+export interface SOPAttachment {
+  url: string;
+  filename: string;
+  size?: number;
+  mimetype?: string;
+  uploadedAt?: string;
+}
+
+export interface SOPVersionSnapshot {
+  versionLabel: string;
+  publishedAt: string;
+  note?: string;
+  content: SOPContent;
+  status?: SOPStatus;
+}
+
+export interface SOPShareLink {
+  token: string;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+// User-created SOP template — stored per-company in dataStore.
+// Built-in templates live in code (lib/sopTemplates.ts) and are not stored here.
+export interface UserSopTemplate extends BaseEntity {
+  title: string;
+  description: string;
+  category?: SOPCategory;
   department?: Department;
+  icon?: string;
+  sections: Record<string, SOPSectionContent>;
+  customSections?: SOPSectionDef[];
+}
+
+export interface SOP extends BaseEntity {
+  title: string;
+  slug: string;
+  category?: SOPCategory;
+  department?: Department;
+  status: SOPStatus;
+  priority: SOPPriority;
+  accessLevel: SOPAccessLevel;
+  versionLabel: string;
+  tags?: string[];
+  owner?: string;
+  expiresAt?: string;
+  nextReviewAt?: string;
+  isCritical?: boolean;
+  templateId?: string;
+  content: SOPContent;
+  attachments?: SOPAttachment[];
+  versions?: SOPVersionSnapshot[];
+  share?: SOPShareLink | null;
+  customSections?: SOPSectionDef[];
+  // Legacy fields for backwards compat with the old 3-field shape
+  name?: string;
   procedure?: string;
 }
 
