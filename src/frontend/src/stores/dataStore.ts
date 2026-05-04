@@ -25,6 +25,7 @@ import type {
   LandingPageSystem,
   SeoSystem,
   GeoSystem,
+  AeoSystem,
   HrSystem,
   Newsletter,
   FAQ,
@@ -95,6 +96,7 @@ interface ModuleData {
   // Marketing
   seoSystem: SeoSystem | null;
   geoSystem: GeoSystem | null;
+  aeoSystem: AeoSystem | null;
   seoPages: SEOPage[];
   ads: Ad[];
   prItems: PRItem[];
@@ -156,6 +158,7 @@ const createEmptyModuleData = (): ModuleData => ({
   books: [],
   seoSystem: null,
   geoSystem: null,
+  aeoSystem: null,
   seoPages: [],
   ads: [],
   prItems: [],

@@ -526,6 +526,19 @@ export interface GeoSystem extends BaseEntity {
 }
 
 // ============================================
+// AEO SYSTEM (17-module sub-tracker, lives under /seo)
+// ============================================
+
+export interface AeoSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // SEO SYSTEM (15-module tracker for /seo)
 // ============================================
 
