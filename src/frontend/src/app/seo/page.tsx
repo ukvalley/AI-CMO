@@ -1,26 +1,27 @@
 'use client';
 
 /**
- * /seo route — hosts FOUR trackers under one URL with a sub-menu tab toggle:
+ * /seo route — hosts FIVE trackers under one URL with a sub-menu tab toggle:
  *   · "SEO Strategy"     → 15-module SeoSystemPage
  *   · "GEO / AI Search"  → 13-module GeoSystemPage   (sub-menu of SEO)
  *   · "AEO"              → 17-module AeoSystemPage   (sub-menu of SEO)
  *   · "AIO"              → 24-module AioSystemPage   (sub-menu of SEO)
+ *   · "SXO"              → 20-module SxoSystemPage   (sub-menu of SEO)
  *
- * Each tab keeps its own state (separate slot in dataStore) so progress
- * and approvals don't bleed across the four systems.
+ * Each tab keeps its own state (separate slot in dataStore).
  */
 
 import { useState } from 'react';
-import { Bot, MessageCircleQuestion, Search, Sparkles } from 'lucide-react';
+import { Bot, Layers, MessageCircleQuestion, Search, Sparkles } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { cn } from '@/utils/cn';
 import SeoSystemPage from '@/modules/marketing/seo-system/page';
 import GeoSystemPage from '@/modules/marketing/geo-system/page';
 import AeoSystemPage from '@/modules/marketing/aeo-system/page';
 import AioSystemPage from '@/modules/marketing/aio-system/page';
+import SxoSystemPage from '@/modules/marketing/sxo-system/page';
 
-type TabId = 'seo' | 'geo' | 'aeo' | 'aio';
+type TabId = 'seo' | 'geo' | 'aeo' | 'aio' | 'sxo';
 
 const TABS: Array<{
   id: TabId;
@@ -56,6 +57,13 @@ const TABS: Array<{
     hint: 'Entities, citations, hallucinations, agent-readiness',
     icon: Bot,
     modules: 24,
+  },
+  {
+    id: 'sxo',
+    label: 'SXO',
+    hint: 'SEO + UX + CRO unified, revenue-aligned',
+    icon: Layers,
+    modules: 20,
   },
 ];
 
@@ -118,6 +126,7 @@ export default function SeoRoute() {
         {tab === 'geo' && <GeoSystemPage />}
         {tab === 'aeo' && <AeoSystemPage />}
         {tab === 'aio' && <AioSystemPage />}
+        {tab === 'sxo' && <SxoSystemPage />}
       </div>
     </DashboardLayout>
   );

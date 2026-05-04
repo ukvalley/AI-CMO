@@ -553,6 +553,20 @@ export interface AioSystem extends BaseEntity {
 }
 
 // ============================================
+// SXO SYSTEM (20-module Search-Experience Optimization sub-tracker, /seo)
+// Combines SEO + UX + CRO into one revenue-aligned programme.
+// ============================================
+
+export interface SxoSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // SEO SYSTEM (15-module tracker for /seo)
 // ============================================
 

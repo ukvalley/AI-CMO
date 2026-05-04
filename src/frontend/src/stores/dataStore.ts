@@ -27,6 +27,7 @@ import type {
   GeoSystem,
   AeoSystem,
   AioSystem,
+  SxoSystem,
   HrSystem,
   Newsletter,
   FAQ,
@@ -99,6 +100,7 @@ interface ModuleData {
   geoSystem: GeoSystem | null;
   aeoSystem: AeoSystem | null;
   aioSystem: AioSystem | null;
+  sxoSystem: SxoSystem | null;
   seoPages: SEOPage[];
   ads: Ad[];
   prItems: PRItem[];
@@ -162,6 +164,7 @@ const createEmptyModuleData = (): ModuleData => ({
   geoSystem: null,
   aeoSystem: null,
   aioSystem: null,
+  sxoSystem: null,
   seoPages: [],
   ads: [],
   prItems: [],
