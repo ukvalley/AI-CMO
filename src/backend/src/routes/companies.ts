@@ -63,7 +63,7 @@ router.post(
 
       const { User, Company } = getModels();
 
-      const company = Company.create({
+      const company = new Company({
         ...req.body,
         userIds: [req.user!.id],
       });

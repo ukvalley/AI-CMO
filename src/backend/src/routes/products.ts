@@ -53,7 +53,7 @@ router.post(
       }
 
       const { ProductCategory } = getModels();
-      const category = ProductCategory.create(req.body);
+      const category = new ProductCategory(req.body);
       await category.save();
 
       res.status(201).json(category);
@@ -190,7 +190,7 @@ router.post(
       }
 
       const { Product } = getModels();
-      const product = Product.create(req.body);
+      const product = new Product(req.body);
       await product.save();
 
       res.status(201).json(product);

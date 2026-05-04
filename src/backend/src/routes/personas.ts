@@ -97,7 +97,7 @@ router.post(
       }
 
       const { Persona } = getModels();
-      const persona = Persona.create(req.body);
+      const persona = new Persona(req.body);
       await persona.save();
 
       res.status(201).json(persona);

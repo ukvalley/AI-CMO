@@ -74,7 +74,7 @@ router.post(
       }
 
       const { Founder } = getModels();
-      const founder = Founder.create(req.body);
+      const founder = new Founder(req.body);
       await founder.save();
 
       res.status(201).json(founder);

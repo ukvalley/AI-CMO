@@ -75,7 +75,7 @@ router.post(
       }
 
       const { ICP } = getModels();
-      const icp = ICP.create({
+      const icp = new ICP({
         ...req.body,
         isActive: req.body.isActive ?? true,
       });

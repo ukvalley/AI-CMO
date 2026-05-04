@@ -77,7 +77,7 @@ router.post(
       }
 
       const { Competitor } = getModels();
-      const competitor = Competitor.create(req.body);
+      const competitor = new Competitor(req.body);
       await competitor.save();
 
       res.status(201).json(competitor);

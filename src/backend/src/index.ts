@@ -63,6 +63,13 @@ const loadRoutes = () => {
   const icpRoutes = require('./routes/icps').default;
   const personaRoutes = require('./routes/personas').default;
   const competitorRoutes = require('./routes/competitors').default;
+  const brandRoutes = require('./routes/brands').default;
+  const brandAssetRoutes = require('./routes/brandAssets').default;
+  const stationeryRoutes = require('./routes/stationery').default;
+  const websitePageRoutes = require('./routes/websitePages').default;
+  const blogRoutes = require('./routes/blogs').default;
+  const newsletterRoutes = require('./routes/newsletters').default;
+  const faqRoutes = require('./routes/faqs').default;
   const moduleDataRoutes = require('./routes/moduleData').default;
   const chatRoutes = require('./routes/chat').default;
   const taskRoutes = require('./routes/tasks').default;
@@ -79,6 +86,13 @@ const loadRoutes = () => {
   app.use('/api/icps', icpRoutes);
   app.use('/api/personas', personaRoutes);
   app.use('/api/competitors', competitorRoutes);
+  app.use('/api/brands', brandRoutes);
+  app.use('/api/brand-assets', brandAssetRoutes);
+  app.use('/api/stationery', stationeryRoutes);
+  app.use('/api/website-pages', websitePageRoutes);
+  app.use('/api/blogs', blogRoutes);
+  app.use('/api/newsletters', newsletterRoutes);
+  app.use('/api/faqs', faqRoutes);
   app.use('/api/module-data', moduleDataRoutes);
   app.use('/api/chat', chatRoutes);
   app.use('/api/tasks', taskRoutes);

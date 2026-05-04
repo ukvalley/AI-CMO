@@ -92,6 +92,13 @@ export const loadModels = () => {
       ICP: new MockModel<any>('icps'),
       Persona: new MockModel<any>('personas'),
       Competitor: new MockModel<any>('competitors'),
+      Brand: new MockModel<any>('brands'),
+      BrandAsset: new MockModel<any>('brandAssets'),
+      Stationery: new MockModel<any>('stationery'),
+      WebsitePage: new MockModel<any>('websitePages'),
+      Blog: new MockModel<any>('blogs'),
+      Newsletter: new MockModel<any>('newsletters'),
+      FAQ: new MockModel<any>('faqs'),
     };
   } else {
     // Import and return real models
@@ -104,6 +111,13 @@ export const loadModels = () => {
     const { ICP: RealICP } = require('./ICP');
     const { Persona: RealPersona } = require('./Persona');
     const { Competitor: RealCompetitor } = require('./Competitor');
+    const { Brand: RealBrand } = require('./Brand');
+    const { BrandAsset: RealBrandAsset } = require('./BrandAsset');
+    const { Stationery: RealStationery } = require('./Stationery');
+    const { WebsitePage: RealWebsitePage } = require('./WebsitePage');
+    const { Blog: RealBlog } = require('./Blog');
+    const { Newsletter: RealNewsletter } = require('./Newsletter');
+    const { FAQ: RealFAQ } = require('./FAQ');
 
     models = {
       User: RealUser,
@@ -116,6 +130,13 @@ export const loadModels = () => {
       ICP: RealICP,
       Persona: RealPersona,
       Competitor: RealCompetitor,
+      Brand: RealBrand,
+      BrandAsset: RealBrandAsset,
+      Stationery: RealStationery,
+      WebsitePage: RealWebsitePage,
+      Blog: RealBlog,
+      Newsletter: RealNewsletter,
+      FAQ: RealFAQ,
     };
   }
 
@@ -135,6 +156,13 @@ export const Employee = () => getModels().Employee;
 export const ICP = () => getModels().ICP;
 export const Persona = () => getModels().Persona;
 export const Competitor = () => getModels().Competitor;
+export const Brand = () => getModels().Brand;
+export const BrandAsset = () => getModels().BrandAsset;
+export const Stationery = () => getModels().Stationery;
+export const WebsitePage = () => getModels().WebsitePage;
+export const Blog = () => getModels().Blog;
+export const Newsletter = () => getModels().Newsletter;
+export const FAQ = () => getModels().FAQ;
 
 // Re-export types
 export type { IUser, UserRole } from './User';
@@ -146,3 +174,10 @@ export type { IEmployee } from './Employee';
 export type { IICP } from './ICP';
 export type { IPersona } from './Persona';
 export type { ICompetitor } from './Competitor';
+export type { IBrand } from './Brand';
+export type { IBrandAsset } from './BrandAsset';
+export type { IStationery } from './Stationery';
+export type { IWebsitePage } from './WebsitePage';
+export type { IBlog } from './Blog';
+export type { INewsletter } from './Newsletter';
+export type { IFAQ } from './FAQ';

@@ -7,6 +7,36 @@ import { useAuthStore } from '@/stores';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+/**
+ * Transform MongoDB _id to id for frontend compatibility
+ */
+const transformIds = (data: any): any => {
+  if (data === null || data === undefined) return data;
+
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map(transformIds);
+  }
+
+  // Handle objects
+  if (typeof data === 'object') {
+    const transformed: any = {};
+    for (const key of Object.keys(data)) {
+      const value = data[key];
+      if (key === '_id') {
+        transformed['id'] = value;
+      } else if (typeof value === 'object') {
+        transformed[key] = transformIds(value);
+      } else {
+        transformed[key] = value;
+      }
+    }
+    return transformed;
+  }
+
+  return data;
+};
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: any;
@@ -83,7 +113,8 @@ export const apiRequest = async <T>(
           status,
         };
       }
-      data = jsonData;
+      // Transform _id to id for MongoDB documents
+      data = transformIds(jsonData);
     } else if (!response.ok) {
       return {
         error: response.statusText || 'Request failed',
@@ -261,6 +292,109 @@ export const competitorApi = {
 
   delete: (id: string) =>
     apiRequest(`/competitors/${id}`, { method: 'DELETE' }),
+};
+
+// ============== CONTENT GROUP APIs ==============
+
+export const websitePageApi = {
+  getAll: (companyId: string) => apiRequest(`/website-pages/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/website-pages/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/website-pages', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/website-pages/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/website-pages/${id}`, { method: 'DELETE' }),
+};
+
+export const blogApi = {
+  getAll: (companyId: string) => apiRequest(`/blogs/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/blogs/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/blogs', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/blogs/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/blogs/${id}`, { method: 'DELETE' }),
+};
+
+export const newsletterApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletters/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/newsletters/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/newsletters', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/newsletters/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/newsletters/${id}`, { method: 'DELETE' }),
+};
+
+export const faqApi = {
+  getAll: (companyId: string) => apiRequest(`/faqs/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/faqs/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/faqs', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/faqs/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/faqs/${id}`, { method: 'DELETE' }),
+};
+
+// ============== STATIONERY API ==============
+
+export const stationeryApi = {
+  getAll: (companyId: string) => apiRequest(`/stationery/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/stationery/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/stationery', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/stationery/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/stationery/${id}`, { method: 'DELETE' }),
+};
+
+// ============== BRAND ASSET API ==============
+
+export const brandAssetApi = {
+  getAll: (companyId: string) => apiRequest(`/brand-assets/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/brand-assets/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/brand-assets', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/brand-assets/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/brand-assets/${id}`, { method: 'DELETE' }),
+};
+
+// ============== BRAND API ==============
+
+export const brandApi = {
+  getByCompany: (companyId: string) => apiRequest(`/brands/${companyId}`),
+
+  create: (data: any) => apiRequest('/brands', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/brands/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/brands/${id}`, { method: 'DELETE' }),
 };
 
 // ============== MODULE DATA API (Generic) ==============

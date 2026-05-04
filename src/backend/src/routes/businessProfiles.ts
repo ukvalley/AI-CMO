@@ -66,7 +66,7 @@ router.post(
         return;
       }
 
-      const profile = BusinessProfile.create(req.body);
+      const profile = new BusinessProfile(req.body);
       await profile.save();
 
       res.status(201).json(profile);
