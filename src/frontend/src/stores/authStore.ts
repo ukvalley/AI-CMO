@@ -9,6 +9,7 @@ import { persist } from 'zustand/middleware';
 import type { User, UserRole, AuthState, Company } from '@/types/entities';
 import { authApi } from '@/services/api';
 import { useCompanyStore } from './companyStore';
+import { useDataStore } from './dataStore';
 
 interface CompanyInfo {
   id: string;
@@ -91,6 +92,10 @@ export const useAuthStore = create<AuthStore>()(
             }];
             companyStore.activeCompanyId = 'demo-company';
 
+            // Sync to dataStore
+            const dataStore = useDataStore.getState();
+            dataStore.setActiveCompany('demo-company');
+
             return { success: true };
           }
 
@@ -133,6 +138,10 @@ export const useAuthStore = create<AuthStore>()(
               }));
               companyStore.companies = fullCompanies;
               companyStore.activeCompanyId = user.activeCompanyId || companies[0].id;
+
+              // Sync to dataStore
+              const dataStore = useDataStore.getState();
+              dataStore.setActiveCompany(user.activeCompanyId || companies[0].id);
             }
 
             return { success: true };
@@ -190,6 +199,10 @@ export const useAuthStore = create<AuthStore>()(
                 updatedAt: new Date().toISOString(),
               }];
               companyStore.activeCompanyId = company.id;
+
+              // Sync to dataStore
+              const dataStore = useDataStore.getState();
+              dataStore.setActiveCompany(company.id);
             }
 
             return { success: true };
@@ -219,7 +232,11 @@ export const useAuthStore = create<AuthStore>()(
         if (typeof window !== 'undefined') {
           localStorage.removeItem('ai-cmo-auth');
           localStorage.removeItem('ai-cmo-companies');
+          localStorage.removeItem('ai-cmo-data');
         }
+        // Clear dataStore active company
+        const dataStore = useDataStore.getState();
+        dataStore.setActiveCompany(null as unknown as string);
       },
 
       setUser: (user) => {
@@ -243,24 +260,36 @@ export const useAuthStore = create<AuthStore>()(
         const { user, token } = get();
         if (!user) return;
 
-        // Update authStore
-        if (user.companyIds.includes(companyId)) {
-          set({
-            user: {
-              ...user,
-              activeCompanyId: companyId,
-              updatedAt: new Date().toISOString(),
-            },
-          });
+        // Verify user has access to this company
+        if (!user.companyIds.includes(companyId)) {
+          console.error('User does not have access to company:', companyId);
+          return;
         }
+
+        // Update authStore
+        set({
+          user: {
+            ...user,
+            activeCompanyId: companyId,
+            updatedAt: new Date().toISOString(),
+          },
+        });
 
         // Sync to companyStore
         const companyStore = useCompanyStore.getState();
         companyStore.setActiveCompany(companyId);
 
+        // Sync to dataStore
+        const dataStore = useDataStore.getState();
+        dataStore.setActiveCompany(companyId);
+
         // API call to persist change (if not demo mode)
         if (token && token !== 'demo-token') {
-          await authApi.switchCompany(companyId);
+          try {
+            await authApi.switchCompany(companyId);
+          } catch (error) {
+            console.error('Failed to switch company on server:', error);
+          }
         }
       },
 
@@ -312,6 +341,12 @@ export const useAuthStore = create<AuthStore>()(
               companyStore.companies = fullCompanies;
               if (user.activeCompanyId) {
                 companyStore.activeCompanyId = user.activeCompanyId;
+              }
+
+              // Sync to dataStore
+              const dataStore = useDataStore.getState();
+              if (user.activeCompanyId) {
+                dataStore.setActiveCompany(user.activeCompanyId);
               }
             }
           }
