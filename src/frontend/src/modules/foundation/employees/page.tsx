@@ -129,7 +129,7 @@ export default function EmployeesPage() {
     const loadData = async () => {
       setIsLoading(true);
       const response = await employeeApi.getAll(companyId);
-      if (response.data) setEmployees(response.data);
+      if (response.data) setEmployees(response.data as Employee[]);
       setIsLoading(false);
     };
 
@@ -151,9 +151,9 @@ export default function EmployeesPage() {
 
   const handleUpdate = async (id: string, data: Partial<Employee>) => {
     const response = await employeeApi.update(id, data);
-    if (response.data) {
+    if (response.data && (response.data as Employee).id) {
       setEmployees((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, ...response.data } : e))
+        prev.map((e) => (e.id === id ? { ...e, ...(response.data as Employee) } : e))
       );
     }
   };

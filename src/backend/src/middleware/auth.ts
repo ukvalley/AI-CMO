@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'ai-cmo-secure-jwt-secret-key-2024';
 
 /**
  * Authenticate JWT token from header

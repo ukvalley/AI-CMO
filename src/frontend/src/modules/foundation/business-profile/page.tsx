@@ -342,8 +342,8 @@ export default function BusinessProfilePage() {
     const loadProfile = async () => {
       setIsLoading(true);
       const response = await businessProfileApi.getByCompany(companyId);
-      if (response.data) {
-        setProfile(response.data);
+      if (response.data && (response.data as BusinessProfile).id) {
+        setProfile(response.data as BusinessProfile);
       }
       setIsLoading(false);
     };

@@ -78,13 +78,13 @@ function useColumns(categories: ProductCategory[]): TableColumn<Product>[] {
         { value: 'b2c', label: 'B2C' },
         { value: 'both', label: 'Both' },
       ],
-      render: (value) => {
+      render: (value, _row) => {
         const labels: Record<string, string> = {
           b2b: 'B2B',
           b2c: 'B2C',
           both: 'B2B + B2C',
         };
-        return labels[value as string] || value;
+        return (labels[value as string] || value) as React.ReactNode;
       },
     },
   ];
@@ -203,8 +203,8 @@ export default function ProductsPage() {
         categoryApi.getAll(companyId),
       ]);
 
-      if (productsRes.data) setProducts(productsRes.data);
-      if (categoriesRes.data) setCategories(categoriesRes.data);
+      if (productsRes.data) setProducts(productsRes.data as Product[]);
+      if (categoriesRes.data) setCategories(categoriesRes.data as ProductCategory[]);
 
       setIsLoading(false);
     };
@@ -233,9 +233,9 @@ export default function ProductsPage() {
     // Features is already an array from tags input
     const response = await productApi.update(id, data);
 
-    if (response.data) {
+    if (response.data && (response.data as Product).id) {
       setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...response.data } : p))
+        prev.map((p) => (p.id === id ? { ...p, ...(response.data as Product) } : p))
       );
     }
   };

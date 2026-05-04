@@ -38,7 +38,7 @@ router.post(
       }
 
       // Create user
-      const user = User.create({
+      const user = new User({
         email,
         passwordHash: password,
         name,
@@ -49,7 +49,7 @@ router.post(
       await user.save();
 
       // Create default company
-      const company = Company.create({
+      const company = new Company({
         name: companyName?.trim() || `${name}'s Company`,
         userIds: [user.id],
         isActive: true,

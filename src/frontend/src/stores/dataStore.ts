@@ -18,8 +18,13 @@ import type {
   Brand,
   BrandAsset,
   Stationery,
+  WebsiteProject,
   WebsitePage,
   Blog,
+  BlogSystem,
+  LandingPageSystem,
+  SeoSystem,
+  HrSystem,
   Newsletter,
   FAQ,
   ContentItem,
@@ -67,7 +72,9 @@ interface ModuleData {
   stationery: Stationery[];
 
   // Content
+  websiteProject: WebsiteProject | null;
   websitePages: WebsitePage[];
+  blogSystem: BlogSystem | null;
   blogs: Blog[];
   newsletters: Newsletter[];
   faqs: FAQ[];
@@ -76,6 +83,7 @@ interface ModuleData {
   testimonials: Testimonial[];
 
   // Sales
+  landingPageSystem: LandingPageSystem | null;
   landingPages: LandingPage[];
   salesScripts: SalesScript[];
   salesCollateral: SalesCollateral[];
@@ -84,6 +92,7 @@ interface ModuleData {
   books: Book[];
 
   // Marketing
+  seoSystem: SeoSystem | null;
   seoPages: SEOPage[];
   ads: Ad[];
   prItems: PRItem[];
@@ -98,6 +107,7 @@ interface ModuleData {
   sops: SOP[];
 
   // Ops
+  hrSystem: HrSystem | null;
   jobPostings: JobPosting[];
   legalDocuments: LegalDocument[];
 }
@@ -126,19 +136,23 @@ const createEmptyModuleData = (): ModuleData => ({
   brand: null,
   brandAssets: [],
   stationery: [],
+  websiteProject: null,
   websitePages: [],
+  blogSystem: null,
   blogs: [],
   newsletters: [],
   faqs: [],
   contentItems: [],
   stories: [],
   testimonials: [],
+  landingPageSystem: null,
   landingPages: [],
   salesScripts: [],
   salesCollateral: [],
   videoContent: [],
   banners: [],
   books: [],
+  seoSystem: null,
   seoPages: [],
   ads: [],
   prItems: [],
@@ -149,6 +163,7 @@ const createEmptyModuleData = (): ModuleData => ({
   membershipPlans: [],
   referralProgrammes: [],
   sops: [],
+  hrSystem: null,
   jobPostings: [],
   legalDocuments: [],
 });

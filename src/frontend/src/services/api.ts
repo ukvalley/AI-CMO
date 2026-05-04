@@ -64,10 +64,10 @@ export const apiRequest = async <T>(
 
     // Handle 401 - Unauthorized
     if (status === 401) {
-      // Clear auth state
+      // Clear auth state and localStorage
       useAuthStore.getState().logout();
       return {
-        error: 'Session expired. Please login again.',
+        error: 'Session expired or invalid. Please login again.',
         status,
       };
     }

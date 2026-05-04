@@ -50,7 +50,7 @@ export default function CompaniesPage() {
     setIsLoading(true);
     const response = await companyApi.getAll();
     if (response.data) {
-      setCompanies(response.data);
+      setCompanies(response.data as Company[]);
     }
     setIsLoading(false);
   };

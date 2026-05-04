@@ -208,8 +208,8 @@ export default function IcpPersonasPage() {
         icpApi.getAll(companyId),
         personaApi.getAll(companyId),
       ]);
-      if (icpsRes.data) setIcps(icpsRes.data);
-      if (personasRes.data) setPersonas(personasRes.data);
+      if (icpsRes.data) setIcps(icpsRes.data as ICP[]);
+      if (personasRes.data) setPersonas(personasRes.data as Persona[]);
       setIsLoading(false);
     };
 
@@ -236,9 +236,9 @@ export default function IcpPersonasPage() {
 
   const handleIcpUpdate = async (id: string, data: Partial<ICP>) => {
     const response = await icpApi.update(id, data);
-    if (response.data) {
+    if (response.data && (response.data as ICP).id) {
       setIcps((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, ...response.data } : i))
+        prev.map((i) => (i.id === id ? { ...i, ...(response.data as ICP) } : i))
       );
     }
   };
@@ -266,9 +266,9 @@ export default function IcpPersonasPage() {
 
   const handlePersonaUpdate = async (id: string, data: Partial<Persona>) => {
     const response = await personaApi.update(id, data);
-    if (response.data) {
+    if (response.data && (response.data as Persona).id) {
       setPersonas((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...response.data } : p))
+        prev.map((p) => (p.id === id ? { ...p, ...(response.data as Persona) } : p))
       );
     }
   };

@@ -98,7 +98,7 @@ export default function FoundersPage() {
     const loadData = async () => {
       setIsLoading(true);
       const response = await founderApi.getAll(companyId);
-      if (response.data) setFounders(response.data);
+      if (response.data) setFounders(response.data as Founder[]);
       setIsLoading(false);
     };
 
@@ -120,9 +120,9 @@ export default function FoundersPage() {
 
   const handleUpdate = async (id: string, data: Partial<Founder>) => {
     const response = await founderApi.update(id, data);
-    if (response.data) {
+    if (response.data && (response.data as Founder).id) {
       setFounders((prev) =>
-        prev.map((f) => (f.id === id ? { ...f, ...response.data } : f))
+        prev.map((f) => (f.id === id ? { ...f, ...(response.data as Founder) } : f))
       );
     }
   };

@@ -164,7 +164,7 @@ export default function CompetitorsPage() {
     const loadData = async () => {
       setIsLoading(true);
       const response = await competitorApi.getAll(companyId);
-      if (response.data) setCompetitors(response.data);
+      if (response.data) setCompetitors(response.data as Competitor[]);
       setIsLoading(false);
     };
 
@@ -186,9 +186,9 @@ export default function CompetitorsPage() {
 
   const handleUpdate = async (id: string, data: Partial<Competitor>) => {
     const response = await competitorApi.update(id, data);
-    if (response.data) {
+    if (response.data && (response.data as Competitor).id) {
       setCompetitors((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, ...response.data } : c))
+        prev.map((c) => (c.id === id ? { ...c, ...(response.data as Competitor) } : c))
       );
     }
   };

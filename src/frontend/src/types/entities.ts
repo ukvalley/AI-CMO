@@ -294,6 +294,7 @@ export type FontOption =
   | 'merriweather';
 
 export interface Brand extends BaseEntity {
+  // Visual basics
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -302,6 +303,226 @@ export interface Brand extends BaseEntity {
   tagline?: string;
   voice?: string;
   personality?: string;
+
+  // ============================================
+  // SOP 1.7 — Brand Identity Direction
+  // 13 modules of governance + identity locks
+  // ============================================
+
+  // 7.1 Purpose & Meaning
+  purposeWhyExists?: string;
+  purposeEmotionalProblem?: string;
+  purposeForWhom?: string;
+  purposeNotForWhom?: string;
+  purposeAlignsVision?: boolean;
+  purposeAlignsValueProp?: boolean;
+  purposeAlignsPositioning?: boolean;
+  purposeApprovedByCEO?: boolean;
+  purposeApprovedAt?: string;
+
+  // 7.2 Personality
+  personalityPrimary?: string[];   // 3 traits
+  personalitySecondary?: string[]; // 2 traits
+  personalitySpeakStyle?: string;
+  personalityUnderPressure?: string;
+  personalityApprovedByCEO?: boolean;
+
+  // 7.3 Voice & Tone
+  voiceWritingStyle?: string;
+  voiceVocabulary?: string;
+  voiceSentenceRules?: string;
+  voiceWebsiteTone?: string;
+  voiceSupportTone?: string;
+  voiceSalesTone?: string;
+  voiceCrisisTone?: string;
+  voiceDos?: string[];
+  voiceDonts?: string[];
+  voiceExamplePhrases?: string;
+  voiceApprovedByCEO?: boolean;
+  voiceApprovedByMarketing?: boolean;
+
+  // 7.4 Emotional Positioning & Promise
+  emotionalBenefit?: string;
+  brandPromise?: string;
+  promiseBelievable?: boolean;
+  promiseDefensible?: boolean;
+  promiseDeliverable?: boolean;
+  triggerTrust?: string;
+  triggerConfidence?: string;
+  triggerRelief?: string;
+  triggerEmpowerment?: string;
+  emotionalApprovedByCEO?: boolean;
+
+  // 7.5 Visual Direction (Conceptual)
+  visualTheme?: 'minimal' | 'bold' | 'elegant' | 'technical';
+  visualEra?: 'traditional' | 'modern' | 'hybrid';
+  visualColourPsychology?: string;
+  visualTypography?: string;
+  visualImageryStyle?: string;
+  visualInspirationLinks?: string[];
+  visualApprovedByCEO?: boolean;
+
+  // 7.6 Differentiation Anchors
+  diffCompetitorVisualGap?: string;
+  diffCompetitorMessagingGap?: string;
+  diffBrandSymbols?: string[];
+  diffSignatureExpressions?: string[];
+  diffLockedElements?: string[];
+  diffApprovedByCEO?: boolean;
+
+  // 7.7 Consistency Guardrails
+  guardCannotChange?: string;
+  guardCanEvolve?: string;
+  guardMisuseExamples?: string;
+  guardApprovalWorkflow?: string;
+  guardCultureAlignment?: string;
+  guardApprovedByCEO?: boolean;
+
+  // 7.8 Internal Brand Alignment
+  alignTrainingModules?: string;
+  alignOnboardingChecklist?: BrandChecklistItem[];
+  alignPerformanceMetrics?: string;
+  alignLeadershipChecklist?: BrandChecklistItem[];
+  alignApprovedByHR?: boolean;
+  alignApprovedByCEO?: boolean;
+
+  // 7.9 Validation & Stress Test
+  validCustomerFeedback?: string;
+  validInternalFeedback?: string;
+  validNeutralFeedback?: string;
+  validScalability?: number;        // 1-10
+  validCulturalSensitivity?: number; // 1-10
+  validLongevity?: number;          // 1-10
+  validFinalLockByCEO?: boolean;
+  validLockedAt?: string;
+
+  // M11 Rules Enforcement Engine
+  rulesVoiceForbiddenWords?: string[];
+  rulesDesignForbiddenPatterns?: string[];
+
+  // M12 Approval Workflow log
+  approvalLog?: BrandApprovalEntry[];
+
+  // M10 Master Document
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+export interface BrandChecklistItem {
+  id: string;
+  item: string;
+  done: boolean;
+}
+
+export type BrandApproverRole =
+  | 'CEO'
+  | 'Brand Strategist'
+  | 'Marketing Head'
+  | 'Product Head'
+  | 'HR Lead';
+
+export interface BrandApprovalEntry {
+  id: string;
+  role: BrandApproverRole;
+  approver: string;
+  section: string;
+  timestamp: string;
+  notes?: string;
+}
+
+// ============================================
+// WEBSITE PROJECT (28-module tracker for /website-content)
+// ============================================
+
+/** Generic per-section data — every section uses the same shape so we can render
+ *  forms config-driven rather than 28 hand-rolled components. */
+export interface WebsiteSectionData {
+  /** Map of fieldKey → primitive value (string | string[] | boolean | number) */
+  [fieldKey: string]: string | string[] | boolean | number | undefined;
+}
+
+export type WebsiteSectionStatus =
+  | 'not-started'
+  | 'in-progress'
+  | 'review'
+  | 'completed'
+  | 'blocked';
+
+export interface WebsiteSectionState {
+  /** Form values, indexed by field key (defined in the section config) */
+  data?: WebsiteSectionData;
+  status?: WebsiteSectionStatus;
+  approved?: boolean;
+  approvedAt?: string;
+  notes?: string;
+}
+
+export interface WebsiteProject extends BaseEntity {
+  /** Free-text project name */
+  name?: string;
+  /** Optional client / company hint */
+  client?: string;
+  /** Map of sectionId → state. We use a plain map so adding new sections
+   *  doesn't require updating the type. */
+  sections?: Record<string, WebsiteSectionState>;
+  /** Reuses the brand approval entry shape */
+  approvalLog?: BrandApprovalEntry[];
+  /** Master document generation */
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
+// BLOG SYSTEM (20-module tracker for /blogs)
+// Reuses the WebsiteSection* shapes — same data primitives.
+// ============================================
+
+export interface BlogSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
+// LANDING PAGE SYSTEM (19-module tracker for /landing-pages)
+// ============================================
+
+export interface LandingPageSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
+// HR & JOBS SYSTEM (18-module tracker for /hr-jobs)
+// ============================================
+
+export interface HrSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
+// SEO SYSTEM (15-module tracker for /seo)
+// ============================================
+
+export interface SeoSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
 }
 
 // ============================================

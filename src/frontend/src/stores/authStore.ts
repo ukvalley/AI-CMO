@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, UserRole, AuthState, Company } from '@/types/entities';
 import { authApi } from '@/services/api';
+import { useCompanyStore } from './companyStore';
 
 interface CompanyInfo {
   id: string;
@@ -22,7 +23,7 @@ interface AuthStore extends AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (data: { email: string; password: string; name: string }) => Promise<{ success: boolean; error?: string }>;
+  register: (data: { email: string; password: string; name: string; companyName?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setUser: (user: User | null) => void;
   updateUser: (updates: Partial<User>) => void;
@@ -76,6 +77,20 @@ export const useAuthStore = create<AuthStore>()(
               token: 'demo-token',
               companies: [DEMO_COMPANY],
             });
+
+            // Set demo company in companyStore
+            const companyStore = useCompanyStore.getState();
+            companyStore.companies = [{
+              id: 'demo-company',
+              name: 'Demo Company',
+              notificationEmail: 'demo@example.com',
+              userIds: ['demo-user'],
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }];
+            companyStore.activeCompanyId = 'demo-company';
+
             return { success: true };
           }
 
@@ -90,7 +105,8 @@ export const useAuthStore = create<AuthStore>()(
             return { success: false, error: response.error };
           }
 
-          const { token, user, companies } = response.data || {};
+          const responseData = response.data as { token?: string; user?: User; companies?: CompanyInfo[] } | undefined;
+          const { token, user, companies } = responseData || {};
 
           if (token && user) {
             set({
@@ -101,6 +117,24 @@ export const useAuthStore = create<AuthStore>()(
               token,
               companies: companies || [],
             });
+
+            // Sync companies to companyStore
+            if (companies && companies.length > 0) {
+              const companyStore = useCompanyStore.getState();
+              // Convert CompanyInfo to Company format
+              const fullCompanies = companies.map((c: CompanyInfo) => ({
+                id: c.id,
+                name: c.name,
+                notificationEmail: '',
+                userIds: [user.id],
+                isActive: c.isActive ?? true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              }));
+              companyStore.companies = fullCompanies;
+              companyStore.activeCompanyId = user.activeCompanyId || companies[0].id;
+            }
+
             return { success: true };
           } else {
             throw new Error('Invalid response from server');
@@ -129,17 +163,35 @@ export const useAuthStore = create<AuthStore>()(
             return { success: false, error: response.error };
           }
 
-          const { token, user, company } = response.data || {};
+          const responseData = response.data as { token?: string; user?: User; company?: { id: string; name: string } } | undefined;
+          const { token, user, company } = responseData || {};
 
           if (token && user) {
+            const userCompanies = company ? [{ id: company.id, name: company.name, isActive: true }] : [];
             set({
               user,
               isAuthenticated: true,
               isLoading: false,
               error: null,
               token,
-              companies: company ? [{ id: company.id, name: company.name, isActive: true }] : [],
+              companies: userCompanies,
             });
+
+            // Sync to companyStore
+            if (company) {
+              const companyStore = useCompanyStore.getState();
+              companyStore.companies = [{
+                id: company.id,
+                name: company.name,
+                notificationEmail: '',
+                userIds: [user.id],
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              }];
+              companyStore.activeCompanyId = company.id;
+            }
+
             return { success: true };
           } else {
             throw new Error('Invalid response from server');
@@ -163,6 +215,11 @@ export const useAuthStore = create<AuthStore>()(
           token: null,
           companies: [],
         });
+        // Clear localStorage to prevent stale token issues
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('ai-cmo-auth');
+          localStorage.removeItem('ai-cmo-companies');
+        }
       },
 
       setUser: (user) => {
@@ -186,7 +243,7 @@ export const useAuthStore = create<AuthStore>()(
         const { user, token } = get();
         if (!user) return;
 
-        // Update locally first for immediate feedback
+        // Update authStore
         if (user.companyIds.includes(companyId)) {
           set({
             user: {
@@ -196,6 +253,10 @@ export const useAuthStore = create<AuthStore>()(
             },
           });
         }
+
+        // Sync to companyStore
+        const companyStore = useCompanyStore.getState();
+        companyStore.setActiveCompany(companyId);
 
         // API call to persist change (if not demo mode)
         if (token && token !== 'demo-token') {
@@ -225,7 +286,8 @@ export const useAuthStore = create<AuthStore>()(
             return;
           }
 
-          const { user, companies } = response.data || {};
+          const responseData = response.data as { user?: User; companies?: CompanyInfo[] } | undefined;
+          const { user, companies } = responseData || {};
 
           if (user) {
             set({
@@ -234,6 +296,24 @@ export const useAuthStore = create<AuthStore>()(
               isLoading: false,
               companies: companies || [],
             });
+
+            // Sync companies to companyStore
+            if (companies && companies.length > 0) {
+              const companyStore = useCompanyStore.getState();
+              const fullCompanies = companies.map((c: CompanyInfo) => ({
+                id: c.id,
+                name: c.name,
+                notificationEmail: '',
+                userIds: [user.id],
+                isActive: c.isActive ?? true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              }));
+              companyStore.companies = fullCompanies;
+              if (user.activeCompanyId) {
+                companyStore.activeCompanyId = user.activeCompanyId;
+              }
+            }
           }
         } catch (error) {
           console.error('Failed to load user:', error);
