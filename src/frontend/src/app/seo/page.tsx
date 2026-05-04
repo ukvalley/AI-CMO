@@ -1,24 +1,26 @@
 'use client';
 
 /**
- * /seo route — hosts THREE trackers under one URL with a sub-menu tab toggle:
+ * /seo route — hosts FOUR trackers under one URL with a sub-menu tab toggle:
  *   · "SEO Strategy"     → 15-module SeoSystemPage
  *   · "GEO / AI Search"  → 13-module GeoSystemPage   (sub-menu of SEO)
  *   · "AEO"              → 17-module AeoSystemPage   (sub-menu of SEO)
+ *   · "AIO"              → 24-module AioSystemPage   (sub-menu of SEO)
  *
  * Each tab keeps its own state (separate slot in dataStore) so progress
- * and approvals don't bleed across the three systems.
+ * and approvals don't bleed across the four systems.
  */
 
 import { useState } from 'react';
-import { MessageCircleQuestion, Search, Sparkles } from 'lucide-react';
+import { Bot, MessageCircleQuestion, Search, Sparkles } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { cn } from '@/utils/cn';
 import SeoSystemPage from '@/modules/marketing/seo-system/page';
 import GeoSystemPage from '@/modules/marketing/geo-system/page';
 import AeoSystemPage from '@/modules/marketing/aeo-system/page';
+import AioSystemPage from '@/modules/marketing/aio-system/page';
 
-type TabId = 'seo' | 'geo' | 'aeo';
+type TabId = 'seo' | 'geo' | 'aeo' | 'aio';
 
 const TABS: Array<{
   id: TabId;
@@ -47,6 +49,13 @@ const TABS: Array<{
     hint: 'Featured snippets + voice + direct answers',
     icon: MessageCircleQuestion,
     modules: 17,
+  },
+  {
+    id: 'aio',
+    label: 'AIO',
+    hint: 'Entities, citations, hallucinations, agent-readiness',
+    icon: Bot,
+    modules: 24,
   },
 ];
 
@@ -108,6 +117,7 @@ export default function SeoRoute() {
         {tab === 'seo' && <SeoSystemPage />}
         {tab === 'geo' && <GeoSystemPage />}
         {tab === 'aeo' && <AeoSystemPage />}
+        {tab === 'aio' && <AioSystemPage />}
       </div>
     </DashboardLayout>
   );

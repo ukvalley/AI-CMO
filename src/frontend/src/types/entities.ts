@@ -539,6 +539,20 @@ export interface AeoSystem extends BaseEntity {
 }
 
 // ============================================
+// AIO SYSTEM (24-module sub-tracker, lives under /seo)
+// AI-Optimized end-to-end programme — citations, entities, knowledge graph
+// ============================================
+
+export interface AioSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // SEO SYSTEM (15-module tracker for /seo)
 // ============================================
 
