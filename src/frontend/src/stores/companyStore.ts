@@ -17,6 +17,7 @@ interface CompanyState {
 
 interface CompanyStore extends CompanyState {
   // Actions
+  setCompanies: (companies: Company[]) => void;
   addCompany: (name: string, notificationEmail?: string) => Company;
   updateCompany: (id: string, updates: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
@@ -49,6 +50,10 @@ export const useCompanyStore = create<CompanyStore>()(
       error: null,
 
       // Actions
+      setCompanies: (companies) => {
+        set({ companies });
+      },
+
       addCompany: (name, notificationEmail) => {
         const newCompany: Company = {
           id: `company-${Date.now()}`,

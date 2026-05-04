@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Logo } from '@/components/ui/Logo';
 import { Modal } from '@/components/ui/Modal';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import { companyApi } from '@/services/api';
 import type { Company } from '@/types/entities';
 
@@ -35,6 +35,7 @@ import type { Company } from '@/types/entities';
 export default function CompaniesPage() {
   const router = useRouter();
   const { user, logout, switchCompany, setUser } = useAuthStore();
+  const { setCompanies: setCompanyStoreCompanies, setActiveCompany: setCompanyStoreActive } = useCompanyStore();
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +51,14 @@ export default function CompaniesPage() {
     setIsLoading(true);
     const response = await companyApi.getAll();
     if (response.data) {
-      setCompanies(response.data as Company[]);
+      const loadedCompanies = response.data as Company[];
+      setCompanies(loadedCompanies);
+      // Sync to companyStore for sidebar
+      setCompanyStoreCompanies(loadedCompanies);
+      // Set active company if user has one
+      if (user?.activeCompanyId) {
+        setCompanyStoreActive(user.activeCompanyId);
+      }
     }
     setIsLoading(false);
   };
