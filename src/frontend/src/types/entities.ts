@@ -513,6 +513,19 @@ export interface HrSystem extends BaseEntity {
 }
 
 // ============================================
+// GEO / AI SEARCH SYSTEM (13-module sub-tracker, lives under /seo)
+// ============================================
+
+export interface GeoSystem extends BaseEntity {
+  name?: string;
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // SEO SYSTEM (15-module tracker for /seo)
 // ============================================
 
