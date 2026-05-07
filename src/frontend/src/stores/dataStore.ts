@@ -28,6 +28,7 @@ import type {
   AeoSystem,
   AioSystem,
   SxoSystem,
+  SalesScriptEngine,
   HrSystem,
   Newsletter,
   FAQ,
@@ -89,6 +90,7 @@ interface ModuleData {
   // Sales
   landingPageSystem: LandingPageSystem | null;
   landingPages: LandingPage[];
+  salesScriptEngine: SalesScriptEngine | null;
   salesScripts: SalesScript[];
   salesCollateral: SalesCollateral[];
   videoContent: VideoContent[];
@@ -155,6 +157,7 @@ const createEmptyModuleData = (): ModuleData => ({
   testimonials: [],
   landingPageSystem: null,
   landingPages: [],
+  salesScriptEngine: null,
   salesScripts: [],
   salesCollateral: [],
   videoContent: [],

@@ -567,6 +567,24 @@ export interface SxoSystem extends BaseEntity {
 }
 
 // ============================================
+// SALES SCRIPT ENGINE (7-section per-rep tracker for /sales-scripts)
+// Personalised scripts: Cold outreach / Discovery / Demo / Objections /
+// Closing / Relationship — pulls context from Brand Voice, ICP, Products,
+// Competitors, and the rep's own profile.
+// ============================================
+
+export interface SalesScriptEngine extends BaseEntity {
+  /** Programme / cohort name */
+  name?: string;
+  /** Optional client / division hint */
+  client?: string;
+  sections?: Record<string, WebsiteSectionState>;
+  approvalLog?: BrandApprovalEntry[];
+  masterDocVersion?: number;
+  masterDocLockedAt?: string;
+}
+
+// ============================================
 // SEO SYSTEM (15-module tracker for /seo)
 // ============================================
 
