@@ -33,7 +33,7 @@ const STATUS_LABELS: Record<WebsiteSectionStatus, string> = {
 };
 
 const STATUS_TONE: Record<WebsiteSectionStatus, string> = {
-  'not-started': 'bg-slate-700 text-slate-300',
+  'not-started': 'bg-[#1a1d21] text-[#afb6c4]',
   'in-progress': 'bg-sky-500/20 text-sky-300',
   review: 'bg-amber-500/20 text-amber-300',
   completed: 'bg-emerald-500/20 text-emerald-300',
@@ -70,16 +70,16 @@ export function SectionForm({
       approvalLabel="Locked"
       rightSlot={
         <div className="flex items-center gap-2">
-          <span className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg bg-primary-500/15 text-primary-400">
+          <span className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg bg-[#C8FF2E]/10 text-[#C8FF2E]">
             <Icon className="w-4 h-4" />
           </span>
           <select
             value={status}
             onChange={(e) => onSetStatus(e.target.value as WebsiteSectionStatus)}
-            className={`text-xs font-medium rounded-md border-0 px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-primary-500/40 ${STATUS_TONE[status]}`}
+            className={`text-xs font-medium rounded-md border-0 px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 ${STATUS_TONE[status]}`}
           >
             {(Object.keys(STATUS_LABELS) as WebsiteSectionStatus[]).map((s) => (
-              <option key={s} value={s} className="bg-slate-800 text-slate-200">
+              <option key={s} value={s} className="bg-[#1a1d21] text-white">
                 {STATUS_LABELS[s]}
               </option>
             ))}
@@ -94,13 +94,13 @@ export function SectionForm({
           <button
             type="button"
             onClick={() => setShowAdvanced((s) => !s)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-200"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#878e9a] hover:text-white"
           >
             {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             {showAdvanced ? 'Hide advanced' : `Show ${section.advancedFields.length} advanced fields`}
           </button>
           {showAdvanced && (
-            <div className="mt-3 pt-4 border-t border-slate-700/60">
+            <div className="mt-3 pt-4 border-t border-white/10">
               <FieldGrid fields={section.advancedFields} data={data} onUpdate={onUpdateField} />
             </div>
           )}
@@ -235,7 +235,7 @@ function FieldRenderer({
           <select
             value={typeof v === 'string' ? v : ''}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+            className="w-full rounded-lg bg-[#1a1d21] border border-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:border-[#C8FF2E]/50 focus:ring-2 focus:ring-[#C8FF2E]/20"
           >
             <option value="" disabled>
               Choose…

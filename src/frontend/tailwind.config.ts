@@ -36,7 +36,7 @@ const config: Config = {
       // Border radius
       borderRadius: borderRadius,
 
-      // Shadows (Soft UI)
+      // Shadows (MENGO Theme)
       boxShadow: {
         sm: shadows.sm,
         DEFAULT: shadows.DEFAULT,
@@ -44,10 +44,9 @@ const config: Config = {
         lg: shadows.lg,
         xl: shadows.xl,
         inner: shadows.inner,
-        'soft-sm': shadows.soft.sm,
-        'soft-md': shadows.soft.md,
-        'soft-lg': shadows.soft.lg,
-        'soft-xl': shadows.soft.xl,
+        'glow-sm': shadows.glow.sm,
+        'glow-md': shadows.glow.md,
+        'glow-lg': shadows.glow.lg,
       },
 
       // Breakpoints

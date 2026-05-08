@@ -12,7 +12,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { websitePageApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { WebsitePage } from '@/types/entities';
 
 // ============================================
@@ -55,7 +55,7 @@ const columns: TableColumn<WebsitePage>[] = [
       value ? (
         <span className="text-green-400">Yes</span>
       ) : (
-        <span className="text-slate-500">-</span>
+        <span className="text-[#686f7e]">-</span>
       ),
   },
 ];
@@ -128,7 +128,8 @@ const formFields: FormField[] = [
 
 export default function WebsitePagesPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [pages, setPages] = useState<WebsitePage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -185,7 +186,7 @@ export default function WebsitePagesPage() {
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to view website pages.</p>
+        <p className="text-[#878e9a]">Please select a company to view website pages.</p>
       </div>
     );
   }
@@ -193,7 +194,7 @@ export default function WebsitePagesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C8FF2E]"></div>
       </div>
     );
   }
@@ -202,12 +203,12 @@ export default function WebsitePagesPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20">
+        <div className="w-16 h-16 bg-gradient-to-br from-[#C8FF2E] to-[#b3e628] rounded-2xl flex items-center justify-center shadow-lg shadow-[#C8FF2E]/20">
           <Globe className="w-8 h-8 text-white" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-white">Website Pages</h1>
-          <p className="text-slate-400">
+          <p className="text-[#878e9a]">
             Manage landing pages, home, about, contact, and other website pages
           </p>
         </div>

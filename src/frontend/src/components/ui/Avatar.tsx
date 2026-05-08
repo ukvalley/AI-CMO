@@ -92,7 +92,7 @@ export const Avatar: React.FC<AvatarProps> = ({
       className={cn(
         'relative inline-flex items-center justify-center',
         'rounded-full overflow-hidden',
-        'bg-gradient-to-br from-primary-100 to-primary-200',
+        'bg-gradient-to-br from-[#C8FF2E]/20 to-[#C8FF2E]/30',
         'flex-shrink-0',
         sizeStyles[size],
         className
@@ -107,7 +107,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           onError={() => setError(true)}
         />
       ) : (
-        <span className="font-medium text-primary-700">
+        <span className="font-medium text-[#C8FF2E]">
           {initials}
         </span>
       )}
@@ -116,7 +116,7 @@ export const Avatar: React.FC<AvatarProps> = ({
       {status && (
         <span
           className={cn(
-            'absolute rounded-full border-2',
+            'absolute rounded-full border-2 border-[#0d1117]',
             statusSizeStyles[size],
             statusPositionStyles[size],
             statusColors[status]
@@ -156,9 +156,9 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
           className={cn(
             'relative z-10 flex items-center justify-center',
             'w-10 h-10 rounded-full',
-            'bg-neutral-200 text-neutral-600',
+            'bg-[#1a1d21] text-[#C8FF2E]',
             'text-xs font-medium',
-            'ring-2 ring-white'
+            'ring-2 ring-[#0d1117] border border-white/10'
           )}
         >
           +{remainingCount}

@@ -110,20 +110,20 @@ export default function CompaniesPage() {
       <div className="text-center">
         <Logo size="lg" className="mx-auto mb-6" />
         <h1 className="text-3xl font-bold text-white mb-2">Your Companies</h1>
-        <p className="text-slate-400">
+        <p className="text-[#878e9a]">
           Select a company to work with or create a new one
         </p>
       </div>
 
       {/* User Info */}
       <div className="flex items-center justify-center gap-4">
-        <div className="bg-slate-800/50 rounded-full px-4 py-2 flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center">
-            <Users className="w-4 h-4 text-primary-400" />
+        <div className="bg-[#151920] rounded-full px-4 py-2 flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#C8FF2E]/10 rounded-full flex items-center justify-center">
+            <Users className="w-4 h-4 text-[#C8FF2E]" />
           </div>
-          <span className="text-slate-300">{user?.name}</span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400 text-sm">{user?.email}</span>
+          <span className="text-[#afb6c4]">{user?.name}</span>
+          <span className="text-[#686f7e]">|</span>
+          <span className="text-[#878e9a] text-sm">{user?.email}</span>
         </div>
         <Button variant="ghost" size="sm" onClick={handleLogout}>
           <LogOut className="w-4 h-4 mr-2" />
@@ -146,15 +146,15 @@ export default function CompaniesPage() {
         {/* Create New Button */}
         <button
           onClick={() => setShowCreateModal(true)}
-          className="group bg-slate-800/30 border-2 border-dashed border-slate-700 rounded-xl p-6 hover:border-primary-500/50 hover:bg-slate-800/50 transition-all"
+          className="group bg-[#151920]/60 border-2 border-dashed border-white/10 rounded-xl p-6 hover:border-[#C8FF2E]/30 hover:bg-[#151920] transition-all"
         >
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center group-hover:bg-primary-500/20 transition-colors">
-              <Plus className="w-6 h-6 text-slate-500 group-hover:text-primary-400" />
+            <div className="w-14 h-14 bg-[#1a1d21] rounded-full flex items-center justify-center group-hover:bg-[#C8FF2E]/10 transition-colors">
+              <Plus className="w-6 h-6 text-[#686f7e] group-hover:text-[#C8FF2E]" />
             </div>
             <div className="text-center">
               <p className="text-white font-medium">Create New Company</p>
-              <p className="text-slate-500 text-sm mt-1">Add another organisation</p>
+              <p className="text-[#686f7e] text-sm mt-1">Add another organisation</p>
             </div>
           </div>
         </button>
@@ -162,10 +162,10 @@ export default function CompaniesPage() {
 
       {/* Empty State */}
       {companies.length === 0 && (
-        <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-700">
-          <Building2 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+        <div className="text-center py-12 bg-[#151920]/60 rounded-xl border border-white/10">
+          <Building2 className="w-16 h-16 text-[#686f7e] mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Companies Yet</h3>
-          <p className="text-slate-400 mb-6 max-w-md mx-auto">
+          <p className="text-[#878e9a] mb-6 max-w-md mx-auto">
             Create your first company to start using AI CMO and manage your marketing
           </p>
           <Button onClick={() => setShowCreateModal(true)}>
@@ -206,15 +206,15 @@ function CompanyCard({
     <Card
       className={`relative group cursor-pointer transition-all ${
         isActive
-          ? 'bg-primary-500/10 border-primary-500/50'
-          : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+          ? 'bg-[#C8FF2E]/10 border-[#C8FF2E]/30'
+          : 'bg-[#151920] border-white/10 hover:border-[#C8FF2E]/30'
       }`}
       onClick={onSelect}
     >
       {/* Active Badge */}
       {isActive && (
         <div className="absolute top-4 right-4">
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary-500/20 text-primary-400 text-xs rounded-full">
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#C8FF2E]/10 text-[#C8FF2E] text-xs rounded-full">
             <Check className="w-3 h-3" />
             Active
           </span>
@@ -230,11 +230,11 @@ function CompanyCard({
         {/* Company Info */}
         <h3 className="text-lg font-semibold text-white mb-1">{company.name}</h3>
         {company.notificationEmail && (
-          <p className="text-sm text-slate-400 mb-4">{company.notificationEmail}</p>
+          <p className="text-sm text-[#878e9a] mb-4">{company.notificationEmail}</p>
         )}
 
         {/* Action */}
-        <div className="flex items-center gap-2 text-primary-400 group-hover:text-primary-300">
+        <div className="flex items-center gap-2 text-[#C8FF2E] group-hover:text-primary-300">
           <span className="text-sm font-medium">
             {isActive ? 'Continue' : 'Switch'}
           </span>
@@ -306,7 +306,7 @@ function CreateCompanyModal({
 
         {/* Company Name */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-[#afb6c4] mb-2">
             Company Name <span className="text-red-400">*</span>
           </label>
           <Input
@@ -320,7 +320,7 @@ function CreateCompanyModal({
 
         {/* Notification Email */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-[#afb6c4] mb-2">
             Notification Email (Optional)
           </label>
           <Input
@@ -329,7 +329,7 @@ function CreateCompanyModal({
             onChange={(e) => setNotificationEmail(e.target.value)}
             placeholder="alerts@company.com"
           />
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#686f7e] mt-1">
             Where to send important notifications
           </p>
         </div>

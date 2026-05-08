@@ -57,6 +57,9 @@ export interface IFounder extends Document {
   bio?: string;
   socialProfiles: ISocialProfiles;
   assets: IFounderAsset[];
+  // Photos & Media
+  photos?: string[];           // Multiple photos (uploaded files or URLs)
+  driveLink?: string;          // Google Drive link for bulk images
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,7 +106,10 @@ const FounderSchema = new Schema<IFounder>({
       createdAt: String
     }],
     default: []
-  }
+  },
+  // Photos & Media
+  photos: [String],            // Array of image URLs
+  driveLink: String            // Google Drive link
 }, {
   timestamps: true
 });

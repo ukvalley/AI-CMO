@@ -120,7 +120,7 @@ export const Modal: React.FC<ModalProps> = ({
         ref={contentRef}
         className={cn(
           'relative z-10 w-full',
-          'bg-slate-800 rounded-xl border border-slate-700',
+          'bg-[#151920] rounded-xl border border-white/10',
           'shadow-2xl shadow-black/50',
           'animate-scale-in',
           sizeStyles[size]
@@ -136,7 +136,7 @@ export const Modal: React.FC<ModalProps> = ({
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-sm text-[#878e9a]">
                   {description}
                 </p>
               )}
@@ -147,7 +147,7 @@ export const Modal: React.FC<ModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="flex-shrink-0 -mr-2 text-slate-400 hover:text-slate-200"
+                className="flex-shrink-0 -mr-2 text-[#878e9a] hover:text-white"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
@@ -161,7 +161,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
             {footer}
           </div>
         )}

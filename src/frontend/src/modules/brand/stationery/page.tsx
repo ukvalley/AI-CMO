@@ -12,7 +12,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { stationeryApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { Stationery } from '@/types/entities';
 
 // ============================================
@@ -63,7 +63,7 @@ const columns: TableColumn<Stationery>[] = [
       }
       if (status === 'archived') {
         return (
-          <span className="text-slate-400 flex items-center gap-1">
+          <span className="text-[#878e9a] flex items-center gap-1">
             <Archive className="w-4 h-4" /> Archived
           </span>
         );
@@ -149,7 +149,8 @@ const formFields: FormField[] = [
 
 export default function StationeryPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [items, setItems] = useState<Stationery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -191,7 +192,7 @@ export default function StationeryPage() {
     const response = await stationeryApi.update(id, data);
     if (response.data) {
       setItems((prev) =>
-        prev.map((item) => (item._id === id ? (response.data as Stationery) : item))
+        prev.map((item) => (item.id === id ? (response.data as Stationery) : item))
       );
     }
   };
@@ -199,14 +200,14 @@ export default function StationeryPage() {
   const handleDelete = async (id: string) => {
     const response = await stationeryApi.delete(id);
     if (!response.error) {
-      setItems((prev) => prev.filter((item) => item._id !== id));
+      setItems((prev) => prev.filter((item) => item.id !== id));
     }
   };
 
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to manage stationery.</p>
+        <p className="text-[#878e9a]">Please select a company to manage stationery.</p>
       </div>
     );
   }
@@ -228,7 +229,7 @@ export default function StationeryPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-white">Stationery</h1>
-          <p className="text-slate-400">
+          <p className="text-[#878e9a]">
             Manage business cards, letterheads, email signatures, and templates
           </p>
         </div>

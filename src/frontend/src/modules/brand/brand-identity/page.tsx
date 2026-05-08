@@ -253,20 +253,20 @@ function HealthDashboard({ brand, total, locked }: { brand: any; total: number; 
   ];
   const overallPct = total === 0 ? 0 : Math.round((locked / total) * 100);
   return (
-    <section className="rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800/70 to-slate-900/70 p-5">
+    <section className="rounded-xl border border-white/10 bg-gradient-to-br from-[#151920]/70 to-[#0d1117]/70 p-5">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-primary-400" />
+          <Activity className="w-4 h-4 text-[#C8FF2E]" />
           <h2 className="font-semibold text-white">Brand Health Dashboard</h2>
-          <span className="text-xs uppercase tracking-wider text-slate-500">Module 13</span>
+          <span className="text-xs uppercase tracking-wider text-[#686f7e]">Module 13</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-slate-400">Overall lock progress</span>
-          <span className="font-mono font-semibold text-primary-400">{overallPct}%</span>
+          <span className="text-[#878e9a]">Overall lock progress</span>
+          <span className="font-mono font-semibold text-[#C8FF2E]">{overallPct}%</span>
         </div>
       </div>
 
-      <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden mb-5">
+      <div className="h-2 w-full rounded-full bg-[#1a1d21] overflow-hidden mb-5">
         <div
           className="h-full bg-gradient-to-r from-primary-500 to-emerald-400 transition-all"
           style={{ width: `${overallPct}%` }}
@@ -293,7 +293,7 @@ function HealthDashboard({ brand, total, locked }: { brand: any; total: number; 
               />
               {c.ok ? 'Green' : 'Red'}
             </div>
-            <div className="mt-1 text-slate-300/80">{c.label}</div>
+            <div className="mt-1 text-[#afb6c4]/80">{c.label}</div>
           </div>
         ))}
       </div>
@@ -343,13 +343,13 @@ export default function BrandIdentityPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-5">
           <h1 className="text-3xl font-bold text-white">Brand Identity Direction</h1>
-          <p className="mt-1 text-slate-400">
+          <p className="mt-1 text-[#878e9a]">
             SOP 1.7 — define, validate, and lock the brand once. Enforce it everywhere.
           </p>
         </div>
-        <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-6">
-          <div className="h-4 w-48 bg-slate-700/50 rounded animate-pulse" />
-          <div className="mt-3 h-2 w-full bg-slate-700/40 rounded" />
+        <div className="rounded-xl border border-white/10 bg-[#1a1d21]/60 p-6">
+          <div className="h-4 w-48 bg-[#21262d]/50 rounded animate-pulse" />
+          <div className="mt-3 h-2 w-full bg-[#21262d]/40 rounded" />
         </div>
       </div>
     );
@@ -359,7 +359,7 @@ export default function BrandIdentityPage() {
     return (
       <div className="max-w-3xl mx-auto p-8 text-center">
         <h1 className="text-2xl font-bold text-white mb-2">Brand Identity Direction</h1>
-        <p className="text-slate-400">
+        <p className="text-[#878e9a]">
           Create or pick a company from the sidebar to start defining brand identity.
         </p>
       </div>
@@ -371,7 +371,7 @@ export default function BrandIdentityPage() {
       {/* Page header */}
       <div className="mb-5">
         <h1 className="text-3xl font-bold text-white">Brand Identity Direction</h1>
-        <p className="mt-1 text-slate-400">
+        <p className="mt-1 text-[#878e9a]">
           SOP 1.7 — define, validate, and lock the brand once. Enforce it everywhere.
         </p>
       </div>
@@ -382,7 +382,7 @@ export default function BrandIdentityPage() {
       {/* Two-column layout */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
         {/* Section nav */}
-        <aside className="lg:sticky lg:top-4 self-start rounded-xl border border-slate-700 bg-slate-800/40 p-2">
+        <aside className="lg:sticky lg:top-4 self-start rounded-xl border border-white/10 bg-[#1a1d21]/60 p-2">
           <nav className="flex flex-col gap-0.5">
             {NAV.map((n) => {
               const Icon = n.icon;
@@ -396,17 +396,17 @@ export default function BrandIdentityPage() {
                   className={cn(
                     'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
                     active
-                      ? 'bg-primary-500/15 text-primary-300'
-                      : 'text-slate-300 hover:bg-slate-700/50'
+                      ? 'bg-[#C8FF2E]/15 text-primary-300'
+                      : 'text-[#afb6c4] hover:bg-[#21262d]/50'
                   )}
                 >
-                  <Icon className={cn('w-4 h-4 shrink-0', active ? 'text-primary-400' : 'text-slate-500')} />
+                  <Icon className={cn('w-4 h-4 shrink-0', active ? 'text-[#C8FF2E]' : 'text-[#686f7e]')} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-[10px] text-slate-500">{n.step}</span>
+                      <span className="font-mono text-[10px] text-[#686f7e]">{n.step}</span>
                       <span className="truncate">{n.label}</span>
                     </div>
-                    <div className="mt-1 h-1 rounded-full bg-slate-700 overflow-hidden">
+                    <div className="mt-1 h-1 rounded-full bg-[#21262d] overflow-hidden">
                       <div
                         className={cn(
                           'h-full transition-all',
@@ -462,7 +462,7 @@ export default function BrandIdentityPage() {
             <ApprovalLogSection brand={brand} />
           </div>
           <ScrollText className="hidden" />
-          <div className="muted text-xs text-slate-500 text-center pt-2 pb-8">
+          <div className="muted text-xs text-[#686f7e] text-center pt-2 pb-8">
             Brand Governance · {NAV.length} modules · {lockedCount} locked
           </div>
         </div>

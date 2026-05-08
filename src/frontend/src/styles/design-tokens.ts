@@ -1,8 +1,8 @@
 /**
- * AI CMO Design System Tokens
+ * AI CMO Design System Tokens - MENGO Theme
  *
- * Single source of truth for all design values.
- * These tokens are used throughout the application.
+ * Dark theme with neon lime/green accents
+ * Based on the MENGO dashboard design
  */
 
 // ============================================
@@ -10,64 +10,64 @@
 // ============================================
 
 export const colors = {
-  // Primary Brand Colors - Purple for AI CMO
+  // Primary Brand Colors - Neon Lime/Green
   primary: {
-    50: '#f5f3ff',
-    100: '#ede9fe',
-    200: '#ddd6fe',
-    300: '#c4b5fd',
-    400: '#a78bfa',
-    500: '#7C6BF0',  // Primary brand color - Purple
-    600: '#6d5ce6',
-    700: '#5d4bd1',
-    800: '#4c3db5',
-    900: '#3d2f99',
+    50: '#f7fee7',
+    100: '#ecfccb',
+    200: '#d9f99d',
+    300: '#bef264',
+    400: '#C8FF2E',  // Primary neon lime - matches design
+    500: '#a3e635',  // Slightly darker lime
+    600: '#84cc16',
+    700: '#65a30d',
+    800: '#4d7c0f',
+    900: '#3f6212',
   },
 
-  // Secondary Accent
+  // Secondary Accent - Cyan for variety
   secondary: {
-    50: '#f0f9ff',
-    100: '#e0f2fe',
-    200: '#bae6fd',
-    300: '#7dd3fc',
-    400: '#38bdf8',
-    500: '#0ea5e9',  // Secondary accent - Sky blue
-    600: '#0284c7',
-    700: '#0369a1',
-    800: '#075985',
-    900: '#0c4a6e',
+    50: '#ecfeff',
+    100: '#cffafe',
+    200: '#a5f3fc',
+    300: '#67e8f9',
+    400: '#22d3ee',
+    500: '#06b6d4',
+    600: '#0891b2',
+    700: '#0e7490',
+    800: '#155e75',
+    900: '#164e63',
   },
 
-  // Neutral Scale (Slate for Dark Theme)
+  // Neutral Scale - Dark greenish-gray for dark theme
   neutral: {
-    50: '#f8fafc',   // Lightest - for light mode
-    100: '#f1f5f9',
-    200: '#e2e8f0',
-    300: '#cbd5e1',
-    400: '#94a3b8',  // Muted text
-    500: '#64748b',  // Secondary text
-    600: '#475569',  // Disabled
-    700: '#334155',  // Borders dark mode
-    800: '#1e293b',  // Card backgrounds
-    900: '#0f172a',  // Main dark background
-    950: '#020617',  // Deepest background
+    50: '#f6f7f9',
+    100: '#eceef2',
+    200: '#d4d8e0',
+    300: '#afb6c4',
+    400: '#878e9d',
+    500: '#686f7e',
+    600: '#525662',
+    700: '#3f434d',
+    800: '#1a1d21',   // Card backgrounds
+    900: '#0d1117',   // Main dark background - matches design
+    950: '#080a0c',   // Deepest background
   },
 
   // Semantic Colors
   success: {
     50: '#f0fdf4',
     100: '#dcfce7',
-    500: '#22c55e',
-    600: '#16a34a',
-    700: '#15803d',
+    500: '#C8FF2E',  // Use primary lime for success
+    600: '#84cc16',
+    700: '#65a30d',
   },
 
   warning: {
     50: '#fffbeb',
     100: '#fef3c7',
-    500: '#f59e0b',
-    600: '#d97706',
-    700: '#b45309',
+    500: '#fbbf24',
+    600: '#f59e0b',
+    700: '#d97706',
   },
 
   error: {
@@ -78,12 +78,21 @@ export const colors = {
     700: '#b91c1c',
   },
 
-  // Background Layers - Dark Theme
+  // Background Layers - Dark Theme (Greenish tint)
   background: {
-    primary: '#0f172a',      // Main background (slate-900)
-    secondary: '#1e293b',   // Card background (slate-800)
-    tertiary: '#334155',     // Elevated surfaces (slate-700)
-    subtle: '#475569',       // Subtle backgrounds (slate-600)
+    primary: '#0d1117',      // Main background
+    secondary: '#151920',   // Card background - slightly lighter
+    tertiary: '#1a1d21',     // Elevated surfaces
+    subtle: '#21262d',       // Subtle backgrounds
+  },
+
+  // Chart/Graph Colors for stats
+  chart: {
+    green: '#C8FF2E',
+    yellow: '#FACC15',
+    orange: '#FB923C',
+    red: '#EF4444',
+    blue: '#22D3EE',
   },
 } as const;
 
@@ -186,38 +195,37 @@ export const spacing = {
 
 export const borderRadius = {
   none: '0',
-  sm: '0.125rem',   // 2px
-  DEFAULT: '0.25rem', // 4px
-  md: '0.375rem',   // 6px
-  lg: '0.5rem',     // 8px
-  xl: '0.75rem',    // 12px
-  '2xl': '1rem',    // 16px
-  '3xl': '1.5rem',  // 24px
+  sm: '0.375rem',   // 6px
+  DEFAULT: '0.5rem', // 8px
+  md: '0.75rem',    // 12px
+  lg: '1rem',       // 16px
+  xl: '1.25rem',    // 20px
+  '2xl': '1.5rem',  // 24px
+  '3xl': '2rem',    // 32px
   full: '9999px',
 } as const;
 
 // ============================================
-// SHADOW SYSTEM (Soft UI - Subtle)
+// SHADOW SYSTEM
 // ============================================
 
 export const shadows = {
-  // Light shadows for subtle elevation
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+  // Subtle dark theme shadows
+  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
+  DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4)',
+  md: '0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4)',
+  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4)',
+  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
 
-  // Soft UI specific shadows (inset + drop)
-  soft: {
-    sm: '0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
-    md: '0 4px 8px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.08)',
-    lg: '0 8px 16px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.06)',
-    xl: '0 16px 32px rgba(0, 0, 0, 0.04), 0 8px 16px rgba(0, 0, 0, 0.06)',
+  // Neon glow for primary accent
+  glow: {
+    sm: '0 0 10px rgba(200, 255, 46, 0.3)',
+    md: '0 0 20px rgba(200, 255, 46, 0.4)',
+    lg: '0 0 30px rgba(200, 255, 46, 0.5)',
   },
 
   // Inner shadow for pressed states
-  inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+  inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.3)',
 } as const;
 
 // ============================================
@@ -311,15 +319,23 @@ export const sidebar = {
 // ============================================
 
 export const componentTokens = {
-  // Card tokens
+  // Card tokens - Dark theme with subtle borders
   card: {
     padding: spacing[6],
     borderRadius: borderRadius.lg,
-    shadow: shadows.soft.md,
-    shadowHover: shadows.soft.lg,
+    shadow: shadows.md,
+    border: '1px solid rgba(255, 255, 255, 0.08)',
   },
 
-  // Button tokens
+  // Stats card tokens - Big bold numbers like in design
+  statsCard: {
+    valueSize: typography.fontSize['4xl'],
+    valueWeight: typography.fontWeight.bold,
+    labelSize: typography.fontSize.sm,
+    changeSize: typography.fontSize.sm,
+  },
+
+  // Button tokens - Rounded with neon accent
   button: {
     padding: {
       sm: `${spacing[2]} ${spacing[3]}`,
@@ -346,7 +362,7 @@ export const componentTokens = {
     cellPadding: spacing[4],
     headerHeight: '3rem',
     rowHeight: '3.5rem',
-    borderColor: colors.neutral[200],
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
 } as const;
 

@@ -12,7 +12,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { blogApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { Blog } from '@/types/entities';
 
 // ============================================
@@ -40,9 +40,9 @@ const columns: TableColumn<Blog>[] = [
     header: 'Reading Time',
     render: (value) =>
       value ? (
-        <span className="flex items-center gap-1 text-slate-400">
+        <span className="flex items-center gap-1 text-[#878e9a]">
           <Clock className="w-3 h-3" />
-          {value} min
+          {String(value)} min
         </span>
       ) : (
         '-'
@@ -116,7 +116,8 @@ const formFields: FormField[] = [
 
 export default function BlogsPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -173,7 +174,7 @@ export default function BlogsPage() {
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to view blogs.</p>
+        <p className="text-[#878e9a]">Please select a company to view blogs.</p>
       </div>
     );
   }
@@ -181,7 +182,7 @@ export default function BlogsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C8FF2E]"></div>
       </div>
     );
   }
@@ -190,12 +191,12 @@ export default function BlogsPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20">
+        <div className="w-16 h-16 bg-gradient-to-br from-[#C8FF2E] to-[#b3e628] rounded-2xl flex items-center justify-center shadow-lg shadow-[#C8FF2E]/20">
           <BookOpen className="w-8 h-8 text-white" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-white">Blogs</h1>
-          <p className="text-slate-400">
+          <p className="text-[#878e9a]">
             Create and manage blog posts with categories and tags
           </p>
         </div>

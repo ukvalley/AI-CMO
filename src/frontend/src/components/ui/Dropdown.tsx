@@ -135,8 +135,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
           ref={menuRef}
           className={cn(
             'absolute z-popover mt-2 w-56',
-            'bg-white rounded-lg',
-            'shadow-soft-lg border border-neutral-100',
+            'bg-[#151920] rounded-lg',
+            'shadow-[0_0_20px_rgba(0,0,0,0.4)] border border-white/10',
             'animate-fade-in animate-scale-in origin-top',
             align === 'right' ? 'right-0' : 'left-0'
           )}
@@ -148,7 +148,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 return (
                   <hr
                     key={`divider-${index}`}
-                    className="my-1 border-neutral-100"
+                    className="my-1 border-white/10"
                   />
                 );
               }
@@ -170,22 +170,22 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   className={cn(
                     'w-full px-4 py-2 text-left',
                     'flex items-center justify-between',
-                    'text-sm text-neutral-700',
+                    'text-sm text-[#afb6c4]',
                     'transition-colors duration-150',
                     'focus:outline-none',
                     item.disabled
                       ? 'opacity-50 cursor-not-allowed'
-                      : 'hover:bg-neutral-50 cursor-pointer',
-                    isHighlighted && 'bg-neutral-50'
+                      : 'hover:bg-[#1a1d21] hover:text-white cursor-pointer',
+                    isHighlighted && 'bg-[#1a1d21] text-white'
                   )}
                   role="menuitem"
                 >
                   <div className="flex items-center gap-3">
-                    {Icon && (<Icon className="w-4 h-4 text-neutral-400" />)}
+                    {Icon && (<Icon className="w-4 h-4 text-[#686f7e]" />)}
                     <span>{item.label}</span>
                   </div>
                   {item.shortcut && (
-                    <kbd className="text-xs text-neutral-400 font-mono">
+                    <kbd className="text-xs text-[#686f7e] font-mono bg-[#1a1d21] px-1.5 py-0.5 rounded">
                       {item.shortcut}
                     </kbd>
                   )}

@@ -11,7 +11,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { employeeApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { Employee, Department, EmployeeLevel } from '@/types/entities';
 
 // ============================================
@@ -105,6 +105,28 @@ const formFields: FormField[] = [
     type: 'social-grid',
     colSpan: 2,
   },
+  {
+    key: 'section-photos',
+    label: 'Photos & Media',
+    type: 'section-header',
+    colSpan: 2,
+  },
+  {
+    key: 'photos',
+    label: 'Employee Photos',
+    type: 'image-gallery',
+    placeholder: 'Upload photos or add Canva/Figma URLs...',
+    helperText: 'Add multiple photos (headshots, team photos, event photos)',
+    colSpan: 2,
+  },
+  {
+    key: 'driveLink',
+    label: 'Google Drive Link',
+    type: 'url',
+    placeholder: 'https://drive.google.com/drive/folders/...',
+    helperText: 'Link to Google Drive folder with additional photos/videos',
+    colSpan: 2,
+  },
 ];
 
 // ============================================
@@ -113,7 +135,8 @@ const formFields: FormField[] = [
 
 export default function EmployeesPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,7 +191,7 @@ export default function EmployeesPage() {
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to view employees.</p>
+        <p className="text-[#878e9a]">Please select a company to view employees.</p>
       </div>
     );
   }

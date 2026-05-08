@@ -98,18 +98,18 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-8">
             <Logo size="lg" />
           </div>
 
-          <Card padding="lg" className="bg-slate-900 border-slate-800 shadow-xl text-center">
+          <Card padding="lg" className="bg-[#0d1117] border-white/10 shadow-xl text-center">
             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-400" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Account Created!</h1>
-            <p className="text-slate-400">
+            <p className="text-[#878e9a]">
               Welcome to AI CMO. Redirecting you to the dashboard...
             </p>
           </Card>
@@ -119,7 +119,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -127,10 +127,10 @@ export default function Register() {
         </div>
 
         {/* Register Card */}
-        <Card padding="lg" className="bg-slate-900 border-slate-800 shadow-xl">
+        <Card padding="lg" className="bg-[#0d1117] border-white/10 shadow-xl">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-white">Create Account</h1>
-            <p className="text-slate-400 mt-2">
+            <p className="text-[#878e9a] mt-2">
               Get started with AI CMO for free
             </p>
           </div>
@@ -151,11 +151,11 @@ export default function Register() {
               type="text"
               placeholder="John Doe"
               required
-              leftIcon={<User className="w-4 h-4 text-slate-500" />}
+              leftIcon={<User className="w-4 h-4 text-[#686f7e]" />}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               error={errors.name}
-              className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
+              className="bg-[#1a1d21] border-white/10 text-white placeholder:text-[#686f7e]"
             />
 
             {/* Email */}
@@ -165,12 +165,12 @@ export default function Register() {
               type="email"
               placeholder="you@example.com"
               required
-              leftIcon={<Mail className="w-4 h-4 text-slate-500" />}
+              leftIcon={<Mail className="w-4 h-4 text-[#686f7e]" />}
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               error={errors.email}
               autoComplete="email"
-              className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
+              className="bg-[#1a1d21] border-white/10 text-white placeholder:text-[#686f7e]"
             />
 
             {/* Company Name */}
@@ -180,11 +180,11 @@ export default function Register() {
               type="text"
               placeholder="Acme Inc."
               required
-              leftIcon={<Building2 className="w-4 h-4 text-slate-500" />}
+              leftIcon={<Building2 className="w-4 h-4 text-[#686f7e]" />}
               value={formData.companyName}
               onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
               error={errors.companyName}
-              className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
+              className="bg-[#1a1d21] border-white/10 text-white placeholder:text-[#686f7e]"
             />
 
             {/* Password */}
@@ -195,12 +195,12 @@ export default function Register() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Create a strong password"
                 required
-                leftIcon={<Lock className="w-4 h-4 text-slate-500" />}
+                leftIcon={<Lock className="w-4 h-4 text-[#686f7e]" />}
                 rightIcon={
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-slate-500 hover:text-slate-300 transition-colors"
+                    className="text-[#686f7e] hover:text-[#afb6c4] transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? (
@@ -214,21 +214,21 @@ export default function Register() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 error={errors.password}
                 autoComplete="new-password"
-                className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
+                className="bg-[#1a1d21] border-white/10 text-white placeholder:text-[#686f7e]"
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[#686f7e]">
                 Must be at least 6 characters
               </p>
             </div>
 
             {/* Terms */}
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[#686f7e]">
               By creating an account, you agree to our{' '}
-              <Link href="#" className="text-primary-400 hover:text-primary-300">
+              <Link href="#" className="text-[#C8FF2E] hover:text-[#d4ff5c]">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="#" className="text-primary-400 hover:text-primary-300">
+              <Link href="#" className="text-[#C8FF2E] hover:text-[#d4ff5c]">
                 Privacy Policy
               </Link>
               .
@@ -248,11 +248,11 @@ export default function Register() {
 
           {/* Login Link */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[#878e9a]">
               Already have an account?{' '}
               <Link
                 href="/login"
-                className="font-medium text-primary-400 hover:text-primary-300"
+                className="font-medium text-[#C8FF2E] hover:text-[#d4ff5c]"
               >
                 Sign in
               </Link>
@@ -261,7 +261,7 @@ export default function Register() {
         </Card>
 
         {/* Footer */}
-        <p className="text-center text-sm text-slate-500 mt-8">
+        <p className="text-center text-sm text-[#686f7e] mt-8">
           &copy; {new Date().getFullYear()} AI CMO. All rights reserved.
         </p>
       </div>

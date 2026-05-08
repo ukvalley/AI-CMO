@@ -33,24 +33,25 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: `
-    bg-primary-500 text-white
-    hover:bg-primary-600 hover:shadow-md
-    active:bg-primary-700
-    focus:ring-primary-500
-    shadow-sm shadow-primary-500/20
+    bg-[#C8FF2E] text-[#0d1117]
+    hover:bg-[#d4ff5c] hover:shadow-md
+    active:bg-[#b3e62e]
+    focus:ring-[#C8FF2E]
+    font-semibold
+    shadow-[0_0_20px_rgba(200,255,46,0.3)]
   `,
   secondary: `
-    bg-slate-800 text-slate-200
-    border border-slate-700
-    hover:bg-slate-700 hover:border-slate-600 hover:shadow-sm
-    active:bg-slate-600
-    focus:ring-primary-500
+    bg-[#1a1d21] text-white
+    border border-white/10
+    hover:bg-[#21262d] hover:border-[#C8FF2E]/30 hover:shadow-sm
+    active:bg-[#151920]
+    focus:ring-[#C8FF2E]
   `,
   ghost: `
-    bg-transparent text-slate-400
-    hover:bg-slate-800 hover:text-slate-200
-    active:bg-slate-700
-    focus:ring-slate-500
+    bg-transparent text-[#878e9a]
+    hover:bg-[#1a1d21] hover:text-white
+    active:bg-[#21262d]
+    focus:ring-[#878e9a]
   `,
   danger: `
     bg-red-500 text-white
@@ -118,11 +119,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         className={cn(
           // Base styles
-          'inline-flex items-center justify-center',
+          'inline-flex items-center justify-center shrink-0',
           'font-medium transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900',
+          'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0d1117]',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
-          'rounded-md cursor-pointer',
+          'rounded-lg cursor-pointer whitespace-nowrap',
 
           // Variant styles
           variantStyles[variant],

@@ -12,7 +12,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { brandAssetApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { BrandAsset } from '@/types/entities';
 
 // ============================================
@@ -59,7 +59,7 @@ const columns: TableColumn<BrandAsset>[] = [
           <Check className="w-4 h-4" /> Yes
         </span>
       ) : (
-        <span className="text-slate-500">-</span>
+        <span className="text-[#686f7e]">-</span>
       ),
   },
   {
@@ -148,7 +148,8 @@ const formFields: FormField[] = [
 
 export default function BrandAssetsPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [assets, setAssets] = useState<BrandAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +191,7 @@ export default function BrandAssetsPage() {
     const response = await brandAssetApi.update(id, data);
     if (response.data) {
       setAssets((prev) =>
-        prev.map((item) => (item._id === id ? (response.data as BrandAsset) : item))
+        prev.map((item) => (item.id === id ? (response.data as BrandAsset) : item))
       );
     }
   };
@@ -198,14 +199,14 @@ export default function BrandAssetsPage() {
   const handleDelete = async (id: string) => {
     const response = await brandAssetApi.delete(id);
     if (!response.error) {
-      setAssets((prev) => prev.filter((item) => item._id !== id));
+      setAssets((prev) => prev.filter((item) => item.id !== id));
     }
   };
 
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to manage brand assets.</p>
+        <p className="text-[#878e9a]">Please select a company to manage brand assets.</p>
       </div>
     );
   }
@@ -227,7 +228,7 @@ export default function BrandAssetsPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-white">Brand Assets</h1>
-          <p className="text-slate-400">
+          <p className="text-[#878e9a]">
             Manage logos, favicons, social images, and other brand assets
           </p>
         </div>

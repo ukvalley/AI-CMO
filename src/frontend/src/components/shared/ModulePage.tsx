@@ -80,7 +80,7 @@ export function ModulePage<T extends { id: string }>({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {viewMode !== 'list' && (
-            <Button variant="ghost" size="sm" onClick={handleBack} className="text-slate-400 hover:text-slate-200">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="text-[#878e9a] hover:text-white">
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
@@ -93,7 +93,7 @@ export function ModulePage<T extends { id: string }>({
                 ? `Add ${module?.name.slice(0, -1) || 'Item'}`
                 : module?.name}
             </h1>
-            {viewMode === 'list' && <p className="text-sm text-slate-400 mt-0.5">{module?.description}</p>}
+            {viewMode === 'list' && <p className="text-sm text-[#878e9a] mt-0.5">{module?.description}</p>}
           </div>
         </div>
 

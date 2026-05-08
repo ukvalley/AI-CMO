@@ -11,7 +11,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { founderApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { Founder, ResponsibilityArea, AssetType } from '@/types/entities';
 
 // ============================================
@@ -74,6 +74,28 @@ const formFields: FormField[] = [
     type: 'social-grid',
     colSpan: 2,
   },
+  {
+    key: 'section-photos',
+    label: 'Photos & Media',
+    type: 'section-header',
+    colSpan: 2,
+  },
+  {
+    key: 'photos',
+    label: 'Founder Photos',
+    type: 'image-gallery',
+    placeholder: 'Upload photos or add Canva/Figma URLs...',
+    helperText: 'Add multiple photos (headshots, team photos, event photos)',
+    colSpan: 2,
+  },
+  {
+    key: 'driveLink',
+    label: 'Google Drive Link',
+    type: 'url',
+    placeholder: 'https://drive.google.com/drive/folders/...',
+    helperText: 'Link to Google Drive folder with additional photos/videos',
+    colSpan: 2,
+  },
 ];
 
 // ============================================
@@ -82,7 +104,8 @@ const formFields: FormField[] = [
 
 export default function FoundersPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [founders, setFounders] = useState<Founder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -137,7 +160,7 @@ export default function FoundersPage() {
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to view founders.</p>
+        <p className="text-[#878e9a]">Please select a company to view founders.</p>
       </div>
     );
   }

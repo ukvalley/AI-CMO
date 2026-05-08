@@ -54,6 +54,9 @@ export interface IEmployee extends Document {
   bio?: string;
   socialProfiles: ISocialProfiles;
   assets: IEmployeeAsset[];
+  // Photos & Media
+  photos?: string[];           // Multiple photos (uploaded files or URLs)
+  driveLink?: string;          // Google Drive link for bulk images
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,7 +109,10 @@ const EmployeeSchema = new Schema<IEmployee>({
       createdAt: String
     }],
     default: []
-  }
+  },
+  // Photos & Media
+  photos: [String],            // Array of image URLs
+  driveLink: String            // Google Drive link
 }, {
   timestamps: true
 });

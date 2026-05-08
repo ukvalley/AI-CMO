@@ -137,11 +137,12 @@ export const useAuthStore = create<AuthStore>()(
                 updatedAt: new Date().toISOString(),
               }));
               companyStore.companies = fullCompanies;
-              companyStore.activeCompanyId = user.activeCompanyId || companies[0].id;
+              const activeId = user.activeCompanyId || companies[0].id;
+              companyStore.setActiveCompany(activeId);
 
               // Sync to dataStore
               const dataStore = useDataStore.getState();
-              dataStore.setActiveCompany(user.activeCompanyId || companies[0].id);
+              dataStore.setActiveCompany(activeId);
             }
 
             return { success: true };
@@ -340,7 +341,7 @@ export const useAuthStore = create<AuthStore>()(
               }));
               companyStore.companies = fullCompanies;
               if (user.activeCompanyId) {
-                companyStore.activeCompanyId = user.activeCompanyId;
+                companyStore.setActiveCompany(user.activeCompanyId);
               }
 
               // Sync to dataStore

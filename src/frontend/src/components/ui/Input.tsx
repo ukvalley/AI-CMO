@@ -80,8 +80,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              'block text-sm font-medium text-slate-300 mb-1.5',
-              disabled && 'text-slate-500'
+              'block text-sm font-medium text-[#afb6c4] mb-1.5',
+              disabled && 'text-[#686f7e]'
             )}
           >
             {label}
@@ -95,7 +95,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {leftIcon && (
             <div
               className={cn(
-                'absolute top-1/2 -translate-y-1/2 text-slate-500',
+                'absolute top-1/2 -translate-y-1/2 text-[#686f7e]',
                 iconPositionStyles[size],
                 'pointer-events-none'
               )}
@@ -114,11 +114,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             disabled={disabled}
             className={cn(
-              // Base styles - Dark theme
+              // Base styles - MENGO Dark theme
               'w-full rounded-lg transition-all duration-200',
-              'bg-slate-800 text-slate-200 placeholder:text-slate-500',
-              'border focus:outline-none focus:ring-2',
-              'disabled:bg-slate-900 disabled:text-slate-500 disabled:cursor-not-allowed',
+              'bg-[#1a1d21] text-white placeholder:text-[#686f7e]',
+              'border border-white/10 focus:outline-none focus:ring-2',
+              'disabled:bg-[#0d1117] disabled:text-[#525662] disabled:cursor-not-allowed',
 
               // Size
               sizeStyles[size],
@@ -134,7 +134,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               // Border and focus states
               hasError
                 ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
-                : 'border-slate-700 focus:border-primary-500 focus:ring-primary-500/20',
+                : 'border-white/10 focus:border-[#C8FF2E]/50 focus:ring-[#C8FF2E]/20',
 
               className
             )}
@@ -145,7 +145,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {rightIcon && !hasError && (
             <div
               className={cn(
-                'absolute top-1/2 -translate-y-1/2 right-3 text-slate-500',
+                'absolute top-1/2 -translate-y-1/2 right-3 text-[#686f7e]',
                 'pointer-events-auto'
               )}
             >
@@ -175,7 +175,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p
             className={cn(
               'mt-1.5 text-sm',
-              hasError ? 'text-red-400' : 'text-slate-500'
+              hasError ? 'text-red-400' : 'text-[#686f7e]'
             )}
           >
             {error || helperText}
@@ -209,8 +209,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           <label
             htmlFor={textareaId}
             className={cn(
-              'block text-sm font-medium text-slate-300 mb-1.5',
-              disabled && 'text-slate-500'
+              'block text-sm font-medium text-[#afb6c4] mb-1.5',
+              disabled && 'text-[#686f7e]'
             )}
           >
             {label}
@@ -222,17 +222,17 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           disabled={disabled}
           className={cn(
-            // Base styles - Dark theme
+            // Base styles - MENGO Dark theme
             'w-full rounded-lg transition-all duration-200',
-            'bg-slate-800 text-slate-200 placeholder:text-slate-500',
-            'border focus:outline-none focus:ring-2',
+            'bg-[#1a1d21] text-white placeholder:text-[#686f7e]',
+            'border border-white/10 focus:outline-none focus:ring-2',
             'px-3 py-2 text-sm min-h-[80px] resize-y',
-            'disabled:bg-slate-900 disabled:text-slate-500 disabled:cursor-not-allowed',
+            'disabled:bg-[#0d1117] disabled:text-[#525662] disabled:cursor-not-allowed',
 
             // Border states
             hasError
               ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-slate-700 focus:border-primary-500 focus:ring-primary-500/20',
+              : 'border-white/10 focus:border-[#C8FF2E]/50 focus:ring-[#C8FF2E]/20',
 
             className
           )}
@@ -243,7 +243,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           <p
             className={cn(
               'mt-1.5 text-sm',
-              hasError ? 'text-red-400' : 'text-slate-500'
+              hasError ? 'text-red-400' : 'text-[#686f7e]'
             )}
           >
             {error || helperText}

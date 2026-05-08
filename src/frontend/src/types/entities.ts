@@ -107,26 +107,50 @@ export type Industry =
   | 'other';
 
 export interface BusinessProfile extends BaseEntity {
+  // A. Basic Info
   name: string;
   startDate?: string;
   stage: BusinessStage;
-  industries: Industry[];
+  teamSize?: number;
+
+  // B. Overview
   description?: string;
+  descriptionLong?: string;
   mission?: string;
   vision?: string;
   coreValues?: string;
   usp?: string;
+
+  // C. Market
+  primaryIndustry?: string;
+  secondaryIndustries?: string;
+  targetGeography?: string;
+  businessModel?: 'b2b' | 'b2c' | 'b2b2c' | 'saas' | 'marketplace' | 'd2c' | 'freemium' | 'subscription' | 'hybrid';
+
+  // D. Offer Layer
+  primaryOffering?: string;
+  secondaryOfferings?: string;
+  pricingModel?: string;
+  averageTicketSize?: string;
+
+  // E. Financial
   funding?: string;
   revenue?: string;
-  teamSize?: number;
   isRevenuePublic: boolean;
-  isFounderPublic: boolean;
+
+  // F. Contact
+  email?: string;
+  phone?: string;
+  website?: string;
+
+  // G. Location
   address?: string;
   city?: string;
   country?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
+
+  // Legacy fields (keep for backwards compatibility)
+  industries: Industry[];
+  isFounderPublic: boolean;
   socialProfiles: SocialProfiles;
   mapLinks?: {
     googleMaps?: string;
@@ -158,6 +182,9 @@ export interface Founder extends BaseEntity {
   bio?: string;
   socialProfiles: SocialProfiles;
   assets: FounderAsset[];
+  // Photos & Media
+  photos?: string[];
+  driveLink?: string;
 }
 
 export type AssetType =
@@ -225,6 +252,9 @@ export interface Employee extends BaseEntity {
   bio?: string;
   socialProfiles: SocialProfiles;
   assets: FounderAsset[];
+  // Photos & Media
+  photos?: string[];
+  driveLink?: string;
 }
 
 // ============================================
@@ -241,7 +271,7 @@ export interface ProductCategory extends BaseEntity {
 
 export interface Product extends BaseEntity {
   name: string;
-  categoryId: string;
+  categoryId?: string;
   price?: number;
   status: ProductStatus;
   audienceType: AudienceType;
@@ -251,31 +281,109 @@ export interface Product extends BaseEntity {
   icpIds: string[];
   personaIds: string[];
   marketingCopy?: string;
+  // Media & Resources
+  images?: string[];           // Array of image URLs
+  catalogPdfUrl?: string;      // PDF catalog URL
+  videoUrls?: string[];        // YouTube video URLs
 }
 
 // ============================================
 // ICP & PERSONA
 // ============================================
 
+// ============================================
+// ICP & PERSONA FRAMEWORK
+// ============================================
+
 export interface ICP extends BaseEntity {
   name: string;
   description?: string;
   isActive: boolean;
+
+  // A. Firmographics
   industry?: string;
   companySize?: string;
   location?: string;
+  revenueRange?: string;
+  fundingStage?: 'bootstrapped' | 'seed' | 'series-a' | 'series-b' | 'series-c' | 'ipo' | 'enterprise';
+  employeeCount?: string;
+  yearsInBusiness?: number;
+
+  // B. Technographics
+  techStack?: string[];
+  toolsUsed?: string[];
+  platforms?: string[];
+
+  // C. Behavioral Traits
+  buyingProcess?: string;
+  decisionTimeframe?: string;
+  budgetAuthority?: 'low' | 'medium' | 'high';
+  priceSensitivity?: 'low' | 'medium' | 'high';
+
+  // D. Psychographics
+  businessGoals?: string[];
+  challenges?: string[];
   painPoints?: string[];
-  goals?: string[];
+  priorities?: string[];
+
+  // E. Activation Criteria
+  triggerEvents?: string[];
+  fitScore?: number; // 0-100
+  priority?: 'low' | 'medium' | 'high';
+
+  // F. Linked Personas
+  personaIds?: string[];
 }
 
 export interface Persona extends BaseEntity {
   name: string;
   icpId: string;
-  age?: string;
-  job?: string;
+  isActive?: boolean;
+
+  // A. Demographics
+  ageRange?: string;
+  gender?: string;
+  jobTitle?: string;
+  seniorityLevel?: 'entry' | 'mid' | 'senior' | 'c-level' | 'founder';
+  department?: string;
+  industry?: string;
+
+  // B. Professional Profile
+  experience?: string;
+  skills?: string[];
+  toolsUsed?: string[];
+  certifications?: string[];
+
+  // C. Psychographics
   goals?: string[];
   painPoints?: string[];
+  motivations?: string[];
+  values?: string[];
+  fears?: string[];
+
+  // D. Behavioral
+  decisionMakingStyle?: 'analytical' | 'intuitive' | 'collaborative' | 'authoritative';
+  researchHabits?: string;
+  contentPreferences?: string[];
+  communicationChannel?: string[];
+
+  // E. Day in the Life
+  dailyChallenges?: string[];
+  successMetrics?: string[];
+  kpi?: string[];
+
+  // F. Buying Behavior
+  budgetAuthority?: boolean;
+  influenceLevel?: 'low' | 'medium' | 'high';
+  buyingRole?: 'champion' | 'decision-maker' | 'influencer' | 'end-user' | 'blocker';
+
+  // G. Bio & Narrative
   bio?: string;
+  quote?: string;
+  objections?: string[];
+
+  // H. Linked Products
+  productIds?: string[];
 }
 
 // ============================================
@@ -676,6 +784,9 @@ export interface Newsletter extends BaseEntity {
   subjectLine?: string;
   previewText?: string;
   content?: string;
+  recipientCount?: number;
+  openCount?: number;
+  clickCount?: number;
 }
 
 // ============================================
@@ -1128,15 +1239,79 @@ export interface JobPosting extends BaseEntity {
 // ============================================
 
 export type ThreatLevel = 'low' | 'medium' | 'high' | 'critical';
+export type MarketPosition = 'leader' | 'challenger' | 'follower' | 'niche';
+export type CompetitorType = 'direct' | 'indirect' | 'potential' | 'replacement';
+export type PricingStrategy = 'premium' | 'competitive' | 'economy' | 'freemium' | 'unknown';
 
 export interface Competitor extends BaseEntity {
   name: string;
+  isActive: boolean;
+
+  // A. Basic Information
   website?: string;
+  logoUrl?: string;
+  foundedYear?: number;
+  headquarters?: string;
+  companySize?: string;
+  fundingStage?: string;
+  fundingRaised?: string;
+  employeeCount?: number;
+  revenueEstimate?: string;
+
+  // B. Market Position
+  competitorType: CompetitorType;
   threatLevel: ThreatLevel;
-  usp?: string;
-  strengths?: string;
-  weaknesses?: string;
-  swot?: string;
+  marketPosition: MarketPosition;
+  marketShare?: string;
+  geographicReach?: string[];
+  targetAudience?: string;
+  industriesServed?: string[];
+
+  // C. Product Analysis
+  primaryProduct?: string;
+  productCategories?: string[];
+  keyFeatures?: string[];
+  pricingStrategy?: PricingStrategy;
+  pricingDetails?: string;
+  freeTrial?: boolean;
+  demoAvailable?: boolean;
+
+  // D. Value Proposition
+  valueProposition?: string;
+  tagline?: string;
+  messaging?: string;
+  differentiators?: string[];
+
+  // E. Marketing Intelligence
+  marketingChannels?: string[];
+  contentStrategy?: string;
+  seoKeywords?: string[];
+  socialMediaPresence?: Record<string, string>;
+  adSpendEstimate?: string;
+
+  // F. Strengths & Weaknesses
+  strengths?: string[];
+  weaknesses?: string[];
+  opportunities?: string[];
+  threats?: string[];
+
+  // G. Strategic Analysis
+  swotSummary?: string;
+  ourAdvantages?: string[];
+  ourVulnerabilities?: string[];
+  recommendedStrategy?: string;
+  battlecards?: string;
+
+  // H. Competitive Intelligence
+  recentNews?: string[];
+  productUpdates?: string[];
+  pricingChanges?: string[];
+  screenshots?: string[];
+  notes?: string;
+
+  // I. Comparison Data
+  featureComparison?: Record<string, boolean>;
+  priceComparison?: Record<string, unknown>;
 }
 
 // ============================================

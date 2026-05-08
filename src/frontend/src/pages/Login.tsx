@@ -87,7 +87,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -95,10 +95,10 @@ export default function Login() {
         </div>
 
         {/* Login Card */}
-        <Card padding="lg" className="bg-slate-900 border-slate-800 shadow-xl">
+        <Card padding="lg" className="bg-[#0d1117] border-white/10 shadow-xl">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-white">{UILabels.logIn}</h1>
-            <p className="text-slate-400 mt-2">
+            <p className="text-[#878e9a] mt-2">
               Welcome back! Please enter your details.
             </p>
           </div>
@@ -119,14 +119,14 @@ export default function Login() {
               type="email"
               placeholder="Enter your email"
               required
-              leftIcon={<Mail className="w-4 h-4 text-slate-500" />}
+              leftIcon={<Mail className="w-4 h-4 text-[#686f7e]" />}
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
               error={errors.email}
               autoComplete="email"
-              className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
+              className="bg-[#1a1d21] border-white/10 text-white placeholder:text-[#686f7e]"
             />
 
             {/* Password Field */}
@@ -137,12 +137,12 @@ export default function Login() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
                 required
-                leftIcon={<Lock className="w-4 h-4 text-slate-500" />}
+                leftIcon={<Lock className="w-4 h-4 text-[#686f7e]" />}
                 rightIcon={
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-slate-500 hover:text-slate-300 transition-colors"
+                    className="text-[#686f7e] hover:text-[#afb6c4] transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? (
@@ -158,7 +158,7 @@ export default function Login() {
                 }
                 error={errors.password}
                 autoComplete="current-password"
-                className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500"
+                className="bg-[#1a1d21] border-white/10 text-white placeholder:text-[#686f7e]"
               />
             </div>
 
@@ -169,14 +169,14 @@ export default function Login() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary-500 focus:ring-primary-500/20"
+                  className="w-4 h-4 rounded border-white/10 bg-[#1a1d21] text-primary-500 focus:ring-[#C8FF2E]/20"
                 />
-                <span className="text-sm text-slate-400">Remember me</span>
+                <span className="text-sm text-[#878e9a]">Remember me</span>
               </label>
 
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-primary-400 hover:text-primary-300"
+                className="text-sm font-medium text-[#C8FF2E] hover:text-[#d4ff5c]"
               >
                 Forgot Password?
               </Link>
@@ -210,11 +210,11 @@ export default function Login() {
 
           {/* Register Link */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[#878e9a]">
               Don&apos;t have an account?{' '}
               <Link
                 href="/register"
-                className="font-medium text-primary-400 hover:text-primary-300"
+                className="font-medium text-[#C8FF2E] hover:text-[#d4ff5c]"
               >
                 Sign up
               </Link>
@@ -223,7 +223,7 @@ export default function Login() {
         </Card>
 
         {/* Footer */}
-        <p className="text-center text-sm text-slate-500 mt-8">
+        <p className="text-center text-sm text-[#686f7e] mt-8">
           &copy; {new Date().getFullYear()} AI CMO. All rights reserved.
         </p>
       </div>

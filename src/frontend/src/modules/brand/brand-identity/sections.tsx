@@ -96,7 +96,7 @@ export function PurposeSection({
       </div>
 
       <div>
-        <p className="text-sm font-medium text-slate-300 mb-2">Alignment checker</p>
+        <p className="text-sm font-medium text-[#afb6c4] mb-2">Alignment checker</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <CheckRow
             label="Aligns with company vision"
@@ -248,7 +248,7 @@ export function VoiceToneSection({
         </Field>
       </div>
 
-      <p className="text-sm font-semibold text-slate-200 pt-2">Tone by context</p>
+      <p className="text-sm font-semibold text-white pt-2">Tone by context</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Website tone">
           <Input
@@ -374,7 +374,7 @@ export function EmotionalSection({
       </div>
 
       <div>
-        <p className="text-sm font-medium text-slate-300 mb-2">Promise validation checklist</p>
+        <p className="text-sm font-medium text-[#afb6c4] mb-2">Promise validation checklist</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <CheckRow
             label="Believable"
@@ -394,7 +394,7 @@ export function EmotionalSection({
         </div>
       </div>
 
-      <p className="text-sm font-semibold text-slate-200 pt-2">Emotional trigger map</p>
+      <p className="text-sm font-semibold text-white pt-2">Emotional trigger map</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Trust trigger">
           <Input
@@ -472,8 +472,8 @@ export function VisualSection({
                 onClick={() => update({ visualTheme: t })}
                 className={`rounded-lg border px-3 py-2.5 text-sm capitalize transition-all ${
                   active
-                    ? 'bg-primary-500/15 border-primary-500/60 text-primary-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-[#C8FF2E]/15 border-[#C8FF2E]/60 text-primary-300'
+                    : 'bg-[#1a1d21] border-white/10 text-[#afb6c4] hover:border-[#C8FF2E]/30'
                 }`}
               >
                 {t}
@@ -494,8 +494,8 @@ export function VisualSection({
                 onClick={() => update({ visualEra: e })}
                 className={`rounded-lg border px-3 py-2.5 text-sm capitalize transition-all ${
                   active
-                    ? 'bg-primary-500/15 border-primary-500/60 text-primary-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-[#C8FF2E]/15 border-[#C8FF2E]/60 text-primary-300'
+                    : 'bg-[#1a1d21] border-white/10 text-[#afb6c4] hover:border-[#C8FF2E]/30'
                 }`}
               >
                 {e}
@@ -810,7 +810,7 @@ function ChecklistEditor({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-slate-300">{title}</p>
+        <p className="text-sm font-medium text-[#afb6c4]">{title}</p>
         <AddRowButton
           label={addLabel}
           onClick={() =>
@@ -826,13 +826,13 @@ function ChecklistEditor({
         />
       </div>
       {items.length === 0 && (
-        <p className="text-xs text-slate-500 italic">No items yet — click {addLabel.toLowerCase()} to begin.</p>
+        <p className="text-xs text-[#686f7e] italic">No items yet — click {addLabel.toLowerCase()} to begin.</p>
       )}
       <ul className="space-y-1.5">
         {items.map((it) => (
           <li
             key={it.id}
-            className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2"
+            className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#1a1d21]/60 px-3 py-2"
           >
             <input
               type="checkbox"
@@ -844,12 +844,12 @@ function ChecklistEditor({
               type="text"
               value={it.item}
               onChange={(e) => update(it.id, { item: e.target.value })}
-              className="flex-1 bg-transparent text-sm text-slate-200 focus:outline-none"
+              className="flex-1 bg-transparent text-sm text-white focus:outline-none"
             />
             <button
               type="button"
               onClick={() => onChange(items.filter((i) => i.id !== it.id))}
-              className="text-slate-500 hover:text-red-400"
+              className="text-[#686f7e] hover:text-red-400"
               aria-label="Remove"
             >
               <Trash2 className="w-4 h-4" />
@@ -882,7 +882,7 @@ export function ValidationSection({
       approved={finalLocked}
       approvalLabel="Brand Locked"
     >
-      <p className="text-sm font-semibold text-slate-200">Feedback capture</p>
+      <p className="text-sm font-semibold text-white">Feedback capture</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Field label="Customer feedback">
           <Textarea
@@ -907,7 +907,7 @@ export function ValidationSection({
         </Field>
       </div>
 
-      <p className="text-sm font-semibold text-slate-200 pt-2">Stress test scoring</p>
+      <p className="text-sm font-semibold text-white pt-2">Stress test scoring</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <SliderField
           label="Scalability"
@@ -996,8 +996,8 @@ export function RulesEngineSection({ brand, update }: { brand: Brand; update: Up
         </Field>
       </div>
 
-      <div className="rounded-lg border border-slate-700 bg-slate-900/40 p-4">
-        <p className="text-sm font-medium text-slate-300 mb-2">Live consistency checker</p>
+      <div className="rounded-lg border border-white/10 bg-[#0d1117]/40 p-4">
+        <p className="text-sm font-medium text-[#afb6c4] mb-2">Live consistency checker</p>
         <Textarea
           rows={4}
           value={sample}
@@ -1006,7 +1006,7 @@ export function RulesEngineSection({ brand, update }: { brand: Brand; update: Up
         />
         <div className="mt-3">
           {sample.trim().length === 0 ? (
-            <p className="text-xs text-slate-500">Awaiting input...</p>
+            <p className="text-xs text-[#686f7e]">Awaiting input...</p>
           ) : violations.length === 0 ? (
             <p className="inline-flex items-center gap-1.5 text-sm text-emerald-400">
               <CheckCircle2 className="w-4 h-4" /> Passes brand rules.
@@ -1016,7 +1016,7 @@ export function RulesEngineSection({ brand, update }: { brand: Brand; update: Up
               <p className="inline-flex items-center gap-1.5 text-sm text-red-400 font-medium">
                 <ShieldAlert className="w-4 h-4" /> {violations.length} violation(s) detected
               </p>
-              <ul className="text-xs text-slate-300 space-y-1">
+              <ul className="text-xs text-[#afb6c4] space-y-1">
                 {violations.map((v, i) => (
                   <li key={i} className="flex gap-2">
                     <span className="rounded bg-red-500/15 text-red-300 px-1.5 py-0.5 font-medium uppercase">
@@ -1045,14 +1045,14 @@ export function ApprovalLogSection({ brand }: { brand: Brand }) {
       title="Role-Based Approval Workflow"
       description="Every lock above is recorded here with role, approver, and timestamp."
     >
-      <div className="rounded-lg border border-slate-700 overflow-hidden">
+      <div className="rounded-lg border border-white/10 overflow-hidden">
         {log.length === 0 ? (
-          <div className="p-6 text-center text-sm text-slate-500">
+          <div className="p-6 text-center text-sm text-[#686f7e]">
             No approvals logged yet. Approve any section to start the audit trail.
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wider">
+            <thead className="bg-[#0d1117]/60 text-[#878e9a] text-xs uppercase tracking-wider">
               <tr>
                 <th className="text-left px-3 py-2 font-medium">When</th>
                 <th className="text-left px-3 py-2 font-medium">Role</th>
@@ -1063,14 +1063,14 @@ export function ApprovalLogSection({ brand }: { brand: Brand }) {
             </thead>
             <tbody>
               {log.map((entry) => (
-                <tr key={entry.id} className="border-t border-slate-700/60 text-slate-300">
+                <tr key={entry.id} className="border-t border-white/10/60 text-[#afb6c4]">
                   <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
                     {new Date(entry.timestamp).toLocaleString()}
                   </td>
                   <td className="px-3 py-2">{entry.role}</td>
                   <td className="px-3 py-2">{entry.approver}</td>
                   <td className="px-3 py-2">{entry.section}</td>
-                  <td className="px-3 py-2 text-slate-400">{entry.notes ?? '—'}</td>
+                  <td className="px-3 py-2 text-[#878e9a]">{entry.notes ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -1233,17 +1233,17 @@ export function MasterDocumentSection({ brand, update }: { brand: Brand; update:
         <button
           type="button"
           onClick={exportJson}
-          className="inline-flex items-center gap-2 rounded-md bg-slate-700 px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-slate-600"
+          className="inline-flex items-center gap-2 rounded-md bg-[#21262d] px-3.5 py-2 text-sm font-medium text-white hover:bg-[#2d333b]"
         >
           <FileText className="w-4 h-4" /> Download JSON
         </button>
-        <span className="text-xs text-slate-400 ml-auto">
-          Version: <span className="font-mono text-slate-200">v{brand.masterDocVersion ?? 0}</span>
+        <span className="text-xs text-[#878e9a] ml-auto">
+          Version: <span className="font-mono text-white">v{brand.masterDocVersion ?? 0}</span>
           {brand.masterDocLockedAt && (
             <>
               {' '}
               · Last exported{' '}
-              <span className="font-mono text-slate-200">
+              <span className="font-mono text-white">
                 {new Date(brand.masterDocLockedAt).toLocaleString()}
               </span>
             </>
@@ -1251,8 +1251,8 @@ export function MasterDocumentSection({ brand, update }: { brand: Brand; update:
         </span>
       </div>
 
-      <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-4 max-h-96 overflow-auto">
-        <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono">{previewMd}</pre>
+      <div className="rounded-lg border border-white/10 bg-[#0d1117]/60 p-4 max-h-96 overflow-auto">
+        <pre className="text-xs text-[#afb6c4] whitespace-pre-wrap font-mono">{previewMd}</pre>
       </div>
     </SectionCard>
   );

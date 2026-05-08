@@ -12,7 +12,7 @@ import { ModulePage } from '@/components/shared';
 import { FormField } from '@/components/shared/UniversalForm';
 import { TableColumn } from '@/components/shared/UniversalTable';
 import { newsletterApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useCompanyStore } from '@/stores';
 import type { Newsletter } from '@/types/entities';
 
 // ============================================
@@ -55,13 +55,13 @@ const columns: TableColumn<Newsletter>[] = [
     header: 'Opens',
     align: 'right',
     render: (value, row) => {
-      const pct = row.recipientCount > 0
-        ? Math.round(((value as number) / row.recipientCount) * 100)
+      const pct = (row.recipientCount ?? 0) > 0
+        ? Math.round(((value as number) / (row.recipientCount ?? 1)) * 100)
         : 0;
       return (
-        <span className="flex items-center gap-1 text-slate-400">
+        <span className="flex items-center gap-1 text-[#878e9a]">
           <Eye className="w-3 h-3" />
-          {value} ({pct}%)
+          {String(value ?? 0)} ({pct}%)
         </span>
       );
     },
@@ -71,13 +71,13 @@ const columns: TableColumn<Newsletter>[] = [
     header: 'Clicks',
     align: 'right',
     render: (value, row) => {
-      const pct = row.recipientCount > 0
-        ? Math.round(((value as number) / row.recipientCount) * 100)
+      const pct = (row.recipientCount ?? 0) > 0
+        ? Math.round(((value as number) / (row.recipientCount ?? 1)) * 100)
         : 0;
       return (
-        <span className="flex items-center gap-1 text-slate-400">
+        <span className="flex items-center gap-1 text-[#878e9a]">
           <MousePointer className="w-3 h-3" />
-          {value} ({pct}%)
+          {String(value ?? 0)} ({pct}%)
         </span>
       );
     },
@@ -144,7 +144,8 @@ const formFields: FormField[] = [
 
 export default function NewslettersPage() {
   const { user } = useAuthStore();
-  const companyId = user?.activeCompanyId;
+  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -201,7 +202,7 @@ export default function NewslettersPage() {
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to view newsletters.</p>
+        <p className="text-[#878e9a]">Please select a company to view newsletters.</p>
       </div>
     );
   }
@@ -209,7 +210,7 @@ export default function NewslettersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C8FF2E]"></div>
       </div>
     );
   }
@@ -218,12 +219,12 @@ export default function NewslettersPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20">
+        <div className="w-16 h-16 bg-gradient-to-br from-[#C8FF2E] to-[#b3e628] rounded-2xl flex items-center justify-center shadow-lg shadow-[#C8FF2E]/20">
           <Mail className="w-8 h-8 text-white" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-white">Newsletters</h1>
-          <p className="text-slate-400">
+          <p className="text-[#878e9a]">
             Create and manage email campaigns and newsletters
           </p>
         </div>

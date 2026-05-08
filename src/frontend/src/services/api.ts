@@ -5,7 +5,7 @@
 
 import { useAuthStore } from '@/stores';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3101/api';
 
 /**
  * Transform MongoDB _id to id for frontend compatibility
@@ -457,4 +457,50 @@ export const aiApi = {
 
   analyze: (data: { data: any; analysisType: string }) =>
     apiRequest('/ai/analyze', { method: 'POST', body: data }),
+};
+
+// ============== FILE UPLOAD API ==============
+
+export const uploadApi = {
+  // Upload single file
+  uploadFile: async (file: File): Promise<{ url: string; originalName: string; size: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  },
+
+  // Upload multiple images
+  uploadImages: async (files: File[]): Promise<{ files: { url: string; originalName: string; size: number }[] }> => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('images', file));
+
+    const response = await fetch(`${API_URL}/upload/images`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  },
 };

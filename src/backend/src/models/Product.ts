@@ -18,7 +18,7 @@ export interface IProductCategory extends Document {
 export interface IProduct extends Document {
   name: string;
   companyId: string;
-  categoryId: string;
+  categoryId?: string;
   price?: number;
   status: ProductStatus;
   audienceType: AudienceType;
@@ -28,6 +28,10 @@ export interface IProduct extends Document {
   icpIds: string[];
   personaIds: string[];
   marketingCopy?: string;
+  // Media & Resources
+  images?: string[];           // Array of image URLs
+  catalogPdfUrl?: string;      // PDF catalog URL
+  videoUrls?: string[];        // YouTube video URLs
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,7 +69,6 @@ const ProductSchema = new Schema<IProduct>({
   },
   categoryId: {
     type: String,
-    required: [true, 'Category ID is required'],
     index: true
   },
   price: Number,
@@ -84,7 +87,11 @@ const ProductSchema = new Schema<IProduct>({
   features: [String],
   icpIds: [String],
   personaIds: [String],
-  marketingCopy: String
+  marketingCopy: String,
+  // Media & Resources
+  images: [String],           // Array of image URLs
+  catalogPdfUrl: String,      // PDF catalog URL
+  videoUrls: [String]         // YouTube video URLs
 }, {
   timestamps: true
 });

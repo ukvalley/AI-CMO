@@ -46,28 +46,28 @@ function HealthDashboard({
     { label: 'Blocked', value: blocked, tone: 'red' as const },
   ];
   const tones = {
-    slate: 'bg-slate-800/60 border-slate-700 text-slate-200',
+    slate: 'bg-[#151920] border-white/10 text-white',
     emerald: 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300',
     sky: 'bg-sky-500/10 border-sky-500/40 text-sky-300',
     red: 'bg-red-500/10 border-red-500/40 text-red-300',
   };
 
   return (
-    <section className="rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800/70 to-slate-900/70 p-5">
+    <section className="rounded-xl border border-white/10 bg-gradient-to-br from-[#151920] to-[#0d1117] p-5">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-primary-400" />
+          <Activity className="w-4 h-4 text-[#C8FF2E]" />
           <h2 className="font-semibold text-white">Landing Page System Health</h2>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-slate-400">Overall completion</span>
-          <span className="font-mono font-semibold text-primary-400">{overallPct}%</span>
+          <span className="text-[#878e9a]">Overall completion</span>
+          <span className="font-mono font-semibold text-[#C8FF2E]">{overallPct}%</span>
         </div>
       </div>
 
-      <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden mb-5">
+      <div className="h-2 w-full rounded-full bg-[#1a1d21] overflow-hidden mb-5">
         <div
-          className="h-full bg-gradient-to-r from-primary-500 to-emerald-400 transition-all"
+          className="h-full bg-gradient-to-r from-[#C8FF2E] to-emerald-400 transition-all"
           style={{ width: `${overallPct}%` }}
         />
       </div>
@@ -171,34 +171,34 @@ function MasterDocSection({
   };
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-5">
+    <div className="rounded-xl border border-white/10 bg-[#151920] p-5">
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-primary-400" />
+          <FileText className="w-4 h-4 text-[#C8FF2E]" />
           <h3 className="font-semibold text-white">Master Landing Page Spec</h3>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onExportMd}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
+            className="inline-flex items-center gap-2 rounded-md bg-[#C8FF2E] px-3 py-1.5 text-sm font-medium text-[#0d1117] hover:bg-[#b3e628]"
           >
             <Download className="w-3.5 h-3.5" /> Export .md
           </button>
           <button
             onClick={onExportJson}
-            className="inline-flex items-center gap-2 rounded-md bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            className="inline-flex items-center gap-2 rounded-md bg-[#1a1d21] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#21262d]"
           >
             <FileText className="w-3.5 h-3.5" /> JSON
           </button>
         </div>
       </div>
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-[#878e9a]">
         Captures every landing page section into one shareable spec.{' '}
-        <span className="font-mono text-slate-300">v{project?.masterDocVersion ?? 0}</span>
+        <span className="font-mono text-[#afb6c4]">v{project?.masterDocVersion ?? 0}</span>
         {project?.masterDocLockedAt && (
           <>
             {' · '}last exported{' '}
-            <span className="font-mono text-slate-300">
+            <span className="font-mono text-[#afb6c4]">
               {new Date(project.masterDocLockedAt).toLocaleString()}
             </span>
           </>
@@ -269,10 +269,10 @@ export default function LandingPageSystemPage() {
     return (
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-white">Landing Pages — System</h1>
-        <p className="mt-1 text-slate-400">
+        <p className="mt-1 text-[#878e9a]">
           A 19-module system from project foundation to handover.
         </p>
-        <div className="mt-6 rounded-xl border border-slate-700 bg-slate-800/40 p-6 animate-pulse h-32" />
+        <div className="mt-6 rounded-xl border border-white/10 bg-[#151920] p-6 animate-pulse h-32" />
       </div>
     );
   }
@@ -281,7 +281,7 @@ export default function LandingPageSystemPage() {
     return (
       <div className="max-w-3xl mx-auto p-8 text-center">
         <h1 className="text-2xl font-bold text-white mb-2">Landing Pages — System</h1>
-        <p className="text-slate-400">
+        <p className="text-[#878e9a]">
           Create or pick a company in the sidebar to start a landing page project.
         </p>
       </div>
@@ -310,7 +310,7 @@ export default function LandingPageSystemPage() {
       <div className="mb-5 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">Landing Pages — System</h1>
-          <p className="mt-1 text-slate-400">
+          <p className="mt-1 text-[#878e9a]">
             19 modules covering the full landing page lifecycle — from onboarding to handover.
           </p>
         </div>
@@ -343,14 +343,14 @@ export default function LandingPageSystemPage() {
       />
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-        <aside className="lg:sticky lg:top-4 self-start rounded-xl border border-slate-700 bg-slate-800/40 p-2 max-h-[calc(100vh-3rem)] overflow-y-auto">
+        <aside className="lg:sticky lg:top-4 self-start rounded-xl border border-white/10 bg-[#151920] p-2 max-h-[calc(100vh-3rem)] overflow-y-auto">
           <div className="px-2 pt-1.5 pb-2">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter modules…"
-              className="w-full rounded-md bg-slate-900 border border-slate-700 text-sm text-slate-200 placeholder:text-slate-500 px-2 py-1.5 focus:outline-none focus:border-primary-500"
+              className="w-full rounded-md bg-[#0d1117] border border-white/10 text-sm text-white placeholder:text-[#686f7e] px-2 py-1.5 focus:outline-none focus:border-[#C8FF2E]/50"
             />
           </div>
           {groupedNav.map((g) => {
@@ -358,7 +358,7 @@ export default function LandingPageSystemPage() {
             if (visible.length === 0) return null;
             return (
               <div key={g.group} className="mb-1">
-                <div className="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                <div className="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider text-[#686f7e] font-semibold">
                   {g.group}
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -376,24 +376,24 @@ export default function LandingPageSystemPage() {
                         className={cn(
                           'flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
                           active
-                            ? 'bg-primary-500/15 text-primary-300'
-                            : 'text-slate-300 hover:bg-slate-700/50'
+                            ? 'bg-[#C8FF2E]/10 text-[#C8FF2E]'
+                            : 'text-[#afb6c4] hover:bg-[#21262d]/50'
                         )}
                       >
                         <Icon
                           className={cn(
                             'w-4 h-4 shrink-0',
-                            active ? 'text-primary-400' : 'text-slate-500'
+                            active ? 'text-[#C8FF2E]' : 'text-[#686f7e]'
                           )}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-[10px] text-slate-500">
+                            <span className="font-mono text-[10px] text-[#686f7e]">
                               {s.step}
                             </span>
                             <span className="truncate">{s.title}</span>
                           </div>
-                          <div className="mt-1 h-1 rounded-full bg-slate-700 overflow-hidden">
+                          <div className="mt-1 h-1 rounded-full bg-[#1a1d21] overflow-hidden">
                             <div
                               className={cn(
                                 'h-full transition-all',
@@ -403,7 +403,7 @@ export default function LandingPageSystemPage() {
                                     ? 'bg-emerald-400'
                                     : status === 'blocked'
                                       ? 'bg-red-400'
-                                      : 'bg-primary-500'
+                                      : 'bg-[#C8FF2E]'
                               )}
                               style={{ width: `${Math.round(ratio * 100)}%` }}
                             />
@@ -444,21 +444,21 @@ export default function LandingPageSystemPage() {
             }}
           />
 
-          <div className="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700/60 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-primary-400" />
+          <div className="rounded-xl border border-white/10 bg-[#151920] overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/10 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#C8FF2E]" />
               <h3 className="font-semibold text-white">Approval Log</h3>
-              <span className="ml-auto text-xs text-slate-500">
+              <span className="ml-auto text-xs text-[#686f7e]">
                 {(project.approvalLog ?? []).length} entries
               </span>
             </div>
             {(project.approvalLog ?? []).length === 0 ? (
-              <div className="p-6 text-center text-sm text-slate-500">
+              <div className="p-6 text-center text-sm text-[#686f7e]">
                 No approvals yet — lock any section to start the audit trail.
               </div>
             ) : (
               <table className="w-full text-sm">
-                <thead className="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wider">
+                <thead className="bg-[#0d1117]/60 text-[#878e9a] text-xs uppercase tracking-wider">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">When</th>
                     <th className="text-left px-3 py-2 font-medium">Role</th>
@@ -467,7 +467,7 @@ export default function LandingPageSystemPage() {
                 </thead>
                 <tbody>
                   {(project.approvalLog ?? []).map((entry) => (
-                    <tr key={entry.id} className="border-t border-slate-700/60 text-slate-300">
+                    <tr key={entry.id} className="border-t border-white/10 text-[#afb6c4]">
                       <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
                         {new Date(entry.timestamp).toLocaleString()}
                       </td>
@@ -480,7 +480,7 @@ export default function LandingPageSystemPage() {
             )}
           </div>
 
-          <div className="text-xs text-slate-500 text-center pt-2 pb-8">
+          <div className="text-xs text-[#686f7e] text-center pt-2 pb-8">
             Landing Page System · {LP_SECTIONS.length} modules · {stats.completed} completed
             · {stats.approvedCount} locked
           </div>

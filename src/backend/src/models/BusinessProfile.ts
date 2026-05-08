@@ -43,27 +43,51 @@ export interface IMapLinks {
 }
 
 export interface IBusinessProfile extends Document {
+  // A. Basic Info
   name: string;
   companyId: string;
   startDate?: string;
   stage: BusinessStage;
-  industries: Industry[];
+  teamSize?: number;
+
+  // B. Overview
   description?: string;
+  descriptionLong?: string;
   mission?: string;
   vision?: string;
   coreValues?: string;
   usp?: string;
+
+  // C. Market
+  primaryIndustry?: string;
+  secondaryIndustries?: string;
+  targetGeography?: string;
+  businessModel?: string;
+
+  // D. Offer Layer
+  primaryOffering?: string;
+  secondaryOfferings?: string;
+  pricingModel?: string;
+  averageTicketSize?: string;
+
+  // E. Financial
   funding?: string;
   revenue?: string;
-  teamSize?: number;
   isRevenuePublic: boolean;
-  isFounderPublic: boolean;
+
+  // F. Contact
+  email?: string;
+  phone?: string;
+  website?: string;
+
+  // G. Location
   address?: string;
   city?: string;
   country?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
+
+  // Legacy fields
+  industries: Industry[];
+  isFounderPublic: boolean;
   socialProfiles: ISocialProfiles;
   mapLinks: IMapLinks;
   createdAt: Date;
@@ -96,22 +120,45 @@ const BusinessProfileSchema = new Schema<IBusinessProfile>({
            'hospitality', 'media', 'non-profit', 'legal', 'marketing',
            'design', 'food-beverage', 'sports', 'other']
   }],
+  // B. Overview
   description: String,
+  descriptionLong: String,
   mission: String,
   vision: String,
   coreValues: String,
   usp: String,
+
+  // C. Market
+  primaryIndustry: String,
+  secondaryIndustries: String,
+  targetGeography: String,
+  businessModel: {
+    type: String,
+    enum: ['b2b', 'b2c', 'b2b2c', 'saas', 'marketplace', 'd2c', 'freemium', 'subscription', 'hybrid']
+  },
+
+  // D. Offer Layer
+  primaryOffering: String,
+  secondaryOfferings: String,
+  pricingModel: String,
+  averageTicketSize: String,
+
+  // E. Financial
   funding: String,
   revenue: String,
-  teamSize: Number,
   isRevenuePublic: {
     type: Boolean,
     default: false
   },
+
+  // Legacy fields
+  teamSize: Number,
   isFounderPublic: {
     type: Boolean,
     default: true
   },
+
+  // G. Location
   address: String,
   city: String,
   country: String,

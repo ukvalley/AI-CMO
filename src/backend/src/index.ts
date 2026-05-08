@@ -22,7 +22,7 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3101;
 
 // WebSocket server for real-time updates
 const wss = new WebSocketServer({ server, path: '/ws' });
@@ -30,7 +30,13 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3100',
+    'http://localhost:3100',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:3001',
+  ],
   credentials: true
 }));
 app.use(compression());
@@ -40,6 +46,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting
 app.use(rateLimiter);
+
+// Static files for uploads
+app.use('/uploads', express.static('uploads'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -74,9 +83,11 @@ const loadRoutes = () => {
   const chatRoutes = require('./routes/chat').default;
   const taskRoutes = require('./routes/tasks').default;
   const aiRoutes = require('./routes/ai').default;
+  const uploadRoutes = require('./routes/upload').default;
 
   // API Routes
   app.use('/api/auth', authRoutes);
+  app.use('/api/upload', uploadRoutes);
   app.use('/api/companies', companyRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/business-profiles', businessProfileRoutes);

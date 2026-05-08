@@ -1,0 +1,24 @@
+# Development Dockerfile for Backend
+# Hot reload with tsx watch
+
+FROM node:20-alpine
+
+# Install system dependencies
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm ci
+
+# Set environment
+ENV NODE_ENV=development
+ENV PORT=3101
+
+EXPOSE 3101
+
+# Run with tsx watch for hot reload
+CMD ["npm", "run", "dev"]
