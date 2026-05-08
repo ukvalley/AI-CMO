@@ -1,12 +1,12 @@
 'use client';
 
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import BrandIdentityPage from '@/modules/brand/brand-identity/page';
+import BrandPage from '@/modules/brand/brand/page';
 
 export default function BrandRoute() {
   return (
     <DashboardLayout>
-      <BrandIdentityPage />
+      <BrandPage />
     </DashboardLayout>
   );
 }
