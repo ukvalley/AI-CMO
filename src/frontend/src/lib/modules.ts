@@ -173,6 +173,18 @@ export const MODULES: ModuleDefinition[] = [
     hasBulkGeneration: false,
   },
   {
+    id: 'visual-identity',
+    name: 'Visual Identity',
+    description: 'Complete design system with colors, typography, spacing, and live previews',
+    group: 'brand',
+    icon: 'Paintbrush',
+    path: '/visual-identity',
+    status: 'active',
+    permissions: ['admin', 'editor'],
+    hasAI: false,
+    hasBulkGeneration: false,
+  },
+  {
     id: 'brand-assets',
     name: 'Brand Assets',
     description: 'Logos, favicons, patterns, backgrounds',
