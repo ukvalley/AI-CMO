@@ -51,14 +51,14 @@ export const MOOD_OPTIONS = [
 ];
 
 export const COLOR_PREFERENCES = [
-  { id: 'warm', name: 'Warm Tones', description: 'Reds, Oranges, Yellows' },
-  { id: 'cool', name: 'Cool Tones', description: 'Blues, Purples, Greens' },
-  { id: 'neutral', name: 'Neutral', description: 'Grays, Beiges, Whites' },
-  { id: 'vibrant', name: 'Vibrant/Bold', description: 'High saturation, Neon' },
-  { id: 'pastel', name: 'Pastel/Soft', description: 'Light, Muted tones' },
-  { id: 'monochrome', name: 'Monochrome', description: 'Single color family' },
-  { id: 'earthy', name: 'Earth Tones', description: 'Natural, Organic colors' },
-  { id: 'any', name: 'No Preference', description: 'Open to suggestions' },
+  { id: 'warm', name: 'Warm Tones', description: 'Reds, Oranges, Yellows', colors: ['#FF6B35', '#F7931E', '#FFD23F'] },
+  { id: 'cool', name: 'Cool Tones', description: 'Blues, Purples, Greens', colors: ['#3A86FF', '#8338EC', '#06FFA5'] },
+  { id: 'neutral', name: 'Neutral', description: 'Grays, Beiges, Whites', colors: ['#2D3436', '#636E72', '#B2BEC3'] },
+  { id: 'vibrant', name: 'Vibrant/Bold', description: 'High saturation, Neon', colors: ['#FF006E', '#FB5607', '#FFBE0B'] },
+  { id: 'pastel', name: 'Pastel/Soft', description: 'Light, Muted tones', colors: ['#FFB5BA', '#C7CEEA', '#B5EAD7'] },
+  { id: 'monochrome', name: 'Monochrome', description: 'Single color family', colors: ['#000000', '#484848', '#888888'] },
+  { id: 'earthy', name: 'Earth Tones', description: 'Natural, Organic colors', colors: ['#8B4513', '#556B2F', '#D2691E'] },
+  { id: 'any', name: 'No Preference', description: 'Open to suggestions', colors: ['#C8FF2E', '#7C6BF0', '#22D3EE'] },
 ];
 
 export const PRESET_PALETTES = [
