@@ -57,13 +57,13 @@ export const Logo: React.FC<LogoProps> = ({
           sizeStyles[size].container
         )}
       >
-        <span className="text-white font-bold text-sm">AI</span>
+        <span className="text-white font-bold text-sm">Me</span>
       </div>
 
       {/* Logo Text */}
       {withText && (
         <span className={cn('font-bold text-neutral-900', sizeStyles[size].text)}>
-          CMO
+          ngo
         </span>
       )}
     </div>

@@ -89,10 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#C8FF2E] rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-[#0d1117] font-bold text-sm">AI</span>
+              <span className="text-[#0d1117] font-bold text-sm">Me</span>
             </div>
             {!collapsed && (
-              <span className="font-semibold text-lg text-white">CMO</span>
+              <span className="font-semibold text-lg text-white">ngo</span>
             )}
           </Link>
 
