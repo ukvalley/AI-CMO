@@ -1,0 +1,100 @@
+# VPS Development Mode - Hot Reload Enabled
+# Usage: docker-compose -f docker-compose.dev.yml up -d
+
+version: '3.8'
+
+services:
+  # MongoDB - Exposed for development access
+  mongodb:
+    image: mongo:7.0
+    container_name: ai-cmo-mongo-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER:-ai_cmo}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD:-dev_password}
+      MONGO_INITDB_DATABASE: ${DB_NAME:-ai_cmo_dev}
+    volumes:
+      - mongo-data-dev:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - ai-cmo-dev
+
+  # Redis - Exposed for development access
+  redis:
+    image: redis:7-alpine
+    container_name: ai-cmo-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-dev:/data
+    networks:
+      - ai-cmo-dev
+
+  # Backend - Hot reload with volume mounts
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: ../../docker/Dockerfile.backend.dev
+    container_name: ai-cmo-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3101:3101"
+    environment:
+      NODE_ENV: development
+      PORT: 3101
+      MONGODB_URI: mongodb://${DB_USER:-ai_cmo}:${DB_PASSWORD:-dev_password}@mongodb:27017/${DB_NAME:-ai_cmo_dev}?authSource=admin
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      FRONTEND_URL: http://localhost:3100
+    volumes:
+      # Mount source code for hot reload
+      - ./src/backend/src:/app/src:ro
+      - ./src/backend/package.json:/app/package.json:ro
+      - ./uploads:/app/uploads
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - ai-cmo-dev
+
+  # Frontend - Hot reload with volume mounts
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: ../../docker/Dockerfile.frontend.dev
+    container_name: ai-cmo-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3101/api
+      PORT: 3100
+    volumes:
+      # Mount source code for hot reload
+      - ./src/frontend/src:/app/src:ro
+      - ./src/frontend/public:/app/public:ro
+      - ./src/frontend/package.json:/app/package.json:ro
+      - ./src/frontend/next.config.js:/app/next.config.js:ro
+      - ./src/frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./src/frontend/tailwind.config.ts:/app/tailwind.config.ts:ro
+      # Cache directories
+      - frontend-node-modules:/app/node_modules
+      - frontend-next-cache:/app/.next
+    depends_on:
+      - backend
+    networks:
+      - ai-cmo-dev
+
+volumes:
+  mongo-data-dev:
+  redis-data-dev:
+  frontend-node-modules:
+  frontend-next-cache:
+
+networks:
+  ai-cmo-dev:
+    driver: bridge

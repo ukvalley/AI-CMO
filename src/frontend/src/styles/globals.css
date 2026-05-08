@@ -1,0 +1,431 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   GLOBAL STYLES - MENGO Theme
+   Dark theme with neon lime/green accents
+   ============================================ */
+
+@layer base {
+  /* Root font settings */
+  :root {
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
+
+    /* CSS variables for dark theming - MENGO theme */
+    --background: 13 17 23;           /* #0d1117 - dark bg */
+    --foreground: 255 255 255;        /* white */
+    --card: 21 25 32;                  /* #151920 - card bg */
+    --card-foreground: 255 255 255;   /* white */
+    --popover: 21 25 32;              /* #151920 */
+    --popover-foreground: 255 255 255;
+    --primary: 200 255 46;            /* #C8FF2E - neon lime */
+    --primary-foreground: 13 17 23;   /* dark text on lime */
+    --secondary: 26 30 33;            /* #1a1d21 */
+    --secondary-foreground: 255 255 255;
+    --muted: 33 38 45;                /* #21262d */
+    --muted-foreground: 135 142 154; /* #878e9a - muted text */
+    --accent: 200 255 46;             /* #C8FF2E */
+    --accent-foreground: 13 17 23;
+    --destructive: 239 68 68;         /* red-500 */
+    --destructive-foreground: 255 255 255;
+    --border: 255 255 255;             /* white with opacity */
+    --input: 33 38 45;                /* #21262d */
+    --ring: 200 255 46;               /* #C8FF2E */
+    --radius: 0.75rem;
+  }
+
+  /* Base styles */
+  * {
+    @apply border-white/10;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-[#0d1117] text-white;
+    @apply font-sans text-base leading-normal;
+    font-feature-settings: inherit;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Focus visible styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-[#C8FF2E] ring-offset-2 ring-offset-[#0d1117];
+  }
+
+  /* Selection styles */
+  ::selection {
+    @apply bg-[#C8FF2E]/30 text-white;
+  }
+}
+
+@layer components {
+  /* ============================================
+     TYPOGRAPHY CLASSES
+     ============================================ */
+
+  .heading-1 {
+    @apply text-4xl font-bold tracking-tight text-white;
+    @apply lg:text-5xl;
+    line-height: 1.1;
+  }
+
+  .heading-2 {
+    @apply text-3xl font-semibold tracking-tight text-white;
+    @apply lg:text-4xl;
+    line-height: 1.15;
+  }
+
+  .heading-3 {
+    @apply text-2xl font-semibold tracking-tight text-white;
+    @apply lg:text-3xl;
+    line-height: 1.2;
+  }
+
+  .heading-4 {
+    @apply text-xl font-semibold tracking-tight text-white;
+    @apply lg:text-2xl;
+    line-height: 1.25;
+  }
+
+  .heading-5 {
+    @apply text-lg font-semibold text-white;
+    line-height: 1.3;
+  }
+
+  .heading-6 {
+    @apply text-base font-semibold text-white;
+    line-height: 1.35;
+  }
+
+  .body-large {
+    @apply text-lg text-[#878e9a] leading-relaxed;
+  }
+
+  .body-default {
+    @apply text-base text-[#afb6c4] leading-normal;
+  }
+
+  .body-small {
+    @apply text-sm text-[#878e9a] leading-normal;
+  }
+
+  .caption {
+    @apply text-xs text-[#686f7e] uppercase tracking-wider font-medium;
+  }
+
+  /* ============================================
+     CARD COMPONENT - MENGO Style
+     ============================================ */
+
+  .card {
+    @apply bg-[#151920] rounded-xl border border-white/10;
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .card-hover:hover {
+    @apply border-[#C8FF2E]/30;
+    box-shadow: 0 0 20px rgba(200, 255, 46, 0.1);
+  }
+
+  /* ============================================
+     STATS CARD - Big bold numbers
+     ============================================ */
+
+  .stats-card {
+    @apply bg-[#151920] rounded-2xl border border-white/10 p-6;
+    @apply flex flex-col gap-2;
+  }
+
+  .stats-value {
+    @apply text-4xl font-bold text-white tracking-tight;
+  }
+
+  .stats-label {
+    @apply text-sm text-[#878e9a] uppercase tracking-wider;
+  }
+
+  .stats-change {
+    @apply text-sm font-medium text-[#C8FF2E] flex items-center gap-1;
+  }
+
+  .stats-change-down {
+    @apply text-sm font-medium text-red-400 flex items-center gap-1;
+  }
+
+  /* ============================================
+     BUTTON VARIANTS - MENGO Style
+     ============================================ */
+
+  .btn {
+    @apply inline-flex items-center justify-center;
+    @apply font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0d1117];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply rounded-lg;
+  }
+
+  .btn-primary {
+    @apply btn;
+    @apply bg-[#C8FF2E] text-[#0d1117];
+    @apply hover:bg-[#d4ff5c];
+    @apply focus:ring-[#C8FF2E];
+    @apply active:bg-[#b3e62e];
+    @apply font-semibold;
+    box-shadow: 0 0 20px rgba(200, 255, 46, 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 30px rgba(200, 255, 46, 0.5);
+  }
+
+  .btn-secondary {
+    @apply btn;
+    @apply bg-[#1a1d21] text-white border border-white/10;
+    @apply hover:bg-[#21262d] hover:border-[#C8FF2E]/30;
+    @apply focus:ring-[#C8FF2E];
+    @apply active:bg-[#151920];
+  }
+
+  .btn-ghost {
+    @apply btn;
+    @apply text-[#878e9a] bg-transparent;
+    @apply hover:bg-[#1a1d21] hover:text-white;
+    @apply focus:ring-[#C8FF2E];
+    @apply active:bg-[#21262d];
+  }
+
+  .btn-danger {
+    @apply btn;
+    @apply bg-red-500 text-white;
+    @apply hover:bg-red-600;
+    @apply focus:ring-red-500;
+    @apply active:bg-red-700;
+  }
+
+  /* ============================================
+     FORM INPUTS - MENGO Style
+     ============================================ */
+
+  .input {
+    @apply w-full px-4 py-2.5;
+    @apply bg-[#1a1d21] border border-white/10 rounded-lg;
+    @apply text-white placeholder-[#686f7e];
+    @apply transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50;
+    @apply disabled:bg-[#0d1117] disabled:text-[#525662];
+  }
+
+  .input-error {
+    @apply border-red-500/50 focus:ring-red-500/20 focus:border-red-500;
+  }
+
+  /* ============================================
+     SIDEBAR - MENGO Style
+     ============================================ */
+
+  .sidebar {
+    @apply bg-[#0d1117] border-r border-white/10;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3;
+    @apply text-[#878e9a] rounded-lg;
+    @apply transition-all duration-200;
+    @apply hover:bg-[#1a1d21] hover:text-white;
+  }
+
+  .sidebar-item.active {
+    @apply bg-[#C8FF2E]/10 text-[#C8FF2E];
+    @apply border-l-2 border-[#C8FF2E];
+  }
+
+  /* ============================================
+     LAYOUT UTILITIES
+     ============================================ */
+
+  .container-dashboard {
+    @apply max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .page-wrapper {
+    @apply min-h-screen bg-[#0d1117];
+  }
+
+  .content-area {
+    @apply flex-1 overflow-auto;
+  }
+
+  /* ============================================
+     SKELETON LOADING - MENGO Style
+     ============================================ */
+
+  .skeleton {
+    @apply bg-[#1a1d21] rounded;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(200, 255, 46, 0.05),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
+  }
+
+  /* ============================================
+     SCROLLBAR STYLES - MENGO
+     ============================================ */
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(135, 142, 154, 0.3) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(135, 142, 154, 0.3);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(200, 255, 46, 0.5);
+  }
+
+  /* ============================================
+     BADGES & TAGS
+     ============================================ */
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-[#C8FF2E]/10 text-[#C8FF2E] border border-[#C8FF2E]/20;
+  }
+
+  .badge-secondary {
+    @apply badge bg-[#1a1d21] text-[#878e9a] border border-white/10;
+  }
+
+  .badge-success {
+    @apply badge bg-green-500/10 text-green-400 border border-green-500/20;
+  }
+
+  /* ============================================
+     PROGRESS BARS & CIRCLES
+     ============================================ */
+
+  .progress-ring circle {
+    transition: stroke-dashoffset 0.35s;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
+  .progress-ring .progress-circle {
+    stroke: #C8FF2E;
+  }
+}
+
+@layer utilities {
+  /* ============================================
+     UTILITY CLASSES
+     ============================================ */
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .gpu-accelerate {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  /* Neon glow utility */
+  .glow-lime {
+    box-shadow: 0 0 20px rgba(200, 255, 46, 0.3);
+  }
+
+  .glow-lime-lg {
+    box-shadow: 0 0 40px rgba(200, 255, 46, 0.5);
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  /* Gradient text */
+  .text-gradient-lime {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #C8FF2E, #a3e635);
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse-lime {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(200, 255, 46, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(200, 255, 46, 0.6);
+  }
+}
+
+.animate-pulse-lime {
+  animation: pulse-lime 2s ease-in-out infinite;
+}
+
+/* ============================================
+   RESPONSIVE TYPOGRAPHY
+   ============================================ */
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1536px) {
+  html {
+    font-size: 18px;
+  }
+}
