@@ -1,7 +1,7 @@
 /**
  * Entity Type Definitions
  *
- * Type definitions for all business entities in the AI CMO platform.
+ * Type definitions for all business entities in the Mengo platform.
  */
 
 // ============================================

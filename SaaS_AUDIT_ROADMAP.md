@@ -1,8 +1,8 @@
-# AI CMO - SaaS Audit & Strategic Roadmap
+# Mengo - SaaS Audit & Strategic Roadmap
 
 **Audit Date:** 2026-05-04  
 **Auditor:** Claude Code (Technical Architecture Review)  
-**Project:** AI CMO - AI-Powered Marketing Platform
+**Project:** Mengo - AI-Powered Marketing Platform
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### Current State: **Not SaaS-Ready (Frontend-Heavy)**
 
-After thorough analysis, **AI CMO is currently 70% frontend and 30% backend**. While it has:
+After thorough analysis, **Mengo is currently 70% frontend and 30% backend**. While it has:
 - ✅ Multi-tenancy architecture (Company-based isolation)
 - ✅ JWT authentication with role-based access
 - ✅ MongoDB with proper data isolation

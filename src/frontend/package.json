@@ -2,7 +2,7 @@
   "name": "@ai-cmo/frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "AI CMO Frontend - SaaS Dashboard Application",
+  "description": "Mengo Frontend - SaaS Dashboard Application",
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "next build",

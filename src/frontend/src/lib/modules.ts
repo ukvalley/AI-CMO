@@ -1,7 +1,7 @@
 /**
  * Module Registry
  *
- * Central registry for all 60+ modules in the AI CMO platform.
+ * Central registry for all 60+ modules in the Mengo platform.
  * Each module is organized by group with metadata for navigation and permissions.
  */
 

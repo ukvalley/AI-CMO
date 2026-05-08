@@ -1,4 +1,4 @@
-# AI CMO - Project Status Report
+# Mengo - Project Status Report
 **Date:** 2026-05-04
 **Branch:** dev
 **Last Updated:** 2026-05-04
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-AI CMO is a modular AI-powered Chief Marketing Officer platform with 60+ modules organized into 8 groups. The project is currently in **active development** with core functionality implemented and several advanced modules from the merged feature branch.
+Mengo is a modular AI-powered Chief Marketing Officer platform with 60+ modules organized into 8 groups. The project is currently in **active development** with core functionality implemented and several advanced modules from the merged feature branch.
 
 ---
 

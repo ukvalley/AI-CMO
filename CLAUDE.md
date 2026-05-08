@@ -1,4 +1,4 @@
-# AI CMO - Project Guide for Developers & AI
+# Mengo - Project Guide for Developers & AI
 
 > **READ THIS FIRST**: This file contains everything developers and AI assistants need to know about the project. AI assistants should study this file before making any changes.
 
@@ -6,7 +6,7 @@
 
 ## 1. PROJECT OVERVIEW
 
-**AI CMO** is a modular AI-powered Chief Marketing Officer platform with 60+ modules organized into 8 groups.
+**Mengo** is a modular AI-powered Chief Marketing Officer platform with 60+ modules organized into 8 groups.
 
 - **Frontend**: Next.js 14 + TypeScript + Tailwind CSS + Zustand
 - **Backend**: Node.js + Express + MongoDB + Redis
@@ -21,7 +21,7 @@
 ## 2. FOLDER STRUCTURE
 
 ```
-/Users/umeshkhivasara/AI CMO/
+/Users/umeshkhivasara/Mengo/
 ├── src/
 │   ├── frontend/                   # Next.js frontend application
 │   │   ├── src/
@@ -443,7 +443,7 @@ npm run dev
 cp .env.example .env
 
 # Required:
-MONGODB_URI=mongodb://ai_cmo:password@localhost:27017/ai_cmo?authSource=admin
+MONGODB_URI=mongodb://mengo:password@localhost:27017/mengo?authSource=admin
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=your-super-secret-key
 CLAUDE_API_KEY=sk-ant-api03-...

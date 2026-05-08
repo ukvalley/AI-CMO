@@ -1,7 +1,7 @@
 /**
  * Logo Component
  *
- * AI CMO logo with different size variants.
+ * Mengo logo with different size variants.
  */
 
 import React from 'react';

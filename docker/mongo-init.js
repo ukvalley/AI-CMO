@@ -1,7 +1,7 @@
 // MongoDB Initialization Script
 // This script runs when MongoDB container starts for the first time
 
-db = db.getSiblingDB('ai_cmo');
+db = db.getSiblingDB('mengo');
 
 // Create collections with validation
 // Companies Collection
@@ -337,4 +337,4 @@ db.users.insertOne({
   updatedAt: new Date()
 });
 
-print('MongoDB initialized successfully with AI CMO schema');
+print('MongoDB initialized successfully with Mengo schema');

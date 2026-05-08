@@ -5,7 +5,7 @@
 set -e
 
 echo "=========================================="
-echo "AI CMO - Production Deployment"
+echo "Mengo - Production Deployment"
 echo "=========================================="
 
 # Colors for output

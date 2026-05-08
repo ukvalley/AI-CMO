@@ -1,4 +1,4 @@
-# AI CMO - Browser Testing Guide
+# Mengo - Browser Testing Guide
 
 ## Pre-requisites
 - Frontend running: http://localhost:3000

@@ -1,4 +1,4 @@
-# AI CMO - Complete Project Documentation
+# Mengo - Complete Project Documentation
 
 > **AI-Powered Chief Marketing Officer Platform**
 > A comprehensive modular marketing management system with 60+ modules.
@@ -22,7 +22,7 @@
 
 ## 1. Project Overview
 
-AI CMO is a modular AI-powered Chief Marketing Officer platform designed to help businesses manage their entire marketing operations through 60+ interconnected modules organized into 8 functional groups.
+Mengo is a modular AI-powered Chief Marketing Officer platform designed to help businesses manage their entire marketing operations through 60+ interconnected modules organized into 8 functional groups.
 
 ### Key Features
 
@@ -86,7 +86,7 @@ AI CMO is a modular AI-powered Chief Marketing Officer platform designed to help
 ## 3. Project Structure
 
 ```
-AI CMO/
+Mengo/
 ├── src/
 │   ├── frontend/                   # Next.js 14 Application
 │   │   ├── src/
@@ -293,8 +293,8 @@ export default function ProductsPage() {
 
 1. **Clone Repository**:
 ```bash
-git clone https://github.com/ukvalley/AI-CMO.git
-cd AI-CMO
+git clone https://github.com/ukvalley/Mengo.git
+cd Mengo
 ```
 
 2. **Install Dependencies**:
@@ -345,10 +345,10 @@ cd src/frontend && npm run dev
 **Development** (`.env.dev`):
 ```env
 # Database
-DB_USER=ai_cmo_dev
+DB_USER=mengo_dev
 DB_PASSWORD=dev_secure_password
-DB_NAME=ai_cmo_dev
-MONGODB_URI=mongodb://ai_cmo_dev:dev_secure_password@mongodb:27017/ai_cmo_dev?authSource=admin
+DB_NAME=mengo_dev
+MONGODB_URI=mongodb://mengo_dev:dev_secure_password@mongodb:27017/mengo_dev?authSource=admin
 REDIS_URL=redis://redis:6379
 
 # Auth
@@ -409,8 +409,8 @@ sudo apt install docker-compose-plugin
 ```bash
 sudo mkdir -p /opt
 cd /opt
-sudo git clone https://github.com/ukvalley/AI-CMO.git
-cd AI-CMO
+sudo git clone https://github.com/ukvalley/Mengo.git
+cd Mengo
 ```
 
 3. **Setup Environment**:
@@ -718,4 +718,4 @@ git push origin feature/module-name
 
 **Last Updated**: 2026-05-08
 **Version**: 1.0
-**Maintainers**: AI CMO Development Team
+**Maintainers**: Mengo Development Team

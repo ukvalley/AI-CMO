@@ -1,7 +1,7 @@
 {
   "name": "ai-cmo-backend",
   "version": "1.0.0",
-  "description": "AI CMO Backend API with MongoDB",
+  "description": "Mengo Backend API with MongoDB",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

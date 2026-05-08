@@ -1,5 +1,5 @@
 /**
- * AI CMO Backend API
+ * Mengo Backend API
  * Express server with MongoDB and Redis
  */
 

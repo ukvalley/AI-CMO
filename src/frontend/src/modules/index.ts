@@ -1,7 +1,7 @@
 /**
  * Modules Index
  *
- * Central export for all 60+ modules in the AI CMO platform.
+ * Central export for all 60+ modules in the Mengo platform.
  */
 
 // Foundation

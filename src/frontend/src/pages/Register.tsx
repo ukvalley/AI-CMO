@@ -110,7 +110,7 @@ export default function Register() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Account Created!</h1>
             <p className="text-[#878e9a]">
-              Welcome to AI CMO. Redirecting you to the dashboard...
+              Welcome to Mengo. Redirecting you to the dashboard...
             </p>
           </Card>
         </div>
@@ -131,7 +131,7 @@ export default function Register() {
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-white">Create Account</h1>
             <p className="text-[#878e9a] mt-2">
-              Get started with AI CMO for free
+              Get started with Mengo for free
             </p>
           </div>
 
@@ -262,7 +262,7 @@ export default function Register() {
 
         {/* Footer */}
         <p className="text-center text-sm text-[#686f7e] mt-8">
-          &copy; {new Date().getFullYear()} AI CMO. All rights reserved.
+          &copy; {new Date().getFullYear()} Mengo. All rights reserved.
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-# AI CMO - UI Testing Guide
+# Mengo - UI Testing Guide
 
 ## Test 1: Business Profile Module
 

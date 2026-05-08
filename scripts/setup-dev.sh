@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# AI CMO Development Setup Script
+# Mengo Development Setup Script
 # Usage: ./scripts/setup-dev.sh
 
 set -e
 
-echo "🚀 Setting up AI CMO development environment..."
+echo "🚀 Setting up Mengo development environment..."
 
 # Colors for output
 RED='\033[0;31m'

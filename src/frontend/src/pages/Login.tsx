@@ -224,7 +224,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="text-center text-sm text-[#686f7e] mt-8">
-          &copy; {new Date().getFullYear()} AI CMO. All rights reserved.
+          &copy; {new Date().getFullYear()} Mengo. All rights reserved.
         </p>
       </div>
     </div>

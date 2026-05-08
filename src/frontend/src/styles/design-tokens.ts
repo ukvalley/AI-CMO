@@ -1,5 +1,5 @@
 /**
- * AI CMO Design System Tokens - MENGO Theme
+ * Mengo Design System Tokens - MENGO Theme
  *
  * Dark theme with neon lime/green accents
  * Based on the MENGO dashboard design

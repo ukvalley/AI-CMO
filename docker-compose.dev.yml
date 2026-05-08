@@ -12,9 +12,9 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${DB_USER:-ai_cmo}
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER:-mengo}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD:-dev_password}
-      MONGO_INITDB_DATABASE: ${DB_NAME:-ai_cmo_dev}
+      MONGO_INITDB_DATABASE: ${DB_NAME:-mengo_dev}
     volumes:
       - mongo-data-dev:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
@@ -45,7 +45,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3101
-      MONGODB_URI: mongodb://${DB_USER:-ai_cmo}:${DB_PASSWORD:-dev_password}@mongodb:27017/${DB_NAME:-ai_cmo_dev}?authSource=admin
+      MONGODB_URI: mongodb://${DB_USER:-mengo}:${DB_PASSWORD:-dev_password}@mongodb:27017/${DB_NAME:-mengo_dev}?authSource=admin
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       FRONTEND_URL: http://localhost:3100

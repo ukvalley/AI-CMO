@@ -1,9 +1,9 @@
-# AI CMO - Project Structure
+# Mengo - Project Structure
 
 ## Repository Structure
 
 ```
-AI CMO/
+Mengo/
 ├── .github/                    # GitHub-specific configurations
 │   ├── workflows/               # CI/CD workflows
 │   ├── pull_request_template.md

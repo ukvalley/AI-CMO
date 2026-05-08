@@ -1,4 +1,4 @@
-# AI CMO Frontend
+# Mengo Frontend
 
 A production-ready SaaS dashboard frontend built with Next.js, React, TypeScript, and Tailwind CSS.
 

@@ -1,4 +1,4 @@
-# Contributing to AI CMO
+# Contributing to Mengo
 
 ## Getting Started
 

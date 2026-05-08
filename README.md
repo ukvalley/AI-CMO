@@ -1,4 +1,4 @@
-# AI CMO
+# Mengo
 
 AI-powered Chief Marketing Officer platform.
 

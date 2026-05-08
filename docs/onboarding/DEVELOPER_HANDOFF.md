@@ -1,7 +1,7 @@
-# AI CMO - Developer Onboarding & Handoff Document
+# Mengo - Developer Onboarding & Handoff Document
 
-**Project:** AI CMO - AI-powered Chief Marketing Officer Platform  
-**Repository:** https://github.com/ukvalley/AI-CMO  
+**Project:** Mengo - AI-powered Chief Marketing Officer Platform  
+**Repository:** https://github.com/ukvalley/Mengo  
 **Last Updated:** 2026-04-23  
 **Status:** Ready for Development
 
@@ -9,7 +9,7 @@
 
 ## 1. Project Overview
 
-AI CMO is a multi-module platform with the following components:
+Mengo is a multi-module platform with the following components:
 - **Frontend**: React/Next.js web application
 - **Backend**: Node.js/Express API services
 - **ML/AI**: Python-based machine learning models
@@ -20,7 +20,7 @@ AI CMO is a multi-module platform with the following components:
 ## 2. Repository Access
 
 ### GitHub Repository
-- **URL:** https://github.com/ukvalley/AI-CMO
+- **URL:** https://github.com/ukvalley/Mengo
 - **Visibility:** Public
 - **Main Branch:** `main` (production)
 - **Development Branch:** `dev` (integration/testing)
@@ -43,8 +43,8 @@ AI CMO is a multi-module platform with the following components:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ukvalley/AI-CMO.git
-cd AI-CMO
+git clone https://github.com/ukvalley/Mengo.git
+cd Mengo
 
 # 2. Run the automated setup
 ./scripts/setup-dev.sh
@@ -64,7 +64,7 @@ npm run dev
 ## 4. Project Structure
 
 ```
-AI CMO/
+Mengo/
 ├── src/
 │   ├── backend/          # Node.js API (Owner: @backend-lead)
 │   ├── frontend/         # React/Next.js (Owner: @frontend-lead)
@@ -205,7 +205,7 @@ chore: update dependencies
 
 ### Creating a PR
 
-1. Go to https://github.com/ukvalley/AI-CMO/pulls
+1. Go to https://github.com/ukvalley/Mengo/pulls
 2. Click "New Pull Request"
 3. **Base:** `dev` ← **Compare:** `feature/your-branch`
 4. Fill in the PR template:
@@ -294,7 +294,7 @@ npm run dev
 ```
 
 ### Option 2: GitHub Codespaces
-1. Go to https://github.com/ukvalley/AI-CMO
+1. Go to https://github.com/ukvalley/Mengo
 2. Click "Code" → "Codespaces" tab
 3. Click "Create codespace on dev"
 4. VS Code opens in browser with pre-configured environment

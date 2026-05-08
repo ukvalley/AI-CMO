@@ -4,7 +4,7 @@
 # Tests all modules with database verification
 
 echo "=========================================="
-echo "AI CMO - Module Testing Suite"
+echo "Mengo - Module Testing Suite"
 echo "=========================================="
 echo ""
 

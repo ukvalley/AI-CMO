@@ -1,10 +1,10 @@
-# AI CMO Architecture Overview
+# Mengo Architecture Overview
 
 ## System Components
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        AI CMO Platform                         │
+│                        Mengo Platform                         │
 ├──────────────┬──────────────┬──────────────┬────────────────┤
 │   Frontend   │   Backend    │      ML      │   Infrastructure │
 ├──────────────┼──────────────┼──────────────┼────────────────┤

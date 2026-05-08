@@ -6,7 +6,7 @@
 import mongoose from 'mongoose';
 import mockDB from './mockDatabase';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai_cmo';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mengo';
 
 let useMock = false;
 

@@ -52,7 +52,7 @@ export const useChatStore = create<ChatStore>()(
             {
               id: `msg-${Date.now()}`,
               role: 'assistant',
-              content: 'Hello! I\'m your AI CMO assistant. How can I help you with your marketing today?',
+              content: 'Hello! I\'m your Mengo assistant. How can I help you with your marketing today?',
               timestamp: new Date().toISOString(),
             },
           ],

@@ -1,7 +1,7 @@
 # Frontend Development Standards
 
 **Based on:** Common Defect Prevention Guide  
-**Applies to:** AI CMO Frontend (Next.js + React + TypeScript)
+**Applies to:** Mengo Frontend (Next.js + React + TypeScript)
 
 ---
 

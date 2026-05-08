@@ -118,7 +118,7 @@ export function AIChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask AI CMO..."
+            placeholder="Ask Mengo..."
             rows={1}
             className="flex-1 bg-[#1a1d21] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#686f7e] resize-none focus:outline-none focus:border-[#C8FF2E]/50"
             style={{ minHeight: '40px', maxHeight: '120px' }}

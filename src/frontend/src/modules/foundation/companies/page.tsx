@@ -166,7 +166,7 @@ export default function CompaniesPage() {
           <Building2 className="w-16 h-16 text-[#686f7e] mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Companies Yet</h3>
           <p className="text-[#878e9a] mb-6 max-w-md mx-auto">
-            Create your first company to start using AI CMO and manage your marketing
+            Create your first company to start using Mengo and manage your marketing
           </p>
           <Button onClick={() => setShowCreateModal(true)}>
             <Plus className="w-4 h-4 mr-2" />

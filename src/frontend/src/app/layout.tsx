@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'AI CMO - Marketing Dashboard',
+  title: 'Mengo - Marketing Dashboard',
   description: 'AI-powered Chief Marketing Officer platform for campaign management and analytics',
 };
 
