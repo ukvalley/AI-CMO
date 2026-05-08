@@ -6,6 +6,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/utils/cn';
 
 // ============================================
@@ -48,22 +49,27 @@ export const Logo: React.FC<LogoProps> = ({
   className,
   href = '/',
 }) => {
+  const sizePixels = {
+    sm: 32,
+    md: 40,
+    lg: 48,
+  };
+
   const logoContent = (
     <div className={cn('flex items-center gap-2', className)}>
       {/* Logo Mark */}
-      <div
-        className={cn(
-          'bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center flex-shrink-0',
-          sizeStyles[size].container
-        )}
-      >
-        <span className="text-white font-bold text-sm">Me</span>
-      </div>
+      <Image
+        src="/logo.png"
+        alt="Mengo"
+        width={sizePixels[size]}
+        height={sizePixels[size]}
+        className={cn('rounded-lg flex-shrink-0', sizeStyles[size].container)}
+      />
 
       {/* Logo Text */}
       {withText && (
         <span className={cn('font-bold text-neutral-900', sizeStyles[size].text)}>
-          ngo
+          Mengo
         </span>
       )}
     </div>

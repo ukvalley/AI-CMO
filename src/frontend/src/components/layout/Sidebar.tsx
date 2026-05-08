@@ -8,6 +8,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/cn';
 import {
@@ -88,11 +89,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Logo Area */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#C8FF2E] rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-[#0d1117] font-bold text-sm">Me</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Mengo"
+              width={32}
+              height={32}
+              className="rounded-lg flex-shrink-0"
+            />
             {!collapsed && (
-              <span className="font-semibold text-lg text-white">ngo</span>
+              <span className="font-semibold text-lg text-white">Mengo</span>
             )}
           </Link>
 
