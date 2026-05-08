@@ -44,11 +44,11 @@ git pull origin main || echo -e "${YELLOW}Not a git repository or already up to 
 
 echo ""
 echo "Step 4: Building images..."
-docker-compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml build --no-cache
 
 echo ""
 echo "Step 5: Starting services..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 echo ""
 echo "Step 6: Running health checks..."
@@ -91,7 +91,7 @@ echo "Your application is now running at:"
 echo "  http://your-domain.com (port 80)"
 echo "  https://your-domain.com (port 443) - after SSL setup"
 echo ""
-echo "View logs: docker-compose -f docker-compose.prod.yml logs -f"
-echo "View backend logs: docker-compose -f docker-compose.prod.yml logs -f backend"
+echo "View logs: docker compose -f docker-compose.prod.yml logs -f"
+echo "View backend logs: docker compose -f docker-compose.prod.yml logs -f backend"
 echo "Backup database: ./scripts/backup-db.sh"
 echo ""

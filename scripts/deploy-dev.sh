@@ -30,11 +30,11 @@ git pull origin dev || echo -e "${YELLOW}Not a git repository or already up to d
 
 echo ""
 echo "Step 2: Stopping existing containers..."
-docker-compose -f docker-compose.dev.yml down
+docker compose -f docker-compose.dev.yml down
 
 echo ""
 echo "Step 3: Building and starting services..."
-docker-compose -f docker-compose.dev.yml up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 
 echo ""
 echo "Step 4: Waiting for services to start..."
@@ -67,6 +67,6 @@ echo "  Backend API: http://localhost:3101"
 echo "  MongoDB: localhost:27017"
 echo "  Redis: localhost:6379"
 echo ""
-echo "View logs: docker-compose -f docker-compose.dev.yml logs -f"
-echo "Stop: docker-compose -f docker-compose.dev.yml down"
+echo "View logs: docker compose -f docker-compose.dev.yml logs -f"
+echo "Stop: docker compose -f docker-compose.dev.yml down"
 echo ""
