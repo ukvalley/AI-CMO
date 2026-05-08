@@ -1,7 +1,7 @@
 {
   "/products/page": "app/products/page.js",
-  "/icp-personas/page": "app/icp-personas/page.js",
-  "/brand/page": "app/brand/page.js",
   "/competitors/page": "app/competitors/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/brand/page": "app/brand/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/visual-identity/page": "app/visual-identity/page.js"
 }
