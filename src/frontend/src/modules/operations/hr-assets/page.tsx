@@ -1,12 +1,18 @@
 /**
- * Stationery Module
+ * HR Assets Module
  *
- * Comprehensive stationery management including:
- * - Core Stationery (Must Have): Business cards, letterheads, envelopes, email signatures, presentations
- * - Office Use Assets: Invoices, quotations, receipts, purchase orders, billing, proposals
- * - Packaging Stationery: Thank you cards, warranty cards, manuals, inserts, stickers, tape
- * - Print Stationery: Stamps, branding, standees, booth designs, T-shirts
- * - Marketing Assets: Newsletters, brochures, pitch decks, taglines, marketing collateral
+ * Comprehensive HR asset management including:
+ * - Desk & Office Items: Notepad, Diary/Planner, File folder, Document folder, Pen branding, Desk name plate
+ * - Legal / Formal Documents: NDA, Terms & Conditions, Policy documents, Employment contracts
+ * - Internal Office Branding: ID Card (front/back), Lanyard design, Employee badge, Attendance sheet, Internal memo
+ * - Letters: Offer letter, Relieving letter, Increment letter, Termination letter, Experience letter, Appointment letter
+ * - Leave Forms: Full day, Short leave, Half day, Maternity/Paternity leave
+ * - Certifications: Experience, Training, Appreciation, Completion, Internship certificates
+ * - Folders: Employee document folder, Onboarding folder, Exit folder, Performance folder
+ * - Recruitment: Job descriptions, Interview forms, Scorecards, Offer/Rejection letters
+ * - Onboarding: Welcome kit, Handbook, Code of conduct, Orientation materials
+ * - Performance: Appraisal forms, KPI templates, Goal setting, Feedback forms
+ * - Exit: Exit checklists, Handover forms, Clearance certificates
  *
  * Supports file upload, dimension presets, and URL for templates and previews.
  */
@@ -14,17 +20,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Upload, Link, X, Check, Trash2, Edit, Plus, Eye, Copy, Download, Clock, Archive } from 'lucide-react';
-import { stationeryApi } from '@/services/api';
+import { FileText, Upload, Link, X, Check, Trash2, Edit, Plus, Eye, Copy, Download, Clock, Archive, Briefcase, Users, Award, FileCheck, FolderOpen } from 'lucide-react';
+import { hrAssetApi } from '@/services/api';
 import { useAuthStore, useCompanyStore } from '@/stores';
 import { cn } from '@/utils/cn';
-import type { Stationery } from '@/types/entities';
+import type { HRAsset } from '@/types/entities';
 
 // ============================================
-// STATIONERY TYPES & TAGS
+// HR ASSET TYPES & TAGS
 // ============================================
 
-interface StationeryTypeOption {
+interface AssetTypeOption {
   value: string;
   label: string;
   disabled?: boolean;
@@ -37,94 +43,256 @@ interface DimensionPreset {
   unit: 'mm' | 'in' | 'px';
 }
 
-// Core Stationery (Must Have)
-const CORE_STATIONERY: StationeryTypeOption[] = [
-  { value: 'business-card', label: 'Business Card (Visiting Card)' },
-  { value: 'letterhead', label: 'Letterhead' },
-  { value: 'envelope-a4', label: 'Envelope (A4 Size)' },
-  { value: 'envelope-dl', label: 'Envelope (DL Size)' },
-  { value: 'email-signature', label: 'Email Signature Design' },
-  { value: 'presentation-template', label: 'Presentation (PPT) Template' },
+// Desk & Office Items
+const DESK_OFFICE_ITEMS: AssetTypeOption[] = [
+  { value: 'notepad', label: 'Notepad' },
+  { value: 'diary-planner', label: 'Diary / Planner' },
+  { value: 'file-folder', label: 'File Folder' },
+  { value: 'document-folder', label: 'Document Folder' },
+  { value: 'pen-branding', label: 'Pen Branding' },
+  { value: 'desk-name-plate', label: 'Desk Name Plate' },
 ];
 
-// Office Use Assets
-const OFFICE_ASSETS: StationeryTypeOption[] = [
-  { value: 'invoice-template', label: 'Invoice Template' },
-  { value: 'quotation-template', label: 'Quotation Template' },
-  { value: 'receipt-design', label: 'Receipt Design' },
-  { value: 'purchase-order', label: 'Purchase Order (PO) Template' },
-  { value: 'billing-format', label: 'Billing Format' },
-  { value: 'proposal-template', label: 'Proposal Template' },
+// Legal / Formal Documents
+const LEGAL_DOCUMENTS: AssetTypeOption[] = [
+  { value: 'nda', label: 'NDA (Non-disclosure Agreement)' },
+  { value: 'terms-conditions', label: 'Terms & Conditions Format' },
+  { value: 'policy-documents', label: 'Policy Documents' },
+  { value: 'employment-contract', label: 'Employment Contract' },
+  { value: 'service-agreement', label: 'Service Agreement' },
 ];
 
-// Packaging Stationery
-const PACKAGING_STATIONERY: StationeryTypeOption[] = [
-  { value: 'thank-you-card', label: 'Thank You Card' },
-  { value: 'warranty-card', label: 'Warranty Card' },
-  { value: 'instruction-manual', label: 'Instruction Manual' },
-  { value: 'product-insert-card', label: 'Product Insert Card' },
-  { value: 'branded-stickers', label: 'Branded Stickers' },
-  { value: 'packaging-tape', label: 'Packaging Tape Branding' },
+// Internal Office Branding
+const INTERNAL_BRANDING: AssetTypeOption[] = [
+  { value: 'id-card-front', label: 'ID Card (Front)' },
+  { value: 'id-card-back', label: 'ID Card (Back)' },
+  { value: 'lanyard-design', label: 'Lanyard Design' },
+  { value: 'employee-badge', label: 'Employee Badge' },
+  { value: 'attendance-sheet', label: 'Attendance Sheet Format' },
+  { value: 'internal-memo', label: 'Internal Memo Template' },
+  { value: 'visiting-card', label: 'Visiting Card' },
 ];
 
-// Print Stationery
-const PRINT_STATIONERY: StationeryTypeOption[] = [
-  { value: 'stamps', label: 'Stamps' },
-  { value: 'branding-print', label: 'Branding (Print)' },
-  { value: 'standees-print', label: 'Standees' },
-  { value: 'booth-designs', label: 'Booth Designs' },
-  { value: 't-shirts', label: 'T-shirts' },
+// Letters
+const LETTERS: AssetTypeOption[] = [
+  { value: 'offer-letter', label: 'Offer Letter' },
+  { value: 'relieving-letter', label: 'Relieving Letter' },
+  { value: 'increment-letter', label: 'Increment Letter' },
+  { value: 'termination-letter', label: 'Termination Letter' },
+  { value: 'experience-letter', label: 'Experience Letter' },
+  { value: 'appointment-letter', label: 'Appointment Letter' },
+  { value: 'promotion-letter', label: 'Promotion Letter' },
+  { value: 'warning-letter', label: 'Warning Letter' },
 ];
 
-// Marketing Assets
-const MARKETING_ASSETS: StationeryTypeOption[] = [
-  { value: 'newsletter-template', label: 'Newsletter Template' },
-  { value: 'brochure-pdf', label: 'Brochure PDF' },
-  { value: 'pitch-deck', label: 'Pitch Deck' },
-  { value: 'tagline', label: 'Tagline' },
-  { value: 'hook-style', label: 'Hook Style' },
-  { value: 'standees-marketing', label: 'Standee (Marketing)' },
-  { value: 'marketing-collateral', label: 'Marketing Collateral' },
+// Leave Forms
+const LEAVE_FORMS: AssetTypeOption[] = [
+  { value: 'full-day-leave', label: 'Full Day Leave Form' },
+  { value: 'short-leave', label: 'Short Leave Form' },
+  { value: 'half-day-leave', label: 'Half Day Leave Form' },
+  { value: 'maternity-leave', label: 'Maternity Leave Form' },
+  { value: 'paternity-leave', label: 'Paternity Leave Form' },
+  { value: 'medical-leave', label: 'Medical Leave Form' },
+  { value: 'annual-leave', label: 'Annual Leave Form' },
 ];
 
-// Legacy/Other types
-const OTHER_STATIONERY: StationeryTypeOption[] = [
-  { value: 'memo-pad', label: 'Memo Pad' },
-  { value: 'folder', label: 'Folder' },
-  { value: 'compliment-slip', label: 'Compliment Slip' },
-  { value: 'envelope', label: 'Envelope (Generic)' },
-  { value: 'other', label: 'Other' },
+// Certifications
+const CERTIFICATIONS: AssetTypeOption[] = [
+  { value: 'experience-certificate', label: 'Experience Certificate' },
+  { value: 'training-certificate', label: 'Training Certificate' },
+  { value: 'appreciation-certificate', label: 'Appreciation Certificate' },
+  { value: 'completion-certificate', label: 'Completion Certificate' },
+  { value: 'internship-certificate', label: 'Internship Certificate' },
+];
+
+// Folders
+const FOLDERS: AssetTypeOption[] = [
+  { value: 'employee-document-folder', label: 'Employee Document Folder' },
+  { value: 'onboarding-folder', label: 'Onboarding Folder' },
+  { value: 'exit-folder', label: 'Exit Folder' },
+  { value: 'performance-folder', label: 'Performance Folder' },
+];
+
+// Recruitment
+const RECRUITMENT: AssetTypeOption[] = [
+  { value: 'job-description', label: 'Job Description (JD)' },
+  { value: 'job-posting-template', label: 'Job Posting Template' },
+  { value: 'interview-evaluation-form', label: 'Interview Evaluation Form' },
+  { value: 'candidate-scorecard', label: 'Candidate Scorecard' },
+  { value: 'offer-letter-template', label: 'Offer Letter Template' },
+  { value: 'rejection-letter', label: 'Rejection Letter' },
+];
+
+// Onboarding
+const ONBOARDING: AssetTypeOption[] = [
+  { value: 'welcome-kit', label: 'Welcome Kit' },
+  { value: 'onboarding-checklist', label: 'Onboarding Checklist' },
+  { value: 'orientation-presentation', label: 'Orientation Presentation' },
+  { value: 'handbook', label: 'Employee Handbook' },
+  { value: 'code-of-conduct', label: 'Code of Conduct' },
+];
+
+// Performance Management
+const PERFORMANCE: AssetTypeOption[] = [
+  { value: 'appraisal-form', label: 'Appraisal Form' },
+  { value: 'kpi-template', label: 'KPI Template' },
+  { value: 'goal-setting-form', label: 'Goal Setting Form' },
+  { value: 'feedback-form', label: 'Feedback Form' },
+  { value: 'pip-template', label: 'Performance Improvement Plan (PIP)' },
+];
+
+// Exit / Offboarding
+const EXIT: AssetTypeOption[] = [
+  { value: 'exit-checklist', label: 'Exit Checklist' },
+  { value: 'handover-form', label: 'Handover Form' },
+  { value: 'exit-interview-form', label: 'Exit Interview Form' },
+  { value: 'clearance-certificate', label: 'Clearance Certificate' },
+];
+
+// Other
+const OTHER_ASSETS: AssetTypeOption[] = [
+  { value: 'other', label: 'Other HR Asset' },
 ];
 
 // Combined list for select dropdown (grouped by category)
-const STATIONERY_TYPES: StationeryTypeOption[] = [
-  { value: '_header_core', label: '━━ Core Stationery (Must Have) ━━', disabled: true },
-  ...CORE_STATIONERY,
-  { value: '_header_office', label: '━━ Office Use Assets ━━', disabled: true },
-  ...OFFICE_ASSETS,
-  { value: '_header_packaging', label: '━━ Packaging Stationery ━━', disabled: true },
-  ...PACKAGING_STATIONERY,
-  { value: '_header_print', label: '━━ Print Stationery ━━', disabled: true },
-  ...PRINT_STATIONERY,
-  { value: '_header_marketing', label: '━━ Marketing Assets ━━', disabled: true },
-  ...MARKETING_ASSETS,
+const HR_ASSET_TYPES: AssetTypeOption[] = [
+  { value: '_header_desk', label: '━━ Desk & Office Items ━━', disabled: true },
+  ...DESK_OFFICE_ITEMS,
+  { value: '_header_legal', label: '━━ Legal / Formal Documents ━━', disabled: true },
+  ...LEGAL_DOCUMENTS,
+  { value: '_header_branding', label: '━━ Internal Office Branding ━━', disabled: true },
+  ...INTERNAL_BRANDING,
+  { value: '_header_letters', label: '━━ Letters ━━', disabled: true },
+  ...LETTERS,
+  { value: '_header_leave', label: '━━ Leave Forms ━━', disabled: true },
+  ...LEAVE_FORMS,
+  { value: '_header_certifications', label: '━━ Certifications ━━', disabled: true },
+  ...CERTIFICATIONS,
+  { value: '_header_folders', label: '━━ Employee Folders ━━', disabled: true },
+  ...FOLDERS,
+  { value: '_header_recruitment', label: '━━ Recruitment ━━', disabled: true },
+  ...RECRUITMENT,
+  { value: '_header_onboarding', label: '━━ Onboarding ━━', disabled: true },
+  ...ONBOARDING,
+  { value: '_header_performance', label: '━━ Performance Management ━━', disabled: true },
+  ...PERFORMANCE,
+  { value: '_header_exit', label: '━━ Exit / Offboarding ━━', disabled: true },
+  ...EXIT,
   { value: '_header_other', label: '━━ Other ━━', disabled: true },
-  ...OTHER_STATIONERY,
+  ...OTHER_ASSETS,
 ];
 
 // Categories for filtering
-const STATIONERY_CATEGORIES = {
-  'core-stationery': 'Core Stationery',
-  'office-assets': 'Office Use Assets',
-  'packaging-stationery': 'Packaging Stationery',
-  'print-stationery': 'Print Stationery',
-  'marketing-assets': 'Marketing Assets',
+const HR_ASSET_CATEGORIES: Record<string, string> = {
+  'desk-office': 'Desk & Office Items',
+  'legal-documents': 'Legal / Formal Documents',
+  'internal-branding': 'Internal Office Branding',
+  'letters': 'Letters',
+  'leave-forms': 'Leave Forms',
+  'certifications': 'Certifications',
+  'folders': 'Employee Folders',
+  'recruitment': 'Recruitment',
+  'onboarding': 'Onboarding',
+  'performance': 'Performance Management',
+  'exit': 'Exit / Offboarding',
   'other': 'Other',
+};
+
+// Map types to categories
+const TYPE_TO_CATEGORY: Record<string, string> = {
+  // Desk & Office
+  'notepad': 'desk-office',
+  'diary-planner': 'desk-office',
+  'file-folder': 'desk-office',
+  'document-folder': 'desk-office',
+  'pen-branding': 'desk-office',
+  'desk-name-plate': 'desk-office',
+  // Legal
+  'nda': 'legal-documents',
+  'terms-conditions': 'legal-documents',
+  'policy-documents': 'legal-documents',
+  'employment-contract': 'legal-documents',
+  'service-agreement': 'legal-documents',
+  // Branding
+  'id-card-front': 'internal-branding',
+  'id-card-back': 'internal-branding',
+  'lanyard-design': 'internal-branding',
+  'employee-badge': 'internal-branding',
+  'attendance-sheet': 'internal-branding',
+  'internal-memo': 'internal-branding',
+  'visiting-card': 'internal-branding',
+  // Letters
+  'offer-letter': 'letters',
+  'relieving-letter': 'letters',
+  'increment-letter': 'letters',
+  'termination-letter': 'letters',
+  'experience-letter': 'letters',
+  'appointment-letter': 'letters',
+  'promotion-letter': 'letters',
+  'warning-letter': 'letters',
+  // Leave
+  'full-day-leave': 'leave-forms',
+  'short-leave': 'leave-forms',
+  'half-day-leave': 'leave-forms',
+  'maternity-leave': 'leave-forms',
+  'paternity-leave': 'leave-forms',
+  'medical-leave': 'leave-forms',
+  'annual-leave': 'leave-forms',
+  // Certifications
+  'experience-certificate': 'certifications',
+  'training-certificate': 'certifications',
+  'appreciation-certificate': 'certifications',
+  'completion-certificate': 'certifications',
+  'internship-certificate': 'certifications',
+  // Folders
+  'employee-document-folder': 'folders',
+  'onboarding-folder': 'folders',
+  'exit-folder': 'folders',
+  'performance-folder': 'folders',
+  // Recruitment
+  'job-description': 'recruitment',
+  'job-posting-template': 'recruitment',
+  'interview-evaluation-form': 'recruitment',
+  'candidate-scorecard': 'recruitment',
+  'offer-letter-template': 'recruitment',
+  'rejection-letter': 'recruitment',
+  // Onboarding
+  'welcome-kit': 'onboarding',
+  'onboarding-checklist': 'onboarding',
+  'orientation-presentation': 'onboarding',
+  'handbook': 'onboarding',
+  'code-of-conduct': 'onboarding',
+  // Performance
+  'appraisal-form': 'performance',
+  'kpi-template': 'performance',
+  'goal-setting-form': 'performance',
+  'feedback-form': 'performance',
+  'pip-template': 'performance',
+  // Exit
+  'exit-checklist': 'exit',
+  'handover-form': 'exit',
+  'exit-interview-form': 'exit',
+  'clearance-certificate': 'exit',
+  // Other
+  'other': 'other',
 };
 
 // Dimension presets by type
 const DIMENSION_PRESETS: Record<string, DimensionPreset[]> = {
-  'business-card': [
+  'id-card-front': [
+    { label: 'Standard CR80 - 85.6 × 54 mm', width: 85.6, height: 54, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'id-card-back': [
+    { label: 'Standard CR80 - 85.6 × 54 mm', width: 85.6, height: 54, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'lanyard-design': [
+    { label: 'Standard Width - 20 mm', width: 20, height: 900, unit: 'mm' },
+    { label: 'Wide - 25 mm', width: 25, height: 900, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'visiting-card': [
     { label: 'Standard (US) - 89 × 51 mm', width: 89, height: 51, unit: 'mm' },
     { label: 'Standard (EU) - 85 × 55 mm', width: 85, height: 55, unit: 'mm' },
     { label: 'Square - 65 × 65 mm', width: 65, height: 65, unit: 'mm' },
@@ -133,56 +301,89 @@ const DIMENSION_PRESETS: Record<string, DimensionPreset[]> = {
   'letterhead': [
     { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
     { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
-    { label: 'Legal - 8.5 × 14 in', width: 8.5, height: 14, unit: 'in' },
     { label: 'Custom', width: 0, height: 0, unit: 'mm' },
   ],
-  'envelope-a4': [
-    { label: 'C4 - 229 × 324 mm', width: 229, height: 324, unit: 'mm' },
-    { label: 'C5 - 162 × 229 mm', width: 162, height: 229, unit: 'mm' },
+  'notepad': [
+    { label: 'A5 - 148 × 210 mm', width: 148, height: 210, unit: 'mm' },
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'Pocket - 90 × 140 mm', width: 90, height: 140, unit: 'mm' },
     { label: 'Custom', width: 0, height: 0, unit: 'mm' },
   ],
-  'envelope-dl': [
-    { label: 'DL - 110 × 220 mm', width: 110, height: 220, unit: 'mm' },
+  'diary-planner': [
+    { label: 'A5 - 148 × 210 mm', width: 148, height: 210, unit: 'mm' },
+    { label: 'B5 - 176 × 250 mm', width: 176, height: 250, unit: 'mm' },
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'file-folder': [
+    { label: 'A4 - 220 × 310 mm', width: 220, height: 310, unit: 'mm' },
+    { label: 'Letter - 9.5 × 12.5 in', width: 9.5, height: 12.5, unit: 'in' },
+    { label: 'Legal - 10 × 15 in', width: 10, height: 15, unit: 'in' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'document-folder': [
+    { label: 'A4 - 220 × 310 mm', width: 220, height: 310, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'pen-branding': [
+    { label: 'Standard Pen - 140 × 10 mm', width: 140, height: 10, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'desk-name-plate': [
+    { label: 'Small - 200 × 50 mm', width: 200, height: 50, unit: 'mm' },
+    { label: 'Medium - 250 × 60 mm', width: 250, height: 60, unit: 'mm' },
+    { label: 'Large - 300 × 70 mm', width: 300, height: 70, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'employee-badge': [
+    { label: 'Standard - 65 × 100 mm', width: 65, height: 100, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'attendance-sheet': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'A3 - 297 × 420 mm', width: 297, height: 420, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'internal-memo': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'Half A4 - 210 × 148 mm', width: 210, height: 148, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'offer-letter': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'relieving-letter': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'increment-letter': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'experience-letter': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'experience-certificate': [
+    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'Certificate - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'training-certificate': [
+    { label: 'A4 Landscape - 297 × 210 mm', width: 297, height: 210, unit: 'mm' },
+    { label: 'A4 Portrait - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
+    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
+  ],
+  'certificate': [
+    { label: 'A4 Landscape - 297 × 210 mm', width: 297, height: 210, unit: 'mm' },
+    { label: 'A4 Portrait - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
     { label: 'Custom', width: 0, height: 0, unit: 'mm' },
   ],
   'presentation-template': [
-    { label: 'Standard (16:9) - 1920 × 1080 px', width: 1920, height: 1080, unit: 'px' },
-    { label: 'Standard (4:3) - 1024 × 768 px', width: 1024, height: 768, unit: 'px' },
-    { label: 'Widescreen - 2560 × 1440 px', width: 2560, height: 1440, unit: 'px' },
-    { label: 'Custom', width: 0, height: 0, unit: 'px' },
-  ],
-  'invoice-template': [
-    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
-    { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
-    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
-  ],
-  'brochure-pdf': [
-    { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
-    { label: 'A5 - 148 × 210 mm', width: 148, height: 210, unit: 'mm' },
-    { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
-    { label: 'Tri-fold (US) - 11 × 8.5 in', width: 11, height: 8.5, unit: 'in' },
-    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
-  ],
-  'standees-print': [
-    { label: 'Small - 600 × 1600 mm', width: 600, height: 1600, unit: 'mm' },
-    { label: 'Medium - 800 × 2000 mm', width: 800, height: 2000, unit: 'mm' },
-    { label: 'Large - 1000 × 2400 mm', width: 1000, height: 2400, unit: 'mm' },
-    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
-  ],
-  'standees-marketing': [
-    { label: 'Small - 600 × 1600 mm', width: 600, height: 1600, unit: 'mm' },
-    { label: 'Medium - 800 × 2000 mm', width: 800, height: 2000, unit: 'mm' },
-    { label: 'Large - 1000 × 2400 mm', width: 1000, height: 2400, unit: 'mm' },
-    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
-  ],
-  't-shirts': [
-    { label: 'Small (S)', width: 0, height: 0, unit: 'mm' },
-    { label: 'Medium (M)', width: 0, height: 0, unit: 'mm' },
-    { label: 'Large (L)', width: 0, height: 0, unit: 'mm' },
-    { label: 'Extra Large (XL)', width: 0, height: 0, unit: 'mm' },
-    { label: 'Custom', width: 0, height: 0, unit: 'mm' },
-  ],
-  'pitch-deck': [
     { label: 'Standard (16:9) - 1920 × 1080 px', width: 1920, height: 1080, unit: 'px' },
     { label: 'Standard (4:3) - 1024 × 768 px', width: 1024, height: 768, unit: 'px' },
     { label: 'Custom', width: 0, height: 0, unit: 'px' },
@@ -191,57 +392,56 @@ const DIMENSION_PRESETS: Record<string, DimensionPreset[]> = {
     { label: 'A4 - 210 × 297 mm', width: 210, height: 297, unit: 'mm' },
     { label: 'A5 - 148 × 210 mm', width: 148, height: 210, unit: 'mm' },
     { label: 'US Letter - 8.5 × 11 in', width: 8.5, height: 11, unit: 'in' },
-    { label: 'Social Square - 1080 × 1080 px', width: 1080, height: 1080, unit: 'px' },
-    { label: 'Social Story - 1080 × 1920 px', width: 1080, height: 1920, unit: 'px' },
     { label: 'Custom', width: 0, height: 0, unit: 'mm' },
   ],
 };
 
-const STATIONERY_TAGS = [
-  // Usage Type
+// Tags
+const HR_ASSET_TAGS = [
+  // Usage
   { value: 'print', label: 'Print Ready' },
   { value: 'digital', label: 'Digital' },
   { value: 'print-digital', label: 'Print + Digital' },
   // Category
-  { value: 'core-stationery', label: 'Core Stationery' },
-  { value: 'office-assets', label: 'Office Assets' },
-  { value: 'packaging', label: 'Packaging' },
-  { value: 'print', label: 'Print' },
-  { value: 'marketing', label: 'Marketing' },
-  // Usage Context
-  { value: 'corporate', label: 'Corporate' },
-  { value: 'external', label: 'External Use' },
-  { value: 'internal', label: 'Internal Use' },
-  { value: 'customer-facing', label: 'Customer Facing' },
-  { value: 'vendor-facing', label: 'Vendor Facing' },
+  { value: 'desk-office', label: 'Desk & Office' },
+  { value: 'legal', label: 'Legal' },
+  { value: 'branding', label: 'Branding' },
+  { value: 'letters', label: 'Letters' },
+  { value: 'leave', label: 'Leave' },
+  { value: 'certificates', label: 'Certificates' },
+  { value: 'folders', label: 'Folders' },
+  { value: 'recruitment', label: 'Recruitment' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'exit', label: 'Exit' },
+  // Lifecycle
+  { value: 'pre-employment', label: 'Pre-employment' },
+  { value: 'employment', label: 'Employment' },
+  { value: 'post-employment', label: 'Post-employment' },
+  // Confidentiality
+  { value: 'confidential', label: 'Confidential' },
+  { value: 'internal-only', label: 'Internal Only' },
+  { value: 'public', label: 'Public' },
   // Status
   { value: 'approved', label: 'Approved' },
   { value: 'draft', label: 'Draft' },
   { value: 'needs-review', label: 'Needs Review' },
-  // Priority
-  { value: 'must-have', label: 'Must Have' },
+  // Required
+  { value: 'mandatory', label: 'Mandatory' },
   { value: 'optional', label: 'Optional' },
-  // Size
-  { value: 'letter-size', label: 'Letter Size' },
-  { value: 'a4', label: 'A4' },
-  { value: 'a5', label: 'A5' },
-  { value: 'us-standard', label: 'US Standard' },
-  { value: 'metric', label: 'Metric (mm)' },
-  { value: 'imperial', label: 'Imperial (in)' },
-  { value: 'digital-px', label: 'Digital (px)' },
 ];
 
 // ============================================
-// COMPONENT: Stationery Card
+// COMPONENT: HR Asset Card
 // ============================================
 
-function StationeryCard({
+function HRAssetCard({
   item,
   onEdit,
   onDelete,
 }: {
-  item: Stationery;
-  onEdit: (item: Stationery) => void;
+  item: HRAsset;
+  onEdit: (item: HRAsset) => void;
   onDelete: (id: string) => void;
 }) {
   const [imageError, setImageError] = useState(false);
@@ -286,8 +486,9 @@ function StationeryCard({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Get preview image URL
   const previewUrl = item.previewImageUrl || item.base64Data;
+  const category = TYPE_TO_CATEGORY[item.type] || 'other';
+  const categoryLabel = HR_ASSET_CATEGORIES[category] || category;
 
   return (
     <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-600 transition-colors">
@@ -361,11 +562,12 @@ function StationeryCard({
       {/* Info */}
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-medium text-slate-200">{item.name}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-slate-200 truncate">{item.name}</h3>
             <p className="text-xs text-slate-500">
-              {STATIONERY_TYPES.find(t => t.value === item.type)?.label || item.type}
+              {HR_ASSET_TYPES.find(t => t.value === item.type)?.label || item.type}
             </p>
+            <p className="text-xs text-primary-400 mt-0.5">{categoryLabel}</p>
           </div>
           <span className={`flex items-center gap-1 text-xs ${getStatusColor()}`}>
             {getStatusIcon()}
@@ -381,7 +583,7 @@ function StationeryCard({
                 key={tag}
                 className="px-2 py-0.5 bg-slate-800 text-slate-400 text-xs rounded"
               >
-                {STATIONERY_TAGS.find(t => t.value === tag)?.label || tag}
+                {HR_ASSET_TAGS.find(t => t.value === tag)?.label || tag}
               </span>
             ))}
             {item.tags.length > 3 && (
@@ -427,10 +629,10 @@ function StationeryCard({
 }
 
 // ============================================
-// COMPONENT: Stationery Form Modal
+// COMPONENT: HR Asset Form Modal
 // ============================================
 
-function StationeryFormModal({
+function HRAssetFormModal({
   isOpen,
   onClose,
   onSave,
@@ -439,12 +641,13 @@ function StationeryFormModal({
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
-  item?: Stationery | null;
+  item?: HRAsset | null;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: '',
+    category: '',
     description: '',
     templateUrl: '',
     previewImageUrl: '',
@@ -452,6 +655,8 @@ function StationeryFormModal({
     status: 'draft' as 'draft' | 'approved' | 'archived',
     tags: [] as string[],
     dimensions: { width: '', height: '', unit: 'mm' as 'mm' | 'in' | 'px' },
+    department: '',
+    version: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -462,6 +667,7 @@ function StationeryFormModal({
       setFormData({
         name: item.name || '',
         type: item.type || '',
+        category: item.category || '',
         description: item.description || '',
         templateUrl: item.templateUrl || '',
         previewImageUrl: item.previewImageUrl || '',
@@ -473,6 +679,8 @@ function StationeryFormModal({
           height: item.dimensions?.height?.toString() || '',
           unit: item.dimensions?.unit || 'mm',
         },
+        department: item.department || '',
+        version: item.version || '',
       });
       if (item.base64Data) {
         setPreviewUrl(item.base64Data);
@@ -481,6 +689,7 @@ function StationeryFormModal({
       setFormData({
         name: '',
         type: '',
+        category: '',
         description: '',
         templateUrl: '',
         previewImageUrl: '',
@@ -488,6 +697,8 @@ function StationeryFormModal({
         status: 'draft',
         tags: [],
         dimensions: { width: '', height: '', unit: 'mm' },
+        department: '',
+        version: '',
       });
       setSelectedFile(null);
       setPreviewUrl('');
@@ -509,6 +720,7 @@ function StationeryFormModal({
 
     const data: any = {
       ...formData,
+      category: TYPE_TO_CATEGORY[formData.type] || 'other',
       dimensions: formData.dimensions.width && formData.dimensions.height
         ? {
             width: parseInt(formData.dimensions.width),
@@ -518,7 +730,6 @@ function StationeryFormModal({
         : undefined,
     };
 
-    // If uploading a file, convert to base64
     if (selectedFile) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -526,7 +737,7 @@ function StationeryFormModal({
         data.fileName = selectedFile.name;
         data.fileSize = selectedFile.size;
         data.fileType = selectedFile.type;
-        data.templateUrl = reader.result; // Use base64 as template URL
+        data.templateUrl = reader.result;
         onSave(data);
         setIsUploading(false);
       };
@@ -554,7 +765,7 @@ function StationeryFormModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-200">
-            {item ? 'Edit Stationery' : 'Add Stationery'}
+            {item ? 'Edit HR Asset' : 'Add HR Asset'}
           </h2>
           <button
             onClick={onClose}
@@ -569,7 +780,7 @@ function StationeryFormModal({
           {/* Upload Section */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Upload Template File
+              Upload Asset File
               <span className="text-slate-500 font-normal ml-2">- or use URL below</span>
             </label>
             <div
@@ -584,7 +795,7 @@ function StationeryFormModal({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.ai,.psd,.sketch,.fig,.svg,.png,.jpg,.webp"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.ai,.psd,.sketch,.fig,.svg,.png,.jpg,.webp,.xlsx,.xls"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -623,7 +834,7 @@ function StationeryFormModal({
                   </div>
                   <p className="text-slate-300 font-medium text-sm">Click to upload file</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    PDF, DOC, PPT, AI, PSD, Sketch, Figma, Images
+                    PDF, DOC, PPT, Excel, Images, Design files
                   </p>
                 </div>
               )}
@@ -691,13 +902,13 @@ function StationeryFormModal({
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Template Name <span className="text-red-400">*</span>
+              Asset Name <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g., Business Card Front"
+              placeholder="e.g., Employee ID Card Template"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
             />
           </div>
@@ -705,23 +916,23 @@ function StationeryFormModal({
           {/* Type */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Stationery Type <span className="text-red-400">*</span>
+              Asset Type <span className="text-red-400">*</span>
             </label>
             <select
               value={formData.type}
               onChange={(e) => {
                 const newType = e.target.value;
-                // Reset dimensions when type changes
                 setFormData(prev => ({
                   ...prev,
                   type: newType,
+                  category: TYPE_TO_CATEGORY[newType] || 'other',
                   dimensions: { width: '', height: '', unit: 'mm' }
                 }));
               }}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
             >
               <option value="">Select type...</option>
-              {STATIONERY_TYPES.map(type => (
+              {HR_ASSET_TYPES.map(type => (
                 <option
                   key={type.value}
                   value={type.value}
@@ -732,6 +943,44 @@ function StationeryFormModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Department
+            </label>
+            <select
+              value={formData.department}
+              onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+            >
+              <option value="">All Departments</option>
+              <option value="hr">HR</option>
+              <option value="engineering">Engineering</option>
+              <option value="marketing">Marketing</option>
+              <option value="sales">Sales</option>
+              <option value="operations">Operations</option>
+              <option value="finance">Finance</option>
+              <option value="legal">Legal</option>
+              <option value="customer-success">Customer Success</option>
+              <option value="product">Product</option>
+              <option value="design">Design</option>
+            </select>
+          </div>
+
+          {/* Version */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Version
+            </label>
+            <input
+              type="text"
+              value={formData.version}
+              onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
+              placeholder="e.g., v1.0"
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+            />
           </div>
 
           {/* Status */}
@@ -785,7 +1034,7 @@ function StationeryFormModal({
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">
-                {!formData.type ? 'Select stationery type first...' : 'Select preset...'}
+                {!formData.type ? 'Select asset type first...' : 'Select preset...'}
               </option>
               {(formData.type && DIMENSION_PRESETS[formData.type]
                 ? DIMENSION_PRESETS[formData.type]
@@ -847,7 +1096,7 @@ function StationeryFormModal({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Brief description..."
+              placeholder="Brief description of this asset..."
               rows={3}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
             />
@@ -859,7 +1108,7 @@ function StationeryFormModal({
               Tags
             </label>
             <div className="flex flex-wrap gap-2">
-              {STATIONERY_TAGS.map(tag => {
+              {HR_ASSET_TAGS.map(tag => {
                 const isSelected = formData.tags.includes(tag.value);
                 return (
                   <button
@@ -902,7 +1151,7 @@ function StationeryFormModal({
             ) : (
               <>
                 <Check className="w-4 h-4" />
-                {item ? 'Save Changes' : 'Add Stationery'}
+                {item ? 'Save Changes' : 'Add HR Asset'}
               </>
             )}
           </button>
@@ -916,21 +1165,21 @@ function StationeryFormModal({
 // MAIN PAGE
 // ============================================
 
-export default function StationeryPage() {
+export default function HRAssetsPage() {
   const { user } = useAuthStore();
   const { activeCompanyId: storeCompanyId } = useCompanyStore();
   const companyId = user?.activeCompanyId || storeCompanyId;
 
-  const [items, setItems] = useState<Stationery[]>([]);
+  const [items, setItems] = useState<HRAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Stationery | null>(null);
+  const [editingItem, setEditingItem] = useState<HRAsset | null>(null);
   const [filter, setFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  // Load stationery
+  // Load HR assets
   useEffect(() => {
     if (!companyId) {
       setItems([]);
@@ -940,9 +1189,13 @@ export default function StationeryPage() {
 
     const loadItems = async () => {
       setIsLoading(true);
-      const response = await stationeryApi.getAll(companyId);
-      if (response.data) {
-        setItems(response.data as Stationery[]);
+      try {
+        const response = await hrAssetApi.getAll(companyId);
+        if (response.data) {
+          setItems(response.data as HRAsset[]);
+        }
+      } catch (error) {
+        console.error('Failed to load HR assets:', error);
       }
       setIsLoading(false);
     };
@@ -953,44 +1206,46 @@ export default function StationeryPage() {
   const handleCreate = async (data: any) => {
     if (!companyId) return;
 
-    const response = await stationeryApi.create({
-      ...data,
-      companyId,
-    });
+    try {
+      const response = await hrAssetApi.create({
+        ...data,
+        companyId,
+      });
 
-    if (response.data) {
-      setItems(prev => [...prev, response.data as Stationery]);
-      setIsModalOpen(false);
+      if (response.data) {
+        setItems(prev => [...prev, response.data as HRAsset]);
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to create HR asset:', error);
     }
   };
 
-  const handleUpdate = async (id: string, data: Partial<Stationery>) => {
-    const response = await stationeryApi.update(id, data);
-    if (response.data) {
-      setItems(prev =>
-        prev.map(item => (item.id === id ? (response.data as Stationery) : item))
-      );
-      setIsModalOpen(false);
-      setEditingItem(null);
+  const handleUpdate = async (id: string, data: Partial<HRAsset>) => {
+    try {
+      const response = await hrAssetApi.update(id, data);
+      if (response.data) {
+        setItems(prev =>
+          prev.map(item => (item.id === id ? (response.data as HRAsset) : item))
+        );
+        setIsModalOpen(false);
+        setEditingItem(null);
+      }
+    } catch (error) {
+      console.error('Failed to update HR asset:', error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this stationery?')) return;
-    const response = await stationeryApi.delete(id);
-    if (!response.error) {
-      setItems(prev => prev.filter(item => item.id !== id));
+    if (!confirm('Are you sure you want to delete this HR asset?')) return;
+    try {
+      const response = await hrAssetApi.delete(id);
+      if (!response.error) {
+        setItems(prev => prev.filter(item => item.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete HR asset:', error);
     }
-  };
-
-  // Helper to get category for a stationery type
-  const getCategoryForType = (type: string): string => {
-    if (CORE_STATIONERY.some(t => t.value === type)) return 'core-stationery';
-    if (OFFICE_ASSETS.some(t => t.value === type)) return 'office-assets';
-    if (PACKAGING_STATIONERY.some(t => t.value === type)) return 'packaging-stationery';
-    if (PRINT_STATIONERY.some(t => t.value === type)) return 'print-stationery';
-    if (MARKETING_ASSETS.some(t => t.value === type)) return 'marketing-assets';
-    return 'other';
   };
 
   const filteredItems = items.filter(item => {
@@ -998,19 +1253,32 @@ export default function StationeryPage() {
       item.tags?.some(tag => tag.toLowerCase().includes(filter.toLowerCase()));
     const matchesType = !typeFilter || item.type === typeFilter;
     const matchesStatus = !statusFilter || item.status === statusFilter;
-    const matchesCategory = !categoryFilter || getCategoryForType(item.type || 'other') === categoryFilter;
+    const matchesCategory = !categoryFilter || item.category === categoryFilter;
     return matchesSearch && matchesType && matchesStatus && matchesCategory;
   });
 
   const groupedItems = filteredItems.reduce((groups, item) => {
-    const category = getCategoryForType(item.type || 'other');
+    const category = item.category || 'other';
     if (!groups[category]) groups[category] = [];
     groups[category].push(item);
     return groups;
-  }, {} as Record<string, Stationery[]>);
+  }, {} as Record<string, HRAsset[]>);
 
   // Category display order
-  const categoryOrder = ['core-stationery', 'office-assets', 'packaging-stationery', 'print-stationery', 'marketing-assets', 'other'];
+  const categoryOrder = [
+    'desk-office',
+    'legal-documents',
+    'internal-branding',
+    'letters',
+    'leave-forms',
+    'certifications',
+    'folders',
+    'recruitment',
+    'onboarding',
+    'performance',
+    'exit',
+    'other'
+  ];
 
   // Stats
   const stats = {
@@ -1023,7 +1291,7 @@ export default function StationeryPage() {
   if (!companyId) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to manage stationery.</p>
+        <p className="text-slate-400">Please select a company to manage HR assets.</p>
       </div>
     );
   }
@@ -1042,12 +1310,12 @@ export default function StationeryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-primary-500/10 rounded-xl flex items-center justify-center">
-            <FileText className="w-6 h-6 text-primary-500" />
+            <Briefcase className="w-6 h-6 text-primary-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-200">Stationery</h1>
+            <h1 className="text-2xl font-bold text-slate-200">HR Assets</h1>
             <p className="text-slate-400 text-sm">
-              Core stationery, office assets, packaging, print materials, and marketing collateral
+              Documents, templates, forms, and branding materials for HR
             </p>
           </div>
         </div>
@@ -1059,7 +1327,7 @@ export default function StationeryPage() {
           className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-400 text-slate-900 font-medium rounded-lg"
         >
           <Plus className="w-4 h-4" />
-          Add Stationery
+          Add HR Asset
         </button>
       </div>
 
@@ -1067,7 +1335,7 @@ export default function StationeryPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
           <p className="text-2xl font-bold text-slate-200">{stats.total}</p>
-          <p className="text-sm text-slate-500">Total Items</p>
+          <p className="text-sm text-slate-500">Total Assets</p>
         </div>
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
           <p className="text-2xl font-bold text-green-400">{stats.approved}</p>
@@ -1087,7 +1355,7 @@ export default function StationeryPage() {
       <div className="flex flex-col md:flex-row gap-4">
         <input
           type="text"
-          placeholder="Search stationery..."
+          placeholder="Search HR assets..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
@@ -1096,16 +1364,22 @@ export default function StationeryPage() {
           value={categoryFilter}
           onChange={(e) => {
             setCategoryFilter(e.target.value);
-            setTypeFilter(''); // Reset type filter when category changes
+            setTypeFilter('');
           }}
           className="px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
         >
           <option value="">All Categories</option>
-          <option value="core-stationery">Core Stationery</option>
-          <option value="office-assets">Office Use Assets</option>
-          <option value="packaging-stationery">Packaging Stationery</option>
-          <option value="print-stationery">Print Stationery</option>
-          <option value="marketing-assets">Marketing Assets</option>
+          <option value="desk-office">Desk & Office Items</option>
+          <option value="legal-documents">Legal Documents</option>
+          <option value="internal-branding">Internal Branding</option>
+          <option value="letters">Letters</option>
+          <option value="leave-forms">Leave Forms</option>
+          <option value="certifications">Certifications</option>
+          <option value="folders">Employee Folders</option>
+          <option value="recruitment">Recruitment</option>
+          <option value="onboarding">Onboarding</option>
+          <option value="performance">Performance</option>
+          <option value="exit">Exit / Offboarding</option>
         </select>
         <select
           value={typeFilter}
@@ -1113,8 +1387,8 @@ export default function StationeryPage() {
           className="px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
         >
           <option value="">All Types</option>
-          {STATIONERY_TYPES
-            .filter(type => !type.disabled && (!categoryFilter || getCategoryForType(type.value) === categoryFilter))
+          {HR_ASSET_TYPES
+            .filter(type => !type.disabled && (!categoryFilter || TYPE_TO_CATEGORY[type.value] === categoryFilter))
             .map(type => (
             <option key={type.value} value={type.value}>{type.label}</option>
           ))}
@@ -1135,10 +1409,10 @@ export default function StationeryPage() {
       {filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-slate-900/30 border border-slate-800 rounded-xl">
           <div className="w-16 h-16 bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-slate-500" />
+            <FolderOpen className="w-8 h-8 text-slate-500" />
           </div>
-          <h3 className="text-lg font-medium text-slate-300 mb-2">No stationery yet</h3>
-          <p className="text-slate-500 mb-4">Upload your first stationery template to get started</p>
+          <h3 className="text-lg font-medium text-slate-300 mb-2">No HR assets yet</h3>
+          <p className="text-slate-500 mb-4">Upload your first HR asset to get started</p>
           <button
             onClick={() => {
               setEditingItem(null);
@@ -1146,7 +1420,7 @@ export default function StationeryPage() {
             }}
             className="px-4 py-2 bg-primary-500 hover:bg-primary-400 text-slate-900 font-medium rounded-lg"
           >
-            Add Stationery
+            Add HR Asset
           </button>
         </div>
       ) : (
@@ -1156,14 +1430,14 @@ export default function StationeryPage() {
             .map((category) => (
             <div key={category}>
               <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                {STATIONERY_CATEGORIES[category as keyof typeof STATIONERY_CATEGORIES] || category}
+                {HR_ASSET_CATEGORIES[category] || category}
                 <span className="px-2 py-0.5 bg-slate-800 text-slate-400 text-xs rounded-full">
                   {groupedItems[category].length}
                 </span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {groupedItems[category].map(item => (
-                  <StationeryCard
+                  <HRAssetCard
                     key={item.id}
                     item={item}
                     onEdit={(i) => {
@@ -1180,7 +1454,7 @@ export default function StationeryPage() {
       )}
 
       {/* Modal */}
-      <StationeryFormModal
+      <HRAssetFormModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);

@@ -75,6 +75,7 @@ const loadRoutes = () => {
   const brandRoutes = require('./routes/brands').default;
   const brandAssetRoutes = require('./routes/brandAssets').default;
   const stationeryRoutes = require('./routes/stationery').default;
+  const hrAssetRoutes = require('./routes/hrAssets').default;
   const websitePageRoutes = require('./routes/websitePages').default;
   const blogRoutes = require('./routes/blogs').default;
   const newsletterRoutes = require('./routes/newsletters').default;
@@ -100,6 +101,7 @@ const loadRoutes = () => {
   app.use('/api/brands', brandRoutes);
   app.use('/api/brand-assets', brandAssetRoutes);
   app.use('/api/stationery', stationeryRoutes);
+  app.use('/api/hr-assets', hrAssetRoutes);
   app.use('/api/website-pages', websitePageRoutes);
   app.use('/api/blogs', blogRoutes);
   app.use('/api/newsletters', newsletterRoutes);

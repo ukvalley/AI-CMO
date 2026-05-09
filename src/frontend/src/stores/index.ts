@@ -9,3 +9,4 @@ export * from './companyStore';
 export * from './dataStore';
 export * from './taskStore';
 export * from './chatStore';
+export * from './themeStore';

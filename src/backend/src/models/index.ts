@@ -95,6 +95,7 @@ export const loadModels = () => {
       Brand: new MockModel<any>('brands'),
       BrandAsset: new MockModel<any>('brandAssets'),
       Stationery: new MockModel<any>('stationery'),
+      HRAsset: new MockModel<any>('hrAssets'),
       WebsitePage: new MockModel<any>('websitePages'),
       Blog: new MockModel<any>('blogs'),
       Newsletter: new MockModel<any>('newsletters'),
@@ -114,6 +115,7 @@ export const loadModels = () => {
     const { Brand: RealBrand } = require('./Brand');
     const { BrandAsset: RealBrandAsset } = require('./BrandAsset');
     const { Stationery: RealStationery } = require('./Stationery');
+    const { HRAsset: RealHRAsset } = require('./HRAsset');
     const { WebsitePage: RealWebsitePage } = require('./WebsitePage');
     const { Blog: RealBlog } = require('./Blog');
     const { Newsletter: RealNewsletter } = require('./Newsletter');
@@ -133,6 +135,7 @@ export const loadModels = () => {
       Brand: RealBrand,
       BrandAsset: RealBrandAsset,
       Stationery: RealStationery,
+      HRAsset: RealHRAsset,
       WebsitePage: RealWebsitePage,
       Blog: RealBlog,
       Newsletter: RealNewsletter,
@@ -159,6 +162,7 @@ export const Competitor = () => getModels().Competitor;
 export const Brand = () => getModels().Brand;
 export const BrandAsset = () => getModels().BrandAsset;
 export const Stationery = () => getModels().Stationery;
+export const HRAsset = () => getModels().HRAsset;
 export const WebsitePage = () => getModels().WebsitePage;
 export const Blog = () => getModels().Blog;
 export const Newsletter = () => getModels().Newsletter;
@@ -177,6 +181,7 @@ export type { ICompetitor } from './Competitor';
 export type { IBrand } from './Brand';
 export type { IBrandAsset } from './BrandAsset';
 export type { IStationery } from './Stationery';
+export type { IHRAsset } from './HRAsset';
 export type { IWebsitePage } from './WebsitePage';
 export type { IBlog } from './Blog';
 export type { INewsletter } from './Newsletter';

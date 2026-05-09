@@ -638,15 +638,31 @@ export interface SeoSystem extends BaseEntity {
 // ============================================
 
 export type BrandAssetType =
+  | 'logo'
+  | 'logo-icon'
   | 'favicon'
   | 'logoMarkLight'
   | 'logoMarkDark'
   | 'logoHorizontal'
   | 'logoVertical'
   | 'logoIconOnly'
+  | 'social-og'
+  | 'social-twitter'
+  | 'social-linkedin'
+  | 'social-instagram'
+  | 'social-facebook'
+  | 'social-tiktok'
+  | 'social-youtube'
+  | 'email-header'
+  | 'email-footer'
+  | 'presentation'
+  | 'document'
+  | 'web-banner'
+  | 'app-icon'
   | 'brandPattern'
   | 'backgroundImage'
   | 'watermark'
+  | 'other'
   | 'custom';
 
 export type AssetStatus = 'pending' | 'uploaded' | 'approved';
@@ -654,39 +670,273 @@ export type AssetStatus = 'pending' | 'uploaded' | 'approved';
 export interface BrandAsset extends BaseEntity {
   name: string;
   type: BrandAssetType;
-  url?: string;
-  base64Data?: string;
+  description?: string;
+  url?: string; // CDN/External URL or base64 data URL
+  sourceUrl?: string; // Canva, Figma, design file URL
+  base64Data?: string; // base64 for uploaded files (matches backend)
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
   status: AssetStatus;
   designBrief?: string;
+  isPrimary?: boolean;
+  source?: 'upload' | 'url';
+  tags?: string[];
+  dimensions?: {
+    width?: number;
+    height?: number;
+  };
+  format?: string;
 }
 
 // ============================================
 // STATIONERY
 // ============================================
 
-export type StationeryType =
-  | 'visitingCard'
+// Core Stationery (Must Have)
+export type CoreStationeryType =
+  | 'business-card'
   | 'letterhead'
-  | 'envelope'
-  | 'pptTemplate'
-  | 'socialKit'
-  | 'emailSignature'
-  | 'invoice'
-  | 'idBadge'
-  | 'packaging'
-  | 'merch'
-  | 'watermark'
-  | 'custom';
+  | 'envelope-a4'
+  | 'envelope-dl'
+  | 'email-signature'
+  | 'presentation-template';
 
-export type StationeryStatus = 'pending' | 'uploaded' | 'generated' | 'approved';
+// Office Use Assets
+export type OfficeAssetsType =
+  | 'invoice-template'
+  | 'quotation-template'
+  | 'receipt-design'
+  | 'purchase-order'
+  | 'billing-format'
+  | 'proposal-template';
+
+// Packaging Stationery
+export type PackagingStationeryType =
+  | 'thank-you-card'
+  | 'warranty-card'
+  | 'instruction-manual'
+  | 'product-insert-card'
+  | 'branded-stickers'
+  | 'packaging-tape';
+
+// Print Stationery
+export type PrintStationeryType =
+  | 'stamps'
+  | 'branding-print'
+  | 'standees-print'
+  | 'booth-designs'
+  | 't-shirts';
+
+// Marketing Assets
+export type MarketingAssetsType =
+  | 'newsletter-template'
+  | 'brochure-pdf'
+  | 'pitch-deck'
+  | 'tagline'
+  | 'hook-style'
+  | 'standees-marketing'
+  | 'marketing-collateral';
+
+// Legacy/Other types
+export type OtherStationeryType =
+  | 'envelope'
+  | 'memo-pad'
+  | 'folder'
+  | 'compliment-slip'
+  | 'other';
+
+// Combined Stationery Type
+export type StationeryType =
+  | CoreStationeryType
+  | OfficeAssetsType
+  | PackagingStationeryType
+  | PrintStationeryType
+  | MarketingAssetsType
+  | OtherStationeryType;
+
+export type StationeryStatus = 'draft' | 'approved' | 'archived';
 
 export interface Stationery extends BaseEntity {
   name: string;
   type: StationeryType;
-  url?: string;
-  base64Data?: string;
+  description?: string;
+  templateUrl?: string; // URL to the template file or base64
+  previewImageUrl?: string; // URL to preview image or base64
+  sourceUrl?: string; // Canva, Figma, design file URL
+  base64Data?: string; // Uploaded file as base64
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
+  dimensions?: {
+    width?: number;
+    height?: number;
+    unit?: 'mm' | 'in' | 'px';
+  };
   status: StationeryStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  tags?: string[];
   designBrief?: string;
+}
+
+// ============================================
+// HR ASSETS
+// ============================================
+
+// Desk & Office Items
+export type DeskOfficeAssetType =
+  | 'notepad'
+  | 'diary-planner'
+  | 'file-folder'
+  | 'document-folder'
+  | 'pen-branding'
+  | 'desk-name-plate';
+
+// Legal / Formal Documents
+export type LegalDocumentAssetType =
+  | 'nda'
+  | 'terms-conditions'
+  | 'policy-documents'
+  | 'employment-contract'
+  | 'service-agreement';
+
+// Internal Office Branding
+export type InternalBrandingAssetType =
+  | 'id-card-front'
+  | 'id-card-back'
+  | 'lanyard-design'
+  | 'employee-badge'
+  | 'attendance-sheet'
+  | 'internal-memo'
+  | 'visiting-card';
+
+// Letters
+export type LetterAssetType =
+  | 'offer-letter'
+  | 'relieving-letter'
+  | 'increment-letter'
+  | 'termination-letter'
+  | 'experience-letter'
+  | 'appointment-letter'
+  | 'promotion-letter'
+  | 'warning-letter';
+
+// Leave Forms
+export type LeaveFormAssetType =
+  | 'full-day-leave'
+  | 'short-leave'
+  | 'half-day-leave'
+  | 'maternity-leave'
+  | 'paternity-leave'
+  | 'medical-leave'
+  | 'annual-leave';
+
+// Certifications
+export type CertificationAssetType =
+  | 'experience-certificate'
+  | 'training-certificate'
+  | 'appreciation-certificate'
+  | 'completion-certificate'
+  | 'internship-certificate';
+
+// Folders
+export type FolderAssetType =
+  | 'employee-document-folder'
+  | 'onboarding-folder'
+  | 'exit-folder'
+  | 'performance-folder';
+
+// Recruitment
+export type RecruitmentAssetType =
+  | 'job-description'
+  | 'job-posting-template'
+  | 'interview-evaluation-form'
+  | 'candidate-scorecard'
+  | 'offer-letter-template'
+  | 'rejection-letter';
+
+// Onboarding
+export type OnboardingAssetType =
+  | 'welcome-kit'
+  | 'onboarding-checklist'
+  | 'orientation-presentation'
+  | 'handbook'
+  | 'code-of-conduct';
+
+// Performance Management
+export type PerformanceAssetType =
+  | 'appraisal-form'
+  | 'kpi-template'
+  | 'goal-setting-form'
+  | 'feedback-form'
+  | 'pip-template';
+
+// Exit / Offboarding
+export type ExitAssetType =
+  | 'exit-checklist'
+  | 'handover-form'
+  | 'exit-interview-form'
+  | 'clearance-certificate';
+
+// Combined HR Asset Type
+export type HRAssetType =
+  | DeskOfficeAssetType
+  | LegalDocumentAssetType
+  | InternalBrandingAssetType
+  | LetterAssetType
+  | LeaveFormAssetType
+  | CertificationAssetType
+  | FolderAssetType
+  | RecruitmentAssetType
+  | OnboardingAssetType
+  | PerformanceAssetType
+  | ExitAssetType
+  | 'other';
+
+export type HRAssetCategory =
+  | 'desk-office'
+  | 'legal-documents'
+  | 'internal-branding'
+  | 'letters'
+  | 'leave-forms'
+  | 'certifications'
+  | 'folders'
+  | 'recruitment'
+  | 'onboarding'
+  | 'performance'
+  | 'exit'
+  | 'other';
+
+export type HRAssetStatus = 'draft' | 'approved' | 'archived';
+
+export interface HRAsset extends BaseEntity {
+  name: string;
+  type: HRAssetType;
+  category: HRAssetCategory;
+  description?: string;
+  templateUrl?: string;
+  previewImageUrl?: string;
+  sourceUrl?: string;
+  base64Data?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
+  dimensions?: {
+    width?: number;
+    height?: number;
+    unit?: 'mm' | 'in' | 'px';
+  };
+  status: HRAssetStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  tags?: string[];
+  // HR-specific fields
+  department?: string;
+  applicableFor?: string[];
+  validFrom?: string;
+  validUntil?: string;
+  version?: string;
 }
 
 // ============================================

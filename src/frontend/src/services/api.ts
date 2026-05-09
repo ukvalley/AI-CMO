@@ -397,6 +397,25 @@ export const brandApi = {
   delete: (id: string) => apiRequest(`/brands/${id}`, { method: 'DELETE' }),
 };
 
+// ============== HR ASSET API ==============
+
+export const hrAssetApi = {
+  getAll: (companyId: string) => apiRequest(`/hr-assets/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/hr-assets/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/hr-assets', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/hr-assets/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/hr-assets/${id}`, { method: 'DELETE' }),
+
+  bulkUpload: (items: any[], companyId: string) =>
+    apiRequest('/hr-assets/bulk', { method: 'POST', body: { items, companyId } }),
+};
+
 // ============== MODULE DATA API (Generic) ==============
 
 export const moduleDataApi = {
