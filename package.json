@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm run dev -w src/backend",
     "dev:frontend": "npm run dev -w src/frontend",
     "dev:ml": "npm run dev -w src/ml",
