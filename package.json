@@ -12,6 +12,7 @@
     "dev:frontend": "npm run dev -w src/frontend",
     "dev:ml": "npm run dev -w src/ml",
     "build": "npm run build --workspaces",
+    "build1": "npm run build",
     "test": "npm run test --workspaces",
     "test:ci": "npm run test:ci --workspaces",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",

@@ -9,10 +9,14 @@
 import React, { useState, useEffect } from 'react';
 import { moduleDataApi } from '@/services/api';
 import { useAuthStore, useCompanyStore } from '@/stores';
-import { Palette, Type, Layout, Eye, Sparkles, Moon, Sun, AlertCircle, CheckCircle2, ArrowLeft, Wand2, Settings } from 'lucide-react';
+import { Palette, Type, Layout, Eye, Sparkles, Moon, Sun, AlertCircle, CheckCircle2, ArrowLeft, Wand2, Settings, LayoutGrid, Check, Smartphone, FileText, CreditCard } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { BrandWizard, Suggestions, WizardAnswers } from './components/BrandWizard';
-import { PRESET_PALETTES, GOOGLE_FONTS, FONT_COMBINATIONS } from './components/data';
+import { DashboardPreview } from './components/DashboardPreview';
+import { MobileAppPreview } from './components/MobileAppPreview';
+import { FlyerPreview } from './components/FlyerPreview';
+import { VisitingCardPreview } from './components/VisitingCardPreview';
+import { PRESET_PALETTES, GOOGLE_FONTS, FONT_COMBINATIONS, ICON_STYLES, IMAGE_STYLES, COMPLETE_TEMPLATES, CompleteTemplate, IconStyle, ImageStyle } from './components/data';
 
 // ============================================
 // TYPES
@@ -39,13 +43,28 @@ interface VisualIdentity {
   bodyFont: string;
   accentFont: string;
   monoFont: string;
-  // Spacing
+  // Typography Spacing
+  headingLineHeight: string;
+  bodyLineHeight: string;
+  headingLetterSpacing: string;
+  bodyLetterSpacing: string;
+  // Border Radius
   borderRadiusSm: string;
   borderRadiusMd: string;
   borderRadiusLg: string;
   borderRadiusXl: string;
+  // Spacing (new)
+  sectionSpacing: string;
+  componentSpacing: string;
+  elementSpacing: string;
+  // Icon Style (new)
+  iconStyle: IconStyle;
+  // Image Style (new)
+  imageStyle: ImageStyle;
   // Wizard answers (for preset mode)
   wizardAnswers?: WizardAnswers;
+  // Selected template (for preset mode)
+  selectedTemplateId?: string;
 }
 
 // ============================================
@@ -112,6 +131,10 @@ function ColorPicker({
   );
 }
 
+// Sample text for font preview
+const FONT_PREVIEW_TEXT = 'The quick brown fox jumps over the lazy dog';
+const FONT_PREVIEW_TEXT_ALT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
 function FontSelector({
   label,
   value,
@@ -138,16 +161,24 @@ function FontSelector({
         disabled={disabled}
         className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-left hover:border-slate-600 transition-colors flex items-center justify-between disabled:opacity-50"
       >
-        <span style={{ fontFamily: value }} className="text-slate-200">
-          {value}
-        </span>
+        <div className="flex items-center gap-3">
+          <span style={{ fontFamily: value }} className="text-slate-200 text-lg">
+            {value}
+          </span>
+          <span
+            style={{ fontFamily: value }}
+            className="text-slate-400 text-sm truncate max-w-[200px]"
+          >
+            {FONT_PREVIEW_TEXT.slice(0, 20)}...
+          </span>
+        </div>
         <span className="text-slate-500">▼</span>
       </button>
 
       {isOpen && !disabled && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-80 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-[500px] overflow-y-auto">
             <div className="p-2 sticky top-0 bg-slate-800 border-b border-slate-700">
               <input
                 type="text"
@@ -167,14 +198,30 @@ function FontSelector({
                   setSearch('');
                 }}
                 className={cn(
-                  'w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors flex items-center justify-between',
+                  'w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors border-b border-slate-700/50 last:border-0',
                   value === font.name && 'bg-slate-700'
                 )}
               >
-                <span style={{ fontFamily: font.name }} className="text-slate-200">
-                  {font.name}
-                </span>
-                {value === font.name && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-slate-500 font-mono">{font.name}</span>
+                      {font.popular && (
+                        <span className="px-1.5 py-0.5 text-[10px] bg-primary-500/20 text-primary-400 rounded">
+                          Popular
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontFamily: font.name }} className="text-slate-200"
+                    >
+                      <p className="text-base mb-0.5">{FONT_PREVIEW_TEXT}</p>
+                      <p className="text-xs text-slate-500">{FONT_PREVIEW_TEXT_ALT}</p>
+                    </div>
+                  </div>
+                  {value === font.name && (
+                    <CheckCircle2 className="w-5 h-5 text-primary-500 ml-3 flex-shrink-0" />
+                  )}
+                </div>
               </button>
             ))}
           </div>
@@ -184,92 +231,278 @@ function FontSelector({
   );
 }
 
-function ComponentPreview({ identity }: { identity: VisualIdentity }) {
+// Template Selector Component
+function TemplateSelector({
+  currentTemplateId,
+  currentColors,
+  onSelectTemplate,
+}: {
+  currentTemplateId?: string;
+  currentColors: { primary: string; secondary: string; accent: string };
+  onSelectTemplate: (template: typeof COMPLETE_TEMPLATES[0]) => void;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const categories = [
+    { id: 'all', name: 'All' },
+    { id: 'technology', name: 'Technology' },
+    { id: 'healthcare', name: 'Healthcare' },
+    { id: 'finance', name: 'Finance' },
+    { id: 'ecommerce', name: 'E-commerce' },
+    { id: 'education', name: 'Education' },
+  ];
+
+  const filteredTemplates = selectedCategory === 'all'
+    ? COMPLETE_TEMPLATES
+    : COMPLETE_TEMPLATES.filter((t) => t.category === selectedCategory);
+
   return (
-    <div
-      className="p-6 rounded-xl border"
-      style={{
-        backgroundColor: identity.backgroundColor,
-        borderColor: identity.secondaryColor,
-      }}
-    >
-      <h3
-        className="text-xl font-bold mb-4"
-        style={{
-          color: identity.textColor,
-          fontFamily: identity.headingFont,
-        }}
-      >
-        Component Preview
-      </h3>
-
-      <div className="space-y-4">
-        {/* Button */}
+    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs mb-2" style={{ color: identity.textMutedColor }}>
-            Primary Button
+          <h2 className="text-lg font-semibold text-slate-200">Templates</h2>
+          <p className="text-sm text-slate-500">
+            Click any template to apply it instantly. Switch to Preset mode first.
           </p>
+        </div>
+      </div>
+
+      {/* Category Filter */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map((cat) => (
           <button
-            className="px-4 py-2 rounded-lg font-medium transition-all"
-            style={{
-              backgroundColor: identity.primaryColor,
-              color: identity.secondaryColor,
-              fontFamily: identity.bodyFont,
-            }}
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+              selectedCategory === cat.id
+                ? 'bg-primary-500 text-slate-900'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+            )}
           >
-            Get Started
+            {cat.name}
           </button>
-        </div>
+        ))}
+      </div>
 
-        {/* Card */}
-        <div
-          className="p-4 rounded-lg border"
-          style={{
-            backgroundColor: identity.surfaceColor,
-            borderColor: identity.secondaryColor,
-          }}
-        >
-          <h4
-            className="font-semibold mb-2"
-            style={{ color: identity.textColor, fontFamily: identity.headingFont }}
+      {/* Templates Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredTemplates.map((template) => {
+          const isSelected = currentTemplateId === template.id;
+          return (
+            <button
+              key={template.id}
+              onClick={() => onSelectTemplate(template)}
+              className={cn(
+                'relative p-4 rounded-xl border-2 text-left transition-all hover:scale-[1.02]',
+                isSelected
+                  ? 'border-primary-500 bg-slate-800 ring-2 ring-primary-500/30'
+                  : 'border-slate-700 bg-slate-900/50 hover:border-slate-500'
+              )}
+            >
+              {/* Selected Indicator */}
+              {isSelected && (
+                <div className="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                  <Check size={12} className="text-slate-900" />
+                </div>
+              )}
+
+              {/* Color Preview */}
+              <div className="flex gap-1 mb-3">
+                <div
+                  className="w-8 h-8 rounded"
+                  style={{ backgroundColor: template.colors.primary }}
+                />
+                <div
+                  className="w-8 h-8 rounded"
+                  style={{ backgroundColor: template.colors.secondary }}
+                />
+                <div
+                  className="w-8 h-8 rounded"
+                  style={{ backgroundColor: template.colors.accent }}
+                />
+              </div>
+
+              {/* Template Name */}
+              <p className="font-medium text-slate-200 mb-1">{template.name}</p>
+              <p className="text-xs text-slate-500 mb-2">{template.description}</p>
+
+              {/* Category Badge */}
+              <span className="inline-block px-1.5 py-0.5 text-[10px] uppercase tracking-wider rounded bg-slate-800 text-slate-400">
+                {template.category}
+              </span>
+
+              {/* Spacing Info */}
+              <div className="mt-2 pt-2 border-t border-slate-700/50 flex gap-2 text-[10px] text-slate-500">
+                <span>S: {template.spacing.section}</span>
+                <span>C: {template.spacing.component}</span>
+                <span>E: {template.spacing.element}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Spacing Slider Component
+function SpacingSelector({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  presets,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  min: number;
+  max: number;
+  step: number;
+  presets: string[];
+  disabled?: boolean;
+}) {
+  const numericValue = parseFloat(value) || 0;
+  const unit = value.replace(/[0-9.]/g, '') || 'rem';
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(`${e.target.value}${unit}`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-slate-300">{label}</label>
+        <span className="text-sm font-mono text-slate-400">{value}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={numericValue}
+        onChange={handleChange}
+        disabled={disabled}
+        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 accent-primary-500"
+      />
+      <div className="flex flex-wrap gap-2">
+        {presets.map((preset) => (
+          <button
+            key={preset}
+            onClick={() => !disabled && onChange(preset)}
+            disabled={disabled}
+            className={cn(
+              'px-2 py-1 text-xs rounded border transition-colors',
+              value === preset
+                ? 'bg-primary-500/20 border-primary-500 text-primary-400'
+                : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
           >
-            Feature Card
-          </h4>
-          <p style={{ color: identity.textMutedColor, fontFamily: identity.bodyFont }}>
-            This is how your content will look with the selected colors and typography.
-          </p>
-        </div>
+            {preset}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        {/* Alert */}
-        <div
-          className="p-3 rounded-lg flex items-center gap-2"
-          style={{
-            backgroundColor: `${identity.successColor}20`,
-            borderLeft: `3px solid ${identity.successColor}`,
-          }}
-        >
-          <CheckCircle2 style={{ color: identity.successColor }} className="w-5 h-5" />
-          <span style={{ color: identity.textColor, fontFamily: identity.bodyFont }}>
-            Success message example
-          </span>
-        </div>
+// Icon Style Selector Component
+function IconStyleSelector({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: IconStyle;
+  onChange: (style: IconStyle) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-slate-300">Icon Style</label>
+      <div className="grid grid-cols-2 gap-3">
+        {ICON_STYLES.map((style) => (
+          <button
+            key={style.id}
+            onClick={() => !disabled && onChange(style)}
+            disabled={disabled}
+            className={cn(
+              'p-3 rounded-xl border-2 text-left transition-all',
+              value.id === style.id
+                ? 'border-primary-500 bg-slate-800'
+                : 'border-slate-700 hover:border-slate-600 bg-slate-900/50',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill={style.style === 'filled' ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth={style.strokeWidth}
+                className="text-slate-400"
+              >
+                <circle cx="12" cy="12" r="10" />
+              </svg>
+              <span className="font-medium text-slate-200 text-sm">{style.name}</span>
+            </div>
+            <p className="text-xs text-slate-500">{style.description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        {/* Input */}
-        <div>
-          <p className="text-xs mb-2" style={{ color: identity.textMutedColor }}>
-            Form Input
-          </p>
-          <input
-            type="text"
-            placeholder="Enter your email..."
-            className="w-full px-3 py-2 rounded-lg border bg-transparent"
-            style={{
-              borderColor: identity.secondaryColor,
-              color: identity.textColor,
-              fontFamily: identity.bodyFont,
-            }}
-          />
-        </div>
+// Image Style Selector Component
+function ImageStyleSelector({
+  value,
+  onChange,
+  disabled = false,
+  primaryColor,
+}: {
+  value: ImageStyle;
+  onChange: (style: ImageStyle) => void;
+  disabled?: boolean;
+  primaryColor: string;
+}) {
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-slate-300">Image Style</label>
+      <div className="grid grid-cols-2 gap-3">
+        {IMAGE_STYLES.map((style) => (
+          <button
+            key={style.id}
+            onClick={() => !disabled && onChange(style)}
+            disabled={disabled}
+            className={cn(
+              'p-3 rounded-xl border-2 text-left transition-all',
+              value.id === style.id
+                ? 'border-primary-500 bg-slate-800'
+                : 'border-slate-700 hover:border-slate-600 bg-slate-900/50',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <div
+              className="w-full h-12 mb-2 bg-slate-700 flex items-center justify-center"
+              style={{
+                borderRadius: style.borderRadius,
+                border: style.border === 'none' ? 'none' : `${style.border} ${primaryColor}`,
+                boxShadow: style.shadow,
+              }}
+            >
+              <span className="text-xs text-slate-400">Preview</span>
+            </div>
+            <span className="font-medium text-slate-200 text-sm block">{style.name}</span>
+            <span className="text-xs text-slate-500">{style.description}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -361,10 +594,12 @@ export default function VisualIdentityPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [previewType, setPreviewType] = useState<'dashboard' | 'mobile' | 'flyer' | 'card'>('dashboard');
   const [wizardComplete, setWizardComplete] = useState(false);
   const [wizardAnswers, setWizardAnswers] = useState<WizardAnswers | null>(null);
-  const [activeTab, setActiveTab] = useState<'colors' | 'typography' | 'preview'>('colors');
+  const [activeTab, setActiveTab] = useState<'colors' | 'typography' | 'spacing' | 'visuals' | 'templates' | 'preview'>('colors');
 
   const defaultIdentity: VisualIdentity = {
     companyId: companyId || '',
@@ -384,10 +619,20 @@ export default function VisualIdentityPage() {
     bodyFont: 'Inter',
     accentFont: 'Playfair Display',
     monoFont: 'JetBrains Mono',
+    // Typography Spacing
+    headingLineHeight: '1.2',
+    bodyLineHeight: '1.6',
+    headingLetterSpacing: '-0.02em',
+    bodyLetterSpacing: '0',
     borderRadiusSm: '0.25rem',
     borderRadiusMd: '0.5rem',
     borderRadiusLg: '0.75rem',
     borderRadiusXl: '1rem',
+    sectionSpacing: '3rem',
+    componentSpacing: '1rem',
+    elementSpacing: '0.5rem',
+    iconStyle: ICON_STYLES[1], // regular-outline
+    imageStyle: IMAGE_STYLES[2], // modern-rounded
   };
 
   const [identity, setIdentity] = useState<VisualIdentity>(defaultIdentity);
@@ -403,10 +648,14 @@ export default function VisualIdentityPage() {
       setLoading(true);
       try {
         const response = await moduleDataApi.get('visual-identity', companyId);
-        if (response.data?.data) {
-          setIdentity({ ...defaultIdentity, ...response.data.data });
+        // Backend returns data directly, not wrapped in { data: ... }
+        const savedData = response.data;
+        if (savedData && Object.keys(savedData).length > 0) {
+          setIdentity({ ...defaultIdentity, ...savedData });
+          // Data exists - don't show wizard, show saved config
+          setShowWizard(false);
         } else {
-          // No existing data - show wizard
+          // No existing data - show wizard for first-time setup
           setShowWizard(true);
         }
       } catch (error) {
@@ -424,30 +673,98 @@ export default function VisualIdentityPage() {
     setWizardComplete(true);
   };
 
-  // Apply selected palette
+  // Select palette (just for preview/storing, not global app theme)
   const handleSelectPalette = (palette: typeof PRESET_PALETTES[0]) => {
-    setIdentity((prev) => ({
-      ...prev,
+    const newIdentity: VisualIdentity = {
+      ...identity,
       mode: 'preset',
-      ...palette.colors,
-    }));
-    setShowWizard(false);
-    setWizardComplete(false);
+      primaryColor: palette.colors.primary,
+      secondaryColor: palette.colors.secondary,
+      accentColor: palette.colors.accent,
+      backgroundColor: palette.colors.background,
+      surfaceColor: palette.colors.surface,
+      textColor: palette.colors.text,
+      textMutedColor: palette.colors.textMuted,
+      successColor: palette.colors.success,
+      warningColor: palette.colors.warning,
+      errorColor: palette.colors.error,
+      infoColor: palette.colors.info,
+    };
+    setIdentity(newIdentity);
+    // Note: We do NOT apply to global theme - this is just brand config storage
   };
 
-  // Apply selected fonts
+  // Select fonts (just for preview/storing, not global app theme)
   const handleSelectFonts = (fonts: typeof FONT_COMBINATIONS[0]) => {
     setIdentity((prev) => ({
       ...prev,
       headingFont: fonts.heading,
       bodyFont: fonts.body,
       accentFont: fonts.accent,
+      monoFont: fonts.mono,
     }));
+    // Note: We do NOT apply to global theme - this is just brand config storage
+  };
+
+  // Save BOTH palette and fonts to brand configuration
+  const handleSaveBoth = async (palette: typeof PRESET_PALETTES[0], fonts: typeof FONT_COMBINATIONS[0]) => {
+    // Find template for this palette to get spacing, icon, and image defaults
+    const template = COMPLETE_TEMPLATES.find((t) => t.id === palette.id);
+
+    const newIdentity: VisualIdentity = {
+      ...identity,
+      mode: 'preset',
+      selectedTemplateId: palette.id,
+      primaryColor: palette.colors.primary,
+      secondaryColor: palette.colors.secondary,
+      accentColor: palette.colors.accent,
+      backgroundColor: palette.colors.background,
+      surfaceColor: palette.colors.surface,
+      textColor: palette.colors.text,
+      textMutedColor: palette.colors.textMuted,
+      successColor: palette.colors.success,
+      warningColor: palette.colors.warning,
+      errorColor: palette.colors.error,
+      infoColor: palette.colors.info,
+      headingFont: fonts.heading,
+      bodyFont: fonts.body,
+      accentFont: fonts.accent,
+      monoFont: fonts.mono,
+      // In template mode, use template defaults for spacing, icons, and images
+      sectionSpacing: template?.spacing?.section || '3rem',
+      componentSpacing: template?.spacing?.component || '1rem',
+      elementSpacing: template?.spacing?.element || '0.5rem',
+      iconStyle: template?.iconStyle || ICON_STYLES[1],
+      imageStyle: template?.imageStyle || IMAGE_STYLES[2],
+      // Typography defaults from template
+      headingLineHeight: template?.fonts?.headingLineHeight || '1.2',
+      bodyLineHeight: template?.fonts?.bodyLineHeight || '1.6',
+      headingLetterSpacing: template?.fonts?.headingLetterSpacing || '-0.02em',
+      bodyLetterSpacing: template?.fonts?.bodyLetterSpacing || '0',
+    };
+    setIdentity(newIdentity);
+    // Save to module data only - do NOT apply globally to Mengo app
+    if (companyId) {
+      try {
+        const response = await moduleDataApi.save('visual-identity', {
+          companyId,
+          data: newIdentity,
+        });
+        if (response.error) {
+          console.error('Failed to save:', response.error);
+        }
+      } catch (error) {
+        console.error('Error saving:', error);
+      }
+    }
+    // Close wizard and show main editor
+    setShowWizard(false);
+    setWizardComplete(false);
   };
 
   // Switch to custom mode
   const handleCustomize = () => {
-    setIdentity((prev) => ({ ...prev, mode: 'custom' }));
+    setIdentity((prev: VisualIdentity) => ({ ...prev, mode: 'custom' }));
     setShowWizard(false);
     setWizardComplete(false);
   };
@@ -462,10 +779,25 @@ export default function VisualIdentityPage() {
   const saveIdentity = async () => {
     if (!companyId) return;
     setSaving(true);
-    await moduleDataApi.save('visual-identity', {
-      companyId,
-      data: identity,
-    });
+    setShowSuccess(false);
+    try {
+      const response = await moduleDataApi.save('visual-identity', {
+        companyId,
+        data: identity,
+      });
+      if (response.error) {
+        console.error('Failed to save visual identity:', response.error);
+        alert('Failed to save: ' + response.error);
+      } else {
+        console.log('Visual identity saved successfully');
+        setShowSuccess(true);
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving visual identity:', error);
+      alert('Error saving visual identity');
+    }
     setSaving(false);
   };
 
@@ -510,6 +842,7 @@ export default function VisualIdentityPage() {
           answers={wizardAnswers}
           onSelectPalette={handleSelectPalette}
           onSelectFonts={handleSelectFonts}
+          onSaveBoth={handleSaveBoth}
           onCustomize={handleCustomize}
         />
       </div>
@@ -534,6 +867,7 @@ export default function VisualIdentityPage() {
           <div className="flex bg-slate-900/50 rounded-lg p-1 border border-slate-800">
             <button
               onClick={handlePresetMode}
+              title="Run wizard again to get new suggestions"
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md transition-all',
                 identity.mode === 'preset'
@@ -542,7 +876,7 @@ export default function VisualIdentityPage() {
               )}
             >
               <Wand2 className="w-4 h-4" />
-              Preset
+              Run Wizard
             </button>
             <button
               onClick={handleCustomize}
@@ -558,13 +892,31 @@ export default function VisualIdentityPage() {
             </button>
           </div>
 
-          <button
-            onClick={saveIdentity}
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-slate-900 rounded-lg hover:bg-primary-400 transition-colors font-medium disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+          <div className="flex items-center gap-3">
+            {showSuccess && (
+              <span className="flex items-center gap-1.5 text-sm text-green-400 animate-in fade-in slide-in-from-right-2 duration-300">
+                <Check className="w-4 h-4" />
+                Saved successfully
+              </span>
+            )}
+            <button
+              onClick={saveIdentity}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-slate-900 rounded-lg hover:bg-primary-400 transition-colors font-medium disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -585,10 +937,13 @@ export default function VisualIdentityPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-900/50 rounded-xl border border-slate-800">
+      <div className="flex gap-1 p-1 bg-slate-900/50 rounded-xl border border-slate-800 flex-wrap">
         {[
           { id: 'colors', label: 'Colors', icon: Palette },
           { id: 'typography', label: 'Typography', icon: Type },
+          { id: 'spacing', label: 'Spacing', icon: Layout },
+          { id: 'visuals', label: 'Visuals', icon: Sparkles },
+          { id: 'templates', label: 'Templates', icon: LayoutGrid },
           { id: 'preview', label: 'Preview', icon: Eye },
         ].map((tab) => (
           <button
@@ -669,38 +1024,620 @@ export default function VisualIdentityPage() {
           )}
 
           {activeTab === 'typography' && (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-slate-200 mb-4">Typography</h2>
+            <div className="space-y-6">
+              {/* Font Selectors */}
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-slate-200">Typography</h2>
+                  {identity.mode === 'preset' && (
+                    <p className="text-sm text-slate-500">
+                      Fonts are preset from template. Switch to Custom mode to change.
+                    </p>
+                  )}
+                </div>
 
-              <FontSelector
-                label="Heading Font"
-                value={identity.headingFont}
-                onChange={(v) => setIdentity((p) => ({ ...p, headingFont: v }))}
-                disabled={identity.mode === 'preset'}
-              />
-              <FontSelector
-                label="Body Font"
-                value={identity.bodyFont}
-                onChange={(v) => setIdentity((p) => ({ ...p, bodyFont: v }))}
-                disabled={identity.mode === 'preset'}
-              />
-              <FontSelector
-                label="Accent Font"
-                value={identity.accentFont}
-                onChange={(v) => setIdentity((p) => ({ ...p, accentFont: v }))}
-                disabled={identity.mode === 'preset'}
-              />
-              <FontSelector
-                label="Monospace Font"
-                value={identity.monoFont}
-                onChange={(v) => setIdentity((p) => ({ ...p, monoFont: v }))}
-                disabled={identity.mode === 'preset'}
-              />
+                <FontSelector
+                  label="Heading Font"
+                  value={identity.headingFont}
+                  onChange={(v) => setIdentity((p) => ({ ...p, headingFont: v }))}
+                  disabled={identity.mode === 'preset'}
+                />
+                <FontSelector
+                  label="Body Font"
+                  value={identity.bodyFont}
+                  onChange={(v) => setIdentity((p) => ({ ...p, bodyFont: v }))}
+                  disabled={identity.mode === 'preset'}
+                />
+                <FontSelector
+                  label="Accent Font"
+                  value={identity.accentFont}
+                  onChange={(v) => setIdentity((p) => ({ ...p, accentFont: v }))}
+                  disabled={identity.mode === 'preset'}
+                />
+                <FontSelector
+                  label="Monospace Font"
+                  value={identity.monoFont}
+                  onChange={(v) => setIdentity((p) => ({ ...p, monoFont: v }))}
+                  disabled={identity.mode === 'preset'}
+                />
+              </div>
+
+              {/* Typography Spacing */}
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-slate-200">Typography Spacing</h2>
+                  {identity.mode === 'preset' && (
+                    <p className="text-sm text-slate-500">
+                      Spacing is preset from template. Switch to Custom mode to change.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Heading Line Height */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-300">Heading Line Height</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="2"
+                      step="0.05"
+                      value={identity.headingLineHeight}
+                      onChange={(e) => setIdentity((p) => ({ ...p, headingLineHeight: e.target.value }))}
+                      disabled={identity.mode === 'preset'}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500 disabled:opacity-50"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>1.0</span>
+                      <span className="text-slate-300 font-mono">{identity.headingLineHeight}</span>
+                      <span>2.0</span>
+                    </div>
+                  </div>
+
+                  {/* Body Line Height */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-300">Body Line Height</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="2.5"
+                      step="0.05"
+                      value={identity.bodyLineHeight}
+                      onChange={(e) => setIdentity((p) => ({ ...p, bodyLineHeight: e.target.value }))}
+                      disabled={identity.mode === 'preset'}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500 disabled:opacity-50"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>1.0</span>
+                      <span className="text-slate-300 font-mono">{identity.bodyLineHeight}</span>
+                      <span>2.5</span>
+                    </div>
+                  </div>
+
+                  {/* Heading Letter Spacing */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-300">Heading Letter Spacing</label>
+                    <input
+                      type="range"
+                      min="-0.05"
+                      max="0.1"
+                      step="0.01"
+                      value={parseFloat(identity.headingLetterSpacing)}
+                      onChange={(e) => setIdentity((p) => ({ ...p, headingLetterSpacing: `${parseFloat(e.target.value).toFixed(2)}em` }))}
+                      disabled={identity.mode === 'preset'}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500 disabled:opacity-50"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>-0.05em</span>
+                      <span className="text-slate-300 font-mono">{identity.headingLetterSpacing}</span>
+                      <span>0.1em</span>
+                    </div>
+                  </div>
+
+                  {/* Body Letter Spacing */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-300">Body Letter Spacing</label>
+                    <input
+                      type="range"
+                      min="-0.02"
+                      max="0.05"
+                      step="0.005"
+                      value={parseFloat(identity.bodyLetterSpacing)}
+                      onChange={(e) => setIdentity((p) => ({ ...p, bodyLetterSpacing: `${parseFloat(e.target.value).toFixed(3)}em` }))}
+                      disabled={identity.mode === 'preset'}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500 disabled:opacity-50"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>-0.02em</span>
+                      <span className="text-slate-300 font-mono">{identity.bodyLetterSpacing}</span>
+                      <span>0.05em</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Font Preview */}
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-slate-200 mb-6">Live Font Preview</h3>
+
+                <div
+                  className="p-6 rounded-lg border-2 border-dashed space-y-6"
+                  style={{
+                    borderColor: identity.secondaryColor,
+                    backgroundColor: identity.backgroundColor,
+                  }}
+                >
+                  {/* Heading Preview */}
+                  <div>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">
+                      Heading Font: {identity.headingFont}
+                    </span>
+                    <h1
+                      style={{
+                        fontFamily: identity.headingFont,
+                        color: identity.textColor,
+                        lineHeight: identity.headingLineHeight,
+                        letterSpacing: identity.headingLetterSpacing,
+                      }}
+                      className="text-4xl font-bold"
+                    >
+                      The Quick Brown Fox
+                    </h1>
+                    <h2
+                      style={{
+                        fontFamily: identity.headingFont,
+                        color: identity.textColor,
+                        lineHeight: identity.headingLineHeight,
+                        letterSpacing: identity.headingLetterSpacing,
+                      }}
+                      className="text-2xl mt-2"
+                    >
+                      Jumps Over The Lazy Dog
+                    </h2>
+                  </div>
+
+                  {/* Body Preview */}
+                  <div className="pt-4 border-t" style={{ borderColor: identity.secondaryColor }}>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">
+                      Body Font: {identity.bodyFont}
+                    </span>
+                    <p
+                      style={{
+                        fontFamily: identity.bodyFont,
+                        color: identity.textMutedColor,
+                        lineHeight: identity.bodyLineHeight,
+                        letterSpacing: identity.bodyLetterSpacing,
+                      }}
+                      className="text-base"
+                    >
+                      The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
+                      How vexingly quick daft zebras jump! Sphinx of black quartz, judge my vow.
+                    </p>
+                  </div>
+
+                  {/* Accent Preview */}
+                  <div className="pt-4 border-t" style={{ borderColor: identity.secondaryColor }}>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">
+                      Accent Font: {identity.accentFont}
+                    </span>
+                    <p
+                      style={{
+                        fontFamily: identity.accentFont,
+                        color: identity.accentColor,
+                      }}
+                      className="text-xl italic"
+                    >
+                      "Beautiful typography makes the design"
+                    </p>
+                  </div>
+
+                  {/* Monospace Preview */}
+                  <div className="pt-4 border-t" style={{ borderColor: identity.secondaryColor }}>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">
+                      Monospace Font: {identity.monoFont}
+                    </span>
+                    <code
+                      style={{
+                        fontFamily: identity.monoFont,
+                        color: identity.primaryColor,
+                        backgroundColor: identity.surfaceColor,
+                      }}
+                      className="text-sm px-3 py-2 rounded block"
+                    >
+                      const fontFamily = '{identity.monoFont}';
+                      console.log('Hello World!');
+                    </code>
+                  </div>
+
+                  {/* Typography Scale */}
+                  <div className="pt-4 border-t" style={{ borderColor: identity.secondaryColor }}>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider mb-3 block">
+                      Type Scale
+                    </span>
+                    <div className="space-y-2">
+                      {['3xl', '2xl', 'xl', 'lg', 'base', 'sm', 'xs'].map((size, i) => {
+                        const sizes: Record<string, string> = {
+                          '3xl': '1.875rem',
+                          '2xl': '1.5rem',
+                          xl: '1.25rem',
+                          lg: '1.125rem',
+                          base: '1rem',
+                          sm: '0.875rem',
+                          xs: '0.75rem',
+                        };
+                        return (
+                          <div key={size} className="flex items-center gap-4">
+                            <span className="text-xs text-slate-500 w-12">{size}</span>
+                            <span
+                              style={{
+                                fontFamily: identity.bodyFont,
+                                fontSize: sizes[size],
+                                color: identity.textColor,
+                              }}
+                            >
+                              The quick brown fox
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
+          {activeTab === 'spacing' && (
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-200">Spacing</h2>
+                {identity.mode === 'preset' && (
+                  <p className="text-sm text-slate-500">
+                    Using template defaults. Switch to Custom mode to adjust.
+                  </p>
+                )}
+              </div>
+
+              <SpacingSelector
+                label="Section Spacing"
+                value={identity.sectionSpacing}
+                onChange={(v) => setIdentity((p) => ({ ...p, sectionSpacing: v }))}
+                min={3}
+                max={8}
+                step={0.5}
+                presets={['3rem', '4rem', '5rem', '6rem', '7rem', '8rem']}
+                disabled={identity.mode === 'preset'}
+              />
+
+              <SpacingSelector
+                label="Component Spacing"
+                value={identity.componentSpacing}
+                onChange={(v) => setIdentity((p) => ({ ...p, componentSpacing: v }))}
+                min={1}
+                max={4}
+                step={0.25}
+                presets={['1rem', '1.5rem', '2rem', '2.5rem', '3rem', '4rem']}
+                disabled={identity.mode === 'preset'}
+              />
+
+              <SpacingSelector
+                label="Element Spacing"
+                value={identity.elementSpacing}
+                onChange={(v) => setIdentity((p) => ({ ...p, elementSpacing: v }))}
+                min={0.25}
+                max={2}
+                step={0.25}
+                presets={['0.25rem', '0.5rem', '0.75rem', '1rem', '1.5rem', '2rem']}
+                disabled={identity.mode === 'preset'}
+              />
+
+              <div className="pt-4 border-t border-slate-800">
+                <h3 className="text-sm font-medium text-slate-300 mb-3">Spacing Preview</h3>
+                <div
+                  className="p-4 rounded-lg border-2 border-dashed border-slate-700"
+                  style={{ backgroundColor: identity.surfaceColor }}
+                >
+                  <div
+                    className="p-4 rounded-lg border"
+                    style={{
+                      backgroundColor: identity.backgroundColor,
+                      borderColor: identity.secondaryColor,
+                      marginBottom: identity.sectionSpacing,
+                    }}
+                  >
+                    <span className="text-xs text-slate-500">Section</span>
+                    <div
+                      className="p-3 rounded border mt-2"
+                      style={{
+                        backgroundColor: identity.surfaceColor,
+                        borderColor: identity.secondaryColor,
+                        marginBottom: identity.componentSpacing,
+                      }}
+                    >
+                      <span className="text-xs text-slate-500">Component</span>
+                      <div className="flex gap-2 mt-2">
+                        <div
+                          className="px-3 py-2 rounded text-xs"
+                          style={{
+                            backgroundColor: `${identity.primaryColor}20`,
+                            color: identity.primaryColor,
+                          }}
+                        >
+                          Element
+                        </div>
+                        <div
+                          className="px-3 py-2 rounded text-xs"
+                          style={{
+                            backgroundColor: `${identity.primaryColor}20`,
+                            color: identity.primaryColor,
+                          }}
+                        >
+                          Element
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'visuals' && (
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-200">Visual Styles</h2>
+                {identity.mode === 'preset' && (
+                  <p className="text-sm text-slate-500">
+                    Using template defaults. Switch to Custom mode to adjust.
+                  </p>
+                )}
+              </div>
+
+              <IconStyleSelector
+                value={identity.iconStyle}
+                onChange={(style) => setIdentity((p) => ({ ...p, iconStyle: style }))}
+                disabled={identity.mode === 'preset'}
+              />
+
+              <div className="pt-4 border-t border-slate-800">
+                <ImageStyleSelector
+                  value={identity.imageStyle}
+                  onChange={(style) => setIdentity((p) => ({ ...p, imageStyle: style }))}
+                  disabled={identity.mode === 'preset'}
+                  primaryColor={identity.primaryColor}
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'templates' && (
+            <TemplateSelector
+              currentTemplateId={identity.selectedTemplateId}
+              currentColors={{
+                primary: identity.primaryColor,
+                secondary: identity.secondaryColor,
+                accent: identity.accentColor,
+              }}
+              onSelectTemplate={(template) => {
+                setIdentity((prev) => ({
+                  ...prev,
+                  mode: 'preset',
+                  selectedTemplateId: template.id,
+                  primaryColor: template.colors.primary,
+                  secondaryColor: template.colors.secondary,
+                  accentColor: template.colors.accent,
+                  backgroundColor: template.colors.background,
+                  surfaceColor: template.colors.surface,
+                  textColor: template.colors.text,
+                  textMutedColor: template.colors.textMuted,
+                  successColor: template.colors.success,
+                  warningColor: template.colors.warning,
+                  errorColor: template.colors.error,
+                  infoColor: template.colors.info,
+                  headingFont: template.fonts.heading,
+                  bodyFont: template.fonts.body,
+                  accentFont: template.fonts.accent,
+                  monoFont: template.fonts.mono,
+                  sectionSpacing: template.spacing.section,
+                  componentSpacing: template.spacing.component,
+                  elementSpacing: template.spacing.element,
+                  iconStyle: template.iconStyle,
+                  imageStyle: template.imageStyle,
+                  headingLineHeight: template.fonts.headingLineHeight || '1.2',
+                  bodyLineHeight: template.fonts.bodyLineHeight || '1.6',
+                  headingLetterSpacing: template.fonts.headingLetterSpacing || '-0.02em',
+                  bodyLetterSpacing: template.fonts.bodyLetterSpacing || '0',
+                }));
+              }}
+            />
+          )}
+
           {activeTab === 'preview' && (
-            <ComponentPreview identity={identity} />
+            <div className="space-y-4">
+              {/* Preview Disclaimer */}
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-400">
+                  <span className="font-semibold">Note:</span> These previews are for demonstration purposes only. Actual results may vary based on implementation.
+                </p>
+              </div>
+              {/* Preview Type Selector */}
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm text-slate-400 mr-2">Preview:</span>
+                {[
+                  { id: 'dashboard', label: 'Dashboard', icon: Layout },
+                  { id: 'mobile', label: 'Mobile App', icon: Smartphone },
+                  { id: 'flyer', label: 'Flyer', icon: FileText },
+                  { id: 'card', label: 'Visiting Card', icon: CreditCard },
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => setPreviewType(type.id as typeof previewType)}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                      previewType === type.id
+                        ? 'bg-primary-500 text-slate-900'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                    )}
+                  >
+                    <type.icon className="w-4 h-4" />
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Preview Content */}
+              <div className="overflow-x-auto">
+                {previewType === 'dashboard' && (
+                  <DashboardPreview
+                    scale={0.55}
+                    onOpenNewTab={() => {
+                      sessionStorage.setItem('preview-identity', JSON.stringify(identity));
+                      window.open('/brand/visual-identity/preview', '_blank');
+                    }}
+                    colors={{
+                      primary: identity.primaryColor,
+                      secondary: identity.secondaryColor,
+                      accent: identity.accentColor,
+                      background: identity.backgroundColor,
+                      surface: identity.surfaceColor,
+                      text: identity.textColor,
+                      textMuted: identity.textMutedColor,
+                      success: identity.successColor,
+                      warning: identity.warningColor,
+                      error: identity.errorColor,
+                      info: identity.infoColor,
+                    }}
+                    fonts={{
+                      heading: identity.headingFont,
+                      body: identity.bodyFont,
+                      accent: identity.accentFont,
+                      mono: identity.monoFont,
+                    }}
+                    typography={{
+                      headingLineHeight: identity.headingLineHeight,
+                      bodyLineHeight: identity.bodyLineHeight,
+                      headingLetterSpacing: identity.headingLetterSpacing,
+                      bodyLetterSpacing: identity.bodyLetterSpacing,
+                    }}
+                    borderRadius={{
+                      sm: identity.borderRadiusSm,
+                      md: identity.borderRadiusMd,
+                      lg: identity.borderRadiusLg,
+                      xl: identity.borderRadiusXl,
+                    }}
+                    spacing={{
+                      section: identity.sectionSpacing,
+                      component: identity.componentSpacing,
+                      element: identity.elementSpacing,
+                    }}
+                    iconStyle={identity.iconStyle}
+                    imageStyle={identity.imageStyle}
+                  />
+                )}
+
+                {previewType === 'mobile' && (
+                  <div className="flex justify-center">
+                    <MobileAppPreview
+                      colors={{
+                        primary: identity.primaryColor,
+                        secondary: identity.secondaryColor,
+                        accent: identity.accentColor,
+                        background: identity.backgroundColor,
+                        surface: identity.surfaceColor,
+                        text: identity.textColor,
+                        textMuted: identity.textMutedColor,
+                        success: identity.successColor,
+                        warning: identity.warningColor,
+                        error: identity.errorColor,
+                        info: identity.infoColor,
+                      }}
+                      fonts={{
+                        heading: identity.headingFont,
+                        body: identity.bodyFont,
+                        accent: identity.accentFont,
+                        mono: identity.monoFont,
+                      }}
+                      borderRadius={{
+                        sm: identity.borderRadiusSm,
+                        md: identity.borderRadiusMd,
+                        lg: identity.borderRadiusLg,
+                        xl: identity.borderRadiusXl,
+                      }}
+                      iconStyle={identity.iconStyle}
+                      imageStyle={identity.imageStyle}
+                    />
+                  </div>
+                )}
+
+                {previewType === 'flyer' && (
+                  <div className="flex justify-center">
+                    <FlyerPreview
+                      colors={{
+                        primary: identity.primaryColor,
+                        secondary: identity.secondaryColor,
+                        accent: identity.accentColor,
+                        background: identity.backgroundColor,
+                        surface: identity.surfaceColor,
+                        text: identity.textColor,
+                        textMuted: identity.textMutedColor,
+                        success: identity.successColor,
+                        warning: identity.warningColor,
+                        error: identity.errorColor,
+                        info: identity.infoColor,
+                      }}
+                      fonts={{
+                        heading: identity.headingFont,
+                        body: identity.bodyFont,
+                        accent: identity.accentFont,
+                        mono: identity.monoFont,
+                      }}
+                      borderRadius={{
+                        sm: identity.borderRadiusSm,
+                        md: identity.borderRadiusMd,
+                        lg: identity.borderRadiusLg,
+                        xl: identity.borderRadiusXl,
+                      }}
+                      iconStyle={identity.iconStyle}
+                      imageStyle={identity.imageStyle}
+                    />
+                  </div>
+                )}
+
+                {previewType === 'card' && (
+                  <div className="flex justify-center">
+                    <VisitingCardPreview
+                      colors={{
+                        primary: identity.primaryColor,
+                        secondary: identity.secondaryColor,
+                        accent: identity.accentColor,
+                        background: identity.backgroundColor,
+                        surface: identity.surfaceColor,
+                        text: identity.textColor,
+                        textMuted: identity.textMutedColor,
+                        success: identity.successColor,
+                        warning: identity.warningColor,
+                        error: identity.errorColor,
+                        info: identity.infoColor,
+                      }}
+                      fonts={{
+                        heading: identity.headingFont,
+                        body: identity.bodyFont,
+                        accent: identity.accentFont,
+                        mono: identity.monoFont,
+                      }}
+                      borderRadius={{
+                        sm: identity.borderRadiusSm,
+                        md: identity.borderRadiusMd,
+                        lg: identity.borderRadiusLg,
+                        xl: identity.borderRadiusXl,
+                      }}
+                      iconStyle={identity.iconStyle}
+                      imageStyle={identity.imageStyle}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
@@ -744,6 +1681,40 @@ export default function VisualIdentityPage() {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Spacing Summary */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <h3 className="font-semibold text-slate-200 mb-4">Spacing</h3>
+            <div className="space-y-3">
+              {[
+                { label: 'Section', value: identity.sectionSpacing },
+                { label: 'Component', value: identity.componentSpacing },
+                { label: 'Element', value: identity.elementSpacing },
+              ].map((item) => (
+                <div key={item.label} className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">{item.label}</span>
+                  <span className="text-sm text-slate-300 font-mono">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Visual Styles Summary */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <h3 className="font-semibold text-slate-200 mb-4">Visual Styles</h3>
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs text-slate-500 block mb-1">Icon Style</span>
+                <span className="text-sm text-slate-300">{identity.iconStyle.name}</span>
+                <p className="text-xs text-slate-500">{identity.iconStyle.description}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block mb-1">Image Style</span>
+                <span className="text-sm text-slate-300">{identity.imageStyle.name}</span>
+                <p className="text-xs text-slate-500">{identity.imageStyle.description}</p>
+              </div>
             </div>
           </div>
 

@@ -1,350 +1,222 @@
 /**
- * Brand Module
+ * Brand Module Landing Page
  *
- * Brand identity and visual guidelines for the company.
+ * Central hub for all brand-related modules.
  */
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ModulePage } from '@/components/shared';
-import { FormField } from '@/components/shared/UniversalForm';
-import { TableColumn } from '@/components/shared/UniversalTable';
-import { brandApi } from '@/services/api';
-import { useAuthStore, useCompanyStore } from '@/stores';
-import type { Brand } from '@/types/entities';
+import React from 'react';
+import Link from 'next/link';
+import {
+  Brain,
+  Paintbrush,
+  Image,
+  FileText,
+  ArrowRight,
+  Palette,
+  BookOpen,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react';
 
 // ============================================
-// TABLE COLUMNS
+// BRAND MODULE CARDS
 // ============================================
 
-const columns: TableColumn<Brand>[] = [
+const BRAND_MODULES = [
   {
-    key: 'tagline',
-    header: 'Tagline',
-    sortable: true,
-    render: (value) => value || 'No tagline set',
+    id: 'brand-strategy',
+    name: 'Brand Strategy',
+    description: 'Define your brand\'s psychology, archetypes, positioning, messaging, and tone of voice using established frameworks.',
+    icon: Brain,
+    path: '/brand/strategy',
+    color: '#7C6BF0',
+    features: ['Brand Archetypes', 'Positioning', 'Tone of Voice', 'Messaging Framework'],
   },
   {
-    key: 'primaryColor',
-    header: 'Primary Color',
-    render: (value) => (
-      <div className="flex items-center gap-2">
-        <div
-          className="w-6 h-6 rounded border border-slate-600"
-          style={{ backgroundColor: value as string }}
-        />
-        <span className="text-slate-400 text-sm">{value as string}</span>
-      </div>
-    ),
+    id: 'visual-identity',
+    name: 'Visual Identity',
+    description: 'Create your complete design system with colors, typography, spacing, and preview across multiple formats.',
+    icon: Paintbrush,
+    path: '/visual-identity',
+    color: '#EC4899',
+    features: ['Color System', 'Typography', 'Templates', 'Live Previews'],
   },
   {
-    key: 'personality',
-    header: 'Personality',
-    render: (value) => {
-      if (!value) return <span className="text-slate-500">Not defined</span>;
-      const personalities = Array.isArray(value) ? value : [value];
-      return (
-        <div className="flex flex-wrap gap-1">
-          {personalities.slice(0, 3).map((p) => (
-            <span key={p} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-xs rounded">
-              {p}
-            </span>
-          ))}
-          {personalities.length > 3 && (
-            <span className="text-slate-500 text-xs">+{personalities.length - 3}</span>
-          )}
-        </div>
-      );
-    },
+    id: 'brand-assets',
+    name: 'Brand Assets',
+    description: 'Manage logos, favicons, patterns, backgrounds, and other visual brand elements.',
+    icon: Image,
+    path: '/brand-assets',
+    color: '#3B82F6',
+    features: ['Logo Library', 'Favicons', 'Patterns', 'Backgrounds'],
   },
   {
-    key: 'voice',
-    header: 'Voice',
-    render: (value) => value || <span className="text-slate-500">Not defined</span>,
+    id: 'stationery',
+    name: 'Stationery',
+    description: 'Design business cards, letterheads, templates, and other branded materials.',
+    icon: FileText,
+    path: '/stationery',
+    color: '#10B981',
+    features: ['Business Cards', 'Letterheads', 'Email Signatures', 'Templates'],
   },
 ];
 
 // ============================================
-// FORM FIELDS
+// MODULE CARD COMPONENT
 // ============================================
 
-const formFields: FormField[] = [
-  {
-    key: 'section-visual',
-    label: 'Visual Identity',
-    type: 'section-header',
-    colSpan: 2,
-  },
-  {
-    key: 'primaryColor',
-    label: 'Primary Color',
-    type: 'color',
-    required: true,
-    helperText: 'Main brand color used for primary actions and highlights',
-  },
-  {
-    key: 'secondaryColor',
-    label: 'Secondary Color',
-    type: 'color',
-    helperText: 'Supporting color for backgrounds and secondary elements',
-  },
-  {
-    key: 'accentColor',
-    label: 'Accent Color',
-    type: 'color',
-    helperText: 'Accent color for special highlights and CTAs',
-  },
-  {
-    key: 'headingFont',
-    label: 'Heading Font',
-    type: 'select',
-    options: [
-      { value: 'inter', label: 'Inter' },
-      { value: 'roboto', label: 'Roboto' },
-      { value: 'montserrat', label: 'Montserrat' },
-      { value: 'playfair', label: 'Playfair Display' },
-      { value: 'poppins', label: 'Poppins' },
-      { value: 'open-sans', label: 'Open Sans' },
-      { value: 'lato', label: 'Lato' },
-    ],
-  },
-  {
-    key: 'bodyFont',
-    label: 'Body Font',
-    type: 'select',
-    options: [
-      { value: 'inter', label: 'Inter' },
-      { value: 'roboto', label: 'Roboto' },
-      { value: 'open-sans', label: 'Open Sans' },
-      { value: 'lato', label: 'Lato' },
-      { value: 'source-sans', label: 'Source Sans Pro' },
-    ],
-  },
-  {
-    key: 'section-identity',
-    label: 'Brand Identity',
-    type: 'section-header',
-    colSpan: 2,
-  },
-  {
-    key: 'tagline',
-    label: 'Brand Tagline',
-    type: 'text',
-    placeholder: 'Your company tagline...',
-    helperText: 'A short, memorable phrase that captures your brand essence',
-  },
-  {
-    key: 'personality',
-    label: 'Brand Personality',
-    type: 'multiselect',
-    options: [
-      { value: 'professional', label: 'Professional' },
-      { value: 'friendly', label: 'Friendly' },
-      { value: 'innovative', label: 'Innovative' },
-      { value: 'trustworthy', label: 'Trustworthy' },
-      { value: 'bold', label: 'Bold' },
-      { value: 'playful', label: 'Playful' },
-      { value: 'sophisticated', label: 'Sophisticated' },
-      { value: 'approachable', label: 'Approachable' },
-      { value: 'authoritative', label: 'Authoritative' },
-      { value: 'creative', label: 'Creative' },
-    ],
-    helperText: 'Select 3-5 traits that describe your brand personality',
-  },
-  {
-    key: 'voice',
-    label: 'Brand Voice',
-    type: 'select',
-    options: [
-      { value: 'professional', label: 'Professional & Corporate' },
-      { value: 'conversational', label: 'Conversational & Friendly' },
-      { value: 'playful', label: 'Playful & Casual' },
-      { value: 'technical', label: 'Technical & Precise' },
-      { value: 'inspirational', label: 'Inspirational & Motivational' },
-      { value: 'authoritative', label: 'Authoritative & Expert' },
-    ],
-    helperText: 'How your brand communicates with its audience',
-  },
-  {
-    key: 'section-messaging',
-    label: 'Brand Messaging',
-    type: 'section-header',
-    colSpan: 2,
-  },
-  {
-    key: 'purposeWhyExists',
-    label: 'Why We Exist',
-    type: 'textarea',
-    rows: 3,
-    placeholder: 'The fundamental reason your company exists...',
-    aiGenerate: true,
-    colSpan: 2,
-  },
-  {
-    key: 'brandPromise',
-    label: 'Brand Promise',
-    type: 'textarea',
-    rows: 2,
-    placeholder: 'What you promise to deliver to customers...',
-    aiGenerate: true,
-    colSpan: 2,
-  },
-  {
-    key: 'emotionalBenefit',
-    label: 'Emotional Benefit',
-    type: 'textarea',
-    rows: 2,
-    placeholder: 'How customers feel when using your product...',
-    aiGenerate: true,
-    colSpan: 2,
-  },
-];
-
-// ============================================
-// BRAND PAGE
-// ============================================
-
-export default function BrandPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
-  const companyId = user?.activeCompanyId || storeCompanyId;
-
-  const [brand, setBrand] = useState<Brand[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load data from API
-  useEffect(() => {
-    if (!companyId) {
-      setBrand([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const response = await brandApi.getByCompany(companyId);
-        if (response.data) {
-          setBrand([response.data as Brand]);
-        } else {
-          // If no brand exists, create default
-          const createResponse = await brandApi.create({
-            companyId,
-            primaryColor: '#7C6BF0',
-            secondaryColor: '#1E293B',
-            accentColor: '#22D3EE',
-            headingFont: 'inter',
-            bodyFont: 'inter',
-          });
-          if (createResponse.data) {
-            setBrand([createResponse.data as Brand]);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load brand:', error);
-      }
-      setIsLoading(false);
-    };
-
-    loadData();
-  }, [companyId]);
-
-  const handleCreate = async (data: Record<string, unknown>) => {
-    if (!companyId) return;
-
-    const response = await brandApi.create({
-      ...data,
-      companyId,
-    });
-
-    if (response.data) {
-      setBrand([response.data as Brand]);
-    }
-  };
-
-  const handleUpdate = async (id: string, data: Partial<Brand>) => {
-    const response = await brandApi.update(id, data);
-    if (response.data) {
-      setBrand([response.data as Brand]);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    // Brand is singleton - don't allow delete, just reset to defaults
-    const response = await brandApi.update(id, {
-      primaryColor: '#7C6BF0',
-      secondaryColor: '#1E293B',
-      accentColor: '#22D3EE',
-      headingFont: 'inter',
-      bodyFont: 'inter',
-      tagline: '',
-      voice: '',
-      personality: [],
-      purposeWhyExists: '',
-      brandPromise: '',
-      emotionalBenefit: '',
-    });
-    if (response.data) {
-      setBrand([response.data as Brand]);
-    }
-  };
-
-  if (!companyId) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-slate-400">Please select a company to view brand settings.</p>
-      </div>
-    );
-  }
+function ModuleCard({
+  module,
+}: {
+  module: typeof BRAND_MODULES[0];
+}) {
+  const Icon = module.icon;
 
   return (
-    <div className="space-y-6">
-      {/* Brand Preview Card */}
-      {brand.length > 0 && (
-        <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-slate-200 mb-4">Brand Preview</h2>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-400">Primary:</span>
-              <div
-                className="w-10 h-10 rounded-lg border border-slate-600"
-                style={{ backgroundColor: brand[0]?.primaryColor }}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-400">Secondary:</span>
-              <div
-                className="w-10 h-10 rounded-lg border border-slate-600"
-                style={{ backgroundColor: brand[0]?.secondaryColor }}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-400">Accent:</span>
-              <div
-                className="w-10 h-10 rounded-lg border border-slate-600"
-                style={{ backgroundColor: brand[0]?.accentColor }}
-              />
-            </div>
-          </div>
-          {brand[0]?.tagline && (
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <span className="text-sm text-slate-400">Tagline:</span>
-              <p className="text-slate-200 mt-1">{brand[0].tagline}</p>
-            </div>
-          )}
+    <Link
+      href={module.path}
+      className="group block bg-slate-900/50 border border-slate-800 rounded-xl p-6 hover:border-slate-600 hover:bg-slate-800/50 transition-all"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: `${module.color}20` }}
+        >
+          <Icon className="w-6 h-6" style={{ color: module.color }} />
         </div>
-      )}
+        <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-slate-400 transition-colors" />
+      </div>
 
-      <ModulePage
-        moduleId="brand"
-        columns={columns}
-        fields={formFields}
-        data={brand}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-      />
+      <h3 className="text-lg font-semibold text-slate-200 mb-2">
+        {module.name}
+      </h3>
+
+      <p className="text-sm text-slate-400 mb-4 line-clamp-2">
+        {module.description}
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {module.features.map((feature) => (
+          <span
+            key={feature}
+            className="px-2 py-1 bg-slate-800 text-slate-400 text-xs rounded"
+          >
+            {feature}
+          </span>
+        ))}
+      </div>
+    </Link>
+  );
+}
+
+// ============================================
+// BRAND MANUAL CARD
+// ============================================
+
+function BrandManualCard() {
+  return (
+    <Link
+      href="/brand/manual"
+      className="group block bg-gradient-to-br from-primary-500/10 to-purple-500/10 border border-primary-500/30 rounded-xl p-6 hover:border-primary-500/50 transition-all"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center">
+          <BookOpen className="w-6 h-6 text-primary-400" />
+        </div>
+        <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-primary-400 transition-colors" />
+      </div>
+
+      <h3 className="text-lg font-semibold text-slate-200 mb-2">
+        Brand Manual
+      </h3>
+
+      <p className="text-sm text-slate-400 mb-4">
+        View and download your complete brand guidelines document.
+      </p>
+
+      <div className="flex items-center gap-2">
+        <span className="px-2 py-1 bg-primary-500/20 text-primary-400 text-xs rounded">
+          View Guidelines
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// ============================================
+// MAIN PAGE
+// ============================================
+
+export default function BrandLandingPage() {
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500/10 rounded-full">
+          <Palette className="w-4 h-4 text-primary-500" />
+          <span className="text-sm text-primary-400 font-medium">Brand Hub</span>
+        </div>
+        <h1 className="text-3xl font-bold text-slate-200">
+          Build Your Brand
+        </h1>
+        <p className="text-slate-400 max-w-2xl mx-auto">
+          Create a comprehensive brand identity that resonates with your audience.
+          Start with strategy, then bring it to life with visual identity and assets.
+        </p>
+      </div>
+
+      {/* Recommended Workflow */}
+      <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-6">
+        <h2 className="text-sm font-medium text-slate-300 mb-4">Recommended Workflow</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          {BRAND_MODULES.map((module, index) => (
+            <React.Fragment key={module.id}>
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg">
+                <module.icon className="w-4 h-4" style={{ color: module.color }} />
+                <span className="text-sm text-slate-300">{module.name}</span>
+              </div>
+              {index < BRAND_MODULES.length - 1 && (
+                <ArrowRight className="w-4 h-4 text-slate-600" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Module Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {BRAND_MODULES.map((module) => (
+          <ModuleCard key={module.id} module={module} />
+        ))}
+        <BrandManualCard />
+      </div>
+
+      {/* Quick Tips */}
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6">
+        <h3 className="text-sm font-medium text-blue-200 mb-2">
+          Brand Building Tips
+        </h3>
+        <ul className="space-y-2 text-sm text-blue-300/80">
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400">1.</span>
+            Start with <strong className="text-blue-200">Brand Strategy</strong> to define your foundation before creating visual assets
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400">2.</span>
+            Use <strong className="text-blue-200">Visual Identity</strong> to ensure consistency across all touchpoints
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400">3.</span>
+            Keep all assets organized in <strong className="text-blue-200">Brand Assets</strong> for easy team access
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400">4.</span>
+            Apply your brand to <strong className="text-blue-200">Stationery</strong> for professional communication
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

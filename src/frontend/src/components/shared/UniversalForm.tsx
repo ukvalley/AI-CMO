@@ -110,7 +110,6 @@ export function UniversalForm<T extends Record<string, unknown>>({
       else if (f.type === 'social-grid') defaults[f.key] = {};
       else if (f.type === 'image-gallery') defaults[f.key] = [];
       else if (f.type === 'video-urls') defaults[f.key] = [];
-      else if (f.type === 'file-upload') defaults[f.key] = '';
       else defaults[f.key] = '';
     });
     return { ...defaults, ...initialData };

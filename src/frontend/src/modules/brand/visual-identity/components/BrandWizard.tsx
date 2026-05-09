@@ -17,6 +17,8 @@ import {
   COLOR_PREFERENCES,
   PRESET_PALETTES,
   FONT_COMBINATIONS,
+  getSmartSuggestions,
+  FONT_SPECIFICATIONS,
 } from './data';
 
 interface WizardAnswers {
@@ -264,48 +266,73 @@ interface SuggestionsProps {
   answers: WizardAnswers;
   onSelectPalette: (palette: typeof PRESET_PALETTES[0]) => void;
   onSelectFonts: (fonts: typeof FONT_COMBINATIONS[0]) => void;
+  onSaveBoth: (palette: typeof PRESET_PALETTES[0], fonts: typeof FONT_COMBINATIONS[0]) => void | Promise<void>;
   onCustomize: () => void;
 }
 
-export function Suggestions({ answers, onSelectPalette, onSelectFonts, onCustomize }: SuggestionsProps) {
-  // Find matching palettes
-  const matchingPalettes = PRESET_PALETTES.filter((palette) => {
-    let score = 0;
-    if (answers.industry && palette.tags.includes(answers.industry)) score += 2;
-    if (answers.personality?.some((p) => palette.tags.includes(p))) score += 1;
-    if (answers.targetAudience && palette.tags.includes(answers.targetAudience)) score += 1;
-    if (answers.mood && palette.tags.includes(answers.mood)) score += 1;
-    if (answers.colorPreference && palette.tags.includes(answers.colorPreference)) score += 2;
-    return score >= 2;
-  }).slice(0, 5);
+export function Suggestions({ answers, onSelectPalette, onSelectFonts, onSaveBoth, onCustomize }: SuggestionsProps) {
+  const [selectedPalette, setSelectedPalette] = useState<typeof PRESET_PALETTES[0] | null>(null);
+  const [selectedFonts, setSelectedFonts] = useState<typeof FONT_COMBINATIONS[0] | null>(null);
 
-  // Find matching font combinations
-  const matchingFonts = FONT_COMBINATIONS.filter((combo) => {
-    let score = 0;
-    if (answers.personality?.some((p) => combo.tags.includes(p))) score += 2;
-    if (answers.mood && combo.tags.includes(answers.mood)) score += 1;
-    return score >= 1;
-  }).slice(0, 3);
+  // Get smart suggestions using algorithm
+  const { palettes: matchingPalettes, fonts: matchingFonts } = getSmartSuggestions(
+    answers.industry || '',
+    answers.personality || [],
+    answers.targetAudience || '',
+    answers.mood || '',
+    answers.colorPreference || ''
+  );
+
+  const handlePaletteClick = (palette: typeof PRESET_PALETTES[0]) => {
+    setSelectedPalette(palette);
+    onSelectPalette(palette);
+  };
+
+  const handleFontClick = (fonts: typeof FONT_COMBINATIONS[0]) => {
+    setSelectedFonts(fonts);
+    onSelectFonts(fonts);
+  };
+
+  const handleSave = async () => {
+    if (selectedPalette && selectedFonts) {
+      await onSaveBoth(selectedPalette, selectedFonts);
+    }
+  };
+
+  const canSave = selectedPalette && selectedFonts;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center">
         <Sparkles className="w-12 h-12 text-primary-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-slate-200 mb-2">We Found Some Matches!</h2>
-        <p className="text-slate-400">Based on your answers, here are our recommendations</p>
+        <p className="text-slate-400">Based on your answers, here are our recommendations. Select one palette and one font combination.</p>
       </div>
 
       {/* Color Palettes */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">Recommended Color Palettes</h3>
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">
+          Recommended Color Palettes
+          {selectedPalette && <span className="ml-2 text-sm text-primary-400">✓ {selectedPalette.name}</span>}
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {matchingPalettes.length > 0 ? (
             matchingPalettes.map((palette) => (
               <button
                 key={palette.id}
-                onClick={() => onSelectPalette(palette)}
-                className="p-4 rounded-xl border-2 border-slate-700 hover:border-primary-500 bg-slate-900/50 text-left transition-all"
+                onClick={() => handlePaletteClick(palette)}
+                className={cn(
+                  "p-4 rounded-xl border-2 text-left transition-all relative",
+                  selectedPalette?.id === palette.id
+                    ? "border-primary-500 bg-slate-800 ring-2 ring-primary-500/30"
+                    : "border-slate-700 hover:border-slate-500 bg-slate-900/50"
+                )}
               >
+                {selectedPalette?.id === palette.id && (
+                  <div className="absolute top-2 right-2">
+                    <Check className="w-5 h-5 text-primary-500" />
+                  </div>
+                )}
                 <h4 className="font-medium text-slate-200 mb-1">{palette.name}</h4>
                 <p className="text-xs text-slate-500 mb-3">{palette.description}</p>
                 <div className="flex gap-1">
@@ -329,29 +356,111 @@ export function Suggestions({ answers, onSelectPalette, onSelectFonts, onCustomi
 
       {/* Font Combinations */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">Recommended Font Combinations</h3>
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">
+          Recommended Font Combinations
+          {selectedFonts && <span className="ml-2 text-sm text-primary-400">✓ {selectedFonts.name}</span>}
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {matchingFonts.map((combo) => (
             <button
               key={combo.name}
-              onClick={() => onSelectFonts(combo)}
-              className="p-4 rounded-xl border-2 border-slate-700 hover:border-primary-500 bg-slate-900/50 text-left transition-all"
+              onClick={() => handleFontClick(combo)}
+              className={cn(
+                "p-4 rounded-xl border-2 text-left transition-all relative",
+                selectedFonts?.name === combo.name
+                  ? "border-primary-500 bg-slate-800 ring-2 ring-primary-500/30"
+                  : "border-slate-700 hover:border-slate-500 bg-slate-900/50"
+              )}
             >
+              {selectedFonts?.name === combo.name && (
+                <div className="absolute top-2 right-2">
+                  <Check className="w-5 h-5 text-primary-500" />
+                </div>
+              )}
               <h4 className="font-medium text-slate-200 mb-1">{combo.name}</h4>
               <p className="text-xs text-slate-500 mb-3">{combo.description}</p>
-              <div className="space-y-1">
-                <div className="text-sm text-slate-400">
-                  <span className="text-slate-500">Heading: </span>
-                  <span style={{ fontFamily: combo.heading }}>{combo.heading}</span>
+
+              {/* Font Preview with Sample Text */}
+              <div className="space-y-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                {/* Heading Preview */}
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 mb-1 block">Heading</span>
+                  <p
+                    style={{ fontFamily: combo.heading }}
+                    className="text-lg text-slate-200 leading-tight"
+                  >
+                    The Quick Brown Fox
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{combo.heading}</p>
                 </div>
-                <div className="text-sm text-slate-400">
-                  <span className="text-slate-500">Body: </span>
-                  <span style={{ fontFamily: combo.body }}>{combo.body}</span>
+
+                {/* Body Preview */}
+                <div className="pt-2 border-t border-slate-700/50">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 mb-1 block">Body</span>
+                  <p
+                    style={{ fontFamily: combo.body }}
+                    className="text-sm text-slate-300 leading-relaxed"
+                  >
+                    The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{combo.body}</p>
                 </div>
+
+                {/* Accent Preview */}
+                <div className="pt-2 border-t border-slate-700/50">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 mb-1 block">Accent</span>
+                  <p
+                    style={{ fontFamily: combo.accent }}
+                    className="text-base text-slate-200 italic"
+                  >
+                    Beautiful Design
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{combo.accent}</p>
+                </div>
+
+                {/* Monospace Preview */}
+                <div className="pt-2 border-t border-slate-700/50">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 mb-1 block">Code</span>
+                  <code
+                    style={{ fontFamily: combo.mono }}
+                    className="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded block"
+                  >
+                    const font = '{combo.mono}';
+                  </code>
+                </div>
+              </div>
+
+              {/* Line Height & Letter Spacing Info */}
+              <div className="flex gap-2 mt-3 text-[10px] text-slate-500">
+                <span className="px-2 py-0.5 bg-slate-800 rounded">LH: {combo.lineHeight.heading}</span>
+                <span className="px-2 py-0.5 bg-slate-800 rounded">LS: {combo.letterSpacing.heading}</span>
               </div>
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="text-center pt-4 border-t border-slate-800">
+        <button
+          onClick={handleSave}
+          disabled={!canSave}
+          className={cn(
+            "px-8 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto",
+            canSave
+              ? "bg-primary-500 text-slate-900 hover:bg-primary-400"
+              : "bg-slate-800 text-slate-500 cursor-not-allowed"
+          )}
+        >
+          <Check className="w-5 h-5" />
+          Apply Selected Theme
+        </button>
+        <p className="text-sm text-slate-500 mt-2">
+          {!selectedPalette && !selectedFonts && "Select a palette and fonts to apply"}
+          {selectedPalette && !selectedFonts && "Now select a font combination"}
+          {!selectedPalette && selectedFonts && "Now select a color palette"}
+          {selectedPalette && selectedFonts && "Ready to apply your brand theme!"}
+        </p>
       </div>
 
       {/* Customize Option */}
@@ -363,7 +472,8 @@ export function Suggestions({ answers, onSelectPalette, onSelectFonts, onCustomi
         >
           Customize Everything
         </button>
-      </div>    </div>
+      </div>
+    </div>
   );
 }
 
