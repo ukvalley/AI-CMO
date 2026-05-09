@@ -12,6 +12,7 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+.next/
 
 # IDE
 .vscode/*
