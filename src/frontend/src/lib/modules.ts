@@ -246,17 +246,17 @@ export const MODULES: ModuleDefinition[] = [
   },
 
   // ==========================================
-  // CONTENT GROUP (7 modules)
+  // CONTENT GROUP (6 modules)
   // ==========================================
   {
-    id: 'website-content',
-    name: 'Website Content',
-    description: 'Pages, SEO, headlines, CTAs',
+    id: 'website-planner',
+    name: 'Website Planner',
+    description: 'Comprehensive website planning, requirements generation, and AI documentation system',
     group: 'content',
     icon: 'Globe',
-    path: '/website-content',
+    path: '/website-planner',
     status: 'active',
-    permissions: ['admin', 'editor'],
+    permissions: ['admin', 'editor', 'viewer'],
     hasAI: true,
     hasBulkGeneration: false,
   },

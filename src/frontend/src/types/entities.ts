@@ -962,19 +962,6 @@ export type PageType =
 
 export type PageStatus = 'draft' | 'writing' | 'review' | 'proofread' | 'seo-check' | 'published';
 
-export interface WebsitePage extends BaseEntity {
-  name: string;
-  type: PageType;
-  seoTitle?: string;
-  metaDescription?: string;
-  h1?: string;
-  mainHeadline?: string;
-  subHeadline?: string;
-  content?: string;
-  ctaText?: string;
-  status: PageStatus;
-}
-
 // ============================================
 // BLOG
 // ============================================
@@ -1681,4 +1668,261 @@ export interface ChatSession {
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================
+// WEBSITE PLANNER MODULE
+// ============================================
+
+export type WebsiteType =
+  | 'corporate'
+  | 'saas'
+  | 'ecommerce'
+  | 'portfolio'
+  | 'marketplace'
+  | 'landing-page'
+  | 'agency'
+  | 'personal-brand';
+
+export type WebsiteStatus =
+  | 'planning'
+  | 'requirements'
+  | 'design'
+  | 'development'
+  | 'review'
+  | 'live'
+  | 'maintenance';
+
+export type SectionPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export type FeatureComplexity = 'simple' | 'medium' | 'complex' | 'enterprise';
+
+export interface WebsiteSection {
+  id: string;
+  name: string;
+  enabled: boolean;
+  order: number;
+  purpose?: string;
+  contentRequirement?: string;
+  uiNotes?: string;
+  cta?: string;
+  referenceLinks?: string[];
+  aiPrompt?: string;
+  seoNotes?: string;
+  mediaRequirement?: string;
+  priority: SectionPriority;
+  customFields?: Record<string, string>;
+}
+
+export interface WebsitePage {
+  id: string;
+  name: string;
+  url: string;
+  pageType: 'main' | 'landing' | 'dynamic' | 'legal' | 'seo';
+  goal?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  schemaRequirement?: string;
+  keywords?: string[];
+  conversionGoal?: string;
+  wireframeNotes?: string;
+  internalLinkingNotes?: string;
+  sections: string[]; // Section IDs
+  isPublished: boolean;
+}
+
+export interface WebsiteFeature {
+  id: string;
+  name: string;
+  enabled: boolean;
+  priority: SectionPriority;
+  notes?: string;
+  complexity: FeatureComplexity;
+  estimatedTimeline?: string;
+  dependencies?: string[];
+}
+
+export interface WebsiteContentBlock {
+  id: string;
+  type: 'headline' | 'subheadline' | 'description' | 'bullet-points' | 'faq' | 'testimonial' | 'cta' | 'stats' | 'comparison' | 'team' | 'product' | 'custom';
+  content: string;
+  aiGenerated?: boolean;
+  aiPrompt?: string;
+  sectionId?: string;
+  pageId?: string;
+}
+
+export interface WebsiteCaseStudy {
+  id: string;
+  clientName: string;
+  industry?: string;
+  problem?: string;
+  solution?: string;
+  technologies?: string[];
+  results?: string;
+  metrics?: Record<string, string>;
+  images?: string[];
+  testimonial?: string;
+  assignedPages?: string[];
+  displayStyle?: 'card' | 'full' | 'minimal';
+}
+
+export interface WebsiteFAQ {
+  id: string;
+  question: string;
+  answer: string;
+  category?: string;
+  relatedPage?: string;
+  seoImportance: SectionPriority;
+  schemaEnabled: boolean;
+  aiGenerated?: boolean;
+}
+
+export interface WebsiteSEOCluster {
+  id: string;
+  topic: string;
+  pillarPage?: string;
+  clusterPages: string[];
+  keywords: string[];
+  contentGap?: string;
+}
+
+export interface WebsiteTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  websiteType: WebsiteType;
+  sections: WebsiteSection[];
+  pages: Partial<WebsitePage>[];
+  features: Partial<WebsiteFeature>[];
+  seoClusters?: Partial<WebsiteSEOCluster>[];
+  isDefault: boolean;
+  tags: string[];
+}
+
+export interface WebsiteAIPrompt {
+  id: string;
+  name: string;
+  targetPlatform: 'chatgpt' | 'claude' | 'cursor' | 'lovable' | 'bolt' | 'v0' | 'replit' | 'framer' | 'webflow' | 'other';
+  prompt: string;
+  context: {
+    brandIncluded: boolean;
+    businessIncluded: boolean;
+    sectionsIncluded: boolean;
+    seoIncluded: boolean;
+    featuresIncluded: boolean;
+  };
+  generatedAt: string;
+}
+
+export interface WebsiteRequirementDocument {
+  id: string;
+  name: string;
+  type: 'markdown' | 'pdf' | 'brd' | 'scope' | 'approval' | 'ui-spec';
+  content: string;
+  generatedAt: string;
+  version: number;
+  status: 'draft' | 'review' | 'approved';
+}
+
+export interface WebsiteComment {
+  id: string;
+  userId: string;
+  userName: string;
+  content: string;
+  section?: string;
+  page?: string;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebsiteApproval {
+  id: string;
+  approverName: string;
+  approverEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  comments?: string;
+  approvedAt?: string;
+}
+
+export interface WebsiteVersion {
+  id: string;
+  version: number;
+  name: string;
+  description?: string;
+  snapshot: Partial<WebsitePlanner>;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface WebsitePlanner extends BaseEntity {
+  // Basic Details
+  name: string;
+  domain?: string;
+  websiteType: WebsiteType;
+  websiteGoal?: string;
+  primaryCTA?: string;
+  secondaryCTA?: string;
+  targetAudience?: string;
+  country?: string;
+  language: string;
+  seoTargetRegion?: string;
+  status: WebsiteStatus;
+  owner?: string;
+  version: number;
+
+  // Brand Integration
+  brandId?: string;
+
+  // Business Foundation Integration
+  businessProfileId?: string;
+
+  // Structure
+  sections: WebsiteSection[];
+  pages: WebsitePage[];
+
+  // Content
+  contentBlocks: WebsiteContentBlock[];
+
+  // Features
+  features: WebsiteFeature[];
+
+  // Case Studies & FAQs
+  caseStudies: WebsiteCaseStudy[];
+  faqs: WebsiteFAQ[];
+
+  // SEO
+  seoClusters: WebsiteSEOCluster[];
+  targetKeywords: string[];
+
+  // AI & Documents
+  aiPrompts: WebsiteAIPrompt[];
+  documents: WebsiteRequirementDocument[];
+
+  // Collaboration
+  comments: WebsiteComment[];
+  approvals: WebsiteApproval[];
+  versions: WebsiteVersion[];
+
+  // References
+  designReferences?: string[];
+  competitorReferences?: string[];
+  moodboardUrl?: string;
+  uiStyle?: string;
+  animationNotes?: string;
+  responsiveNotes?: string;
+  accessibilityNotes?: string;
+
+  // Assets
+  logoIds?: string[];
+  imageIds?: string[];
+  videoIds?: string[];
+  documentIds?: string[];
+
+  // Template
+  templateId?: string;
+
+  // Activity
+  lastActivityAt?: string;
 }
