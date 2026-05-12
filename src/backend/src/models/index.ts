@@ -10,37 +10,15 @@ import { isMockMode, mockDB } from '../utils/database';
 // MOCK MODEL IMPLEMENTATION
 // ============================================
 
-class MockModel<T extends { id: string; save?: () => Promise<T>; comparePassword?: (p: string) => Promise<boolean> }> {
-  private collection: Map<string, T> = new Map();
+/**
+ * Creates a mock model that behaves like a Mongoose model constructor.
+ * Supports `new Model(data)` + `.save()`, `Model.create(data)`,
+ * `Model.findOne()`, `Model.find()`, `Model.findById()`, `Model.findByIdAndDelete()`.
+ */
+function createMockModel<T extends Record<string, any>>(name: string) {
+  const collection = new Map<string, any>();
 
-  async findOne(query: Partial<T>): Promise<T | null> {
-    const key = Object.keys(query)[0] as keyof T;
-    for (const item of this.collection.values()) {
-      if ((item as any)[key] === (query as any)[key]) {
-        return this.addMethods(item);
-      }
-    }
-    return null;
-  }
-
-  async find(query?: any): Promise<T[]> {
-    let items = Array.from(this.collection.values());
-    if (query?._id?.$in) {
-      items = items.filter((item: any) => query._id.$in.includes(item.id));
-    }
-    return items.map(item => this.addMethods(item));
-  }
-
-  async findById(id: string): Promise<T | null> {
-    const item = this.collection.get(id);
-    return item ? this.addMethods(item) : null;
-  }
-
-  async findByIdAndDelete(id: string): Promise<void> {
-    this.collection.delete(id);
-  }
-
-  create(data: Partial<T>): T {
+  function Model(data: Record<string, any>) {
     const id = Math.random().toString(36).substring(2, 15);
     const item: any = {
       ...data,
@@ -49,12 +27,12 @@ class MockModel<T extends { id: string; save?: () => Promise<T>; comparePassword
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    this.collection.set(id, item);
-    return this.addMethods(item);
+    collection.set(id, item);
+    addMethods(item);
+    return item;
   }
 
-  // Add mock methods
-  private addMethods(item: any): T {
+  function addMethods(item: any): any {
     if (!item.save) {
       item.save = async () => {
         item.updatedAt = new Date().toISOString();
@@ -68,6 +46,62 @@ class MockModel<T extends { id: string; save?: () => Promise<T>; comparePassword
     }
     return item;
   }
+
+  Model.findOne = async (query: Record<string, any>): Promise<any | null> => {
+    const key = Object.keys(query)[0];
+    for (const item of collection.values()) {
+      if (item[key] === query[key]) {
+        return addMethods({ ...item });
+      }
+    }
+    return null;
+  };
+
+  Model.find = async (query?: any): Promise<any[]> => {
+    let items = Array.from(collection.values());
+    if (query?._id?.$in) {
+      items = items.filter((item: any) => query._id.$in.includes(item.id));
+    }
+    return items.map((item: any) => addMethods({ ...item }));
+  };
+
+  Model.findById = async (id: string): Promise<any | null> => {
+    const item = collection.get(id);
+    return item ? addMethods({ ...item }) : null;
+  };
+
+  Model.findByIdAndDelete = async (id: string): Promise<any> => {
+    const item = collection.get(id);
+    collection.delete(id);
+    return item || null;
+  };
+
+  Model.create = (data: Record<string, any>): any => {
+    return Model(data);
+  };
+
+  Model.findByIdAndUpdate = async (id: string, update: any, options?: any): Promise<any | null> => {
+    const item = collection.get(id);
+    if (!item) return null;
+    Object.assign(item, update, { updatedAt: new Date().toISOString() });
+    return addMethods(item);
+  };
+
+  Model.deleteOne = async (query: Record<string, any>): Promise<void> => {
+    const key = Object.keys(query)[0];
+    for (const [id, item] of collection.entries()) {
+      if (item[key] === query[key]) {
+        collection.delete(id);
+        return;
+      }
+    }
+  };
+
+  Model.countDocuments = async (): Promise<number> => {
+    return collection.size;
+  };
+
+  return Model;
 }
 
 // ============================================
@@ -80,26 +114,26 @@ export const loadModels = () => {
   if (models) return models;
 
   if (isMockMode()) {
-    // Return mock models
+    // Return mock models that act as constructors
     models = {
-      User: new MockModel<any>('users'),
-      Company: new MockModel<any>('companies'),
-      BusinessProfile: new MockModel<any>('businessProfiles'),
-      Product: new MockModel<any>('products'),
-      ProductCategory: new MockModel<any>('productCategories'),
-      Founder: new MockModel<any>('founders'),
-      Employee: new MockModel<any>('employees'),
-      ICP: new MockModel<any>('icps'),
-      Persona: new MockModel<any>('personas'),
-      Competitor: new MockModel<any>('competitors'),
-      Brand: new MockModel<any>('brands'),
-      BrandAsset: new MockModel<any>('brandAssets'),
-      Stationery: new MockModel<any>('stationery'),
-      HRAsset: new MockModel<any>('hrAssets'),
-      WebsitePage: new MockModel<any>('websitePages'),
-      Blog: new MockModel<any>('blogs'),
-      Newsletter: new MockModel<any>('newsletters'),
-      FAQ: new MockModel<any>('faqs'),
+      User: createMockModel('users'),
+      Company: createMockModel('companies'),
+      BusinessProfile: createMockModel('businessProfiles'),
+      Product: createMockModel('products'),
+      ProductCategory: createMockModel('productCategories'),
+      Founder: createMockModel('founders'),
+      Employee: createMockModel('employees'),
+      ICP: createMockModel('icps'),
+      Persona: createMockModel('personas'),
+      Competitor: createMockModel('competitors'),
+      Brand: createMockModel('brands'),
+      BrandAsset: createMockModel('brandAssets'),
+      Stationery: createMockModel('stationery'),
+      HRAsset: createMockModel('hrAssets'),
+      WebsitePage: createMockModel('websitePages'),
+      Blog: createMockModel('blogs'),
+      Newsletter: createMockModel('newsletters'),
+      FAQ: createMockModel('faqs'),
     };
   } else {
     // Import and return real models
@@ -148,25 +182,6 @@ export const loadModels = () => {
 
 // Export getter functions that load models dynamically
 export const getModels = () => loadModels();
-
-export const User = () => getModels().User;
-export const Company = () => getModels().Company;
-export const BusinessProfile = () => getModels().BusinessProfile;
-export const Product = () => getModels().Product;
-export const ProductCategory = () => getModels().ProductCategory;
-export const Founder = () => getModels().Founder;
-export const Employee = () => getModels().Employee;
-export const ICP = () => getModels().ICP;
-export const Persona = () => getModels().Persona;
-export const Competitor = () => getModels().Competitor;
-export const Brand = () => getModels().Brand;
-export const BrandAsset = () => getModels().BrandAsset;
-export const Stationery = () => getModels().Stationery;
-export const HRAsset = () => getModels().HRAsset;
-export const WebsitePage = () => getModels().WebsitePage;
-export const Blog = () => getModels().Blog;
-export const Newsletter = () => getModels().Newsletter;
-export const FAQ = () => getModels().FAQ;
 
 // Re-export types
 export type { IUser, UserRole } from './User';
