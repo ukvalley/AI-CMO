@@ -17,8 +17,20 @@ import { connectRedis } from './utils/redis';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables — check multiple possible locations
+import path from 'path';
+const envPaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '../../.env'),
+];
+for (const envPath of envPaths) {
+  const result = dotenv.config({ path: envPath });
+  if (!result.error) {
+    console.log(`📄 Loaded .env from: ${envPath}`);
+    break;
+  }
+}
 
 const app = express();
 const server = createServer(app);
@@ -159,13 +171,11 @@ const startServer = async () => {
     await connectDatabase();
     console.log(isMockMode() ? '📦 Using in-memory mock database' : '✅ MongoDB connected');
 
-    // Connect to Redis (optional)
-    try {
-      await connectRedis();
-      console.log('✅ Redis connected');
-    } catch (error) {
-      console.log('⚠️  Redis not available (optional)');
-    }
+    // Connect to Redis (optional — won't block startup)
+    await connectRedis();
+
+    // Load routes after database connection
+    loadRoutes();
 
     // Load routes after database connection
     loadRoutes();

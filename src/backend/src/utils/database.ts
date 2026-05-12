@@ -6,14 +6,16 @@
 import mongoose from 'mongoose';
 import mockDB from './mockDatabase';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mengo';
+function getMongoURI(): string {
+  return process.env.MONGODB_URI || 'mongodb://localhost:27017/mengo';
+}
 
 let useMock = false;
 
 // Connection options
 const options: mongoose.ConnectOptions = {
   maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
 };
 
@@ -21,6 +23,9 @@ const options: mongoose.ConnectOptions = {
  * Connect to MongoDB or use mock
  */
 export const connectDatabase = async (): Promise<void> => {
+  const MONGODB_URI = getMongoURI();
+  console.log(`📄 MONGODB_URI: ${MONGODB_URI.replace(/:([^@]{4})[^@]+@/, ':****@')}`);
+
   try {
     await mongoose.connect(MONGODB_URI, options);
     useMock = false;
@@ -40,10 +45,9 @@ export const connectDatabase = async (): Promise<void> => {
       useMock = false;
     });
 
-  } catch (error) {
-    console.warn('⚠️ MongoDB not available. Using in-memory mock database for development...');
-    console.warn('   To use real MongoDB, install it with: brew install mongodb-community');
-    console.warn('   Or use Docker: docker run -d -p 27017:27017 mongo:7');
+  } catch (error: any) {
+    console.error('❌ MongoDB connection failed:', error.message || error);
+    console.warn('⚠️ Falling back to in-memory mock database');
     useMock = true;
   }
 };

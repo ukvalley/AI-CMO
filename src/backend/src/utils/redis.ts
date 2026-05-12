@@ -4,43 +4,61 @@
 
 import Redis from 'ioredis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+function getRedisUrl(): string {
+  return process.env.REDIS_URL || 'redis://localhost:6379';
+}
 
 let redis: Redis | null = null;
+let redisConnected = false;
 
 /**
  * Connect to Redis
  */
-export const connectRedis = async (): Promise<Redis> => {
-  if (redis) return redis;
+export const connectRedis = async (): Promise<Redis | null> => {
+  if (redis && redisConnected) return redis;
 
-  redis = new Redis(REDIS_URL, {
-    retryStrategy: (times) => {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    },
-    maxRetriesPerRequest: 3,
+  return new Promise((resolve) => {
+    const client = new Redis(getRedisUrl(), {
+      retryStrategy: (times) => {
+        if (times > 3) {
+          // Stop retrying after 3 attempts
+          console.log('⚠️  Redis unavailable — running without cache');
+          return null; // Stop retrying
+        }
+        return Math.min(times * 200, 1000);
+      },
+      maxRetriesPerRequest: 1,
+      lazyConnect: true,
+    });
+
+    client.on('error', () => {
+      // Suppress individual error logs, retryStrategy handles it
+    });
+
+    client.on('connect', () => {
+      redisConnected = true;
+      redis = client;
+      console.log('✅ Redis connected');
+    });
+
+    client.on('close', () => {
+      redisConnected = false;
+    });
+
+    client.connect().then(() => {
+      resolve(client);
+    }).catch(() => {
+      // Redis unavailable — continue without it
+      resolve(null);
+    });
   });
-
-  redis.on('error', (err) => {
-    console.error('Redis error:', err);
-  });
-
-  redis.on('connect', () => {
-    console.log('Redis client connected');
-  });
-
-  return redis;
 };
 
 /**
- * Get Redis instance
+ * Get Redis instance (null if unavailable)
  */
-export const getRedis = (): Redis => {
-  if (!redis) {
-    throw new Error('Redis not connected. Call connectRedis() first.');
-  }
-  return redis;
+export const getRedis = (): Redis | null => {
+  return redisConnected ? redis : null;
 };
 
 /**
@@ -48,6 +66,7 @@ export const getRedis = (): Redis => {
  */
 export const cacheSet = async (key: string, value: any, ttlSeconds: number = 3600): Promise<void> => {
   const client = getRedis();
+  if (!client) return;
   await client.setex(key, ttlSeconds, JSON.stringify(value));
 };
 
@@ -56,6 +75,7 @@ export const cacheSet = async (key: string, value: any, ttlSeconds: number = 360
  */
 export const cacheGet = async <T>(key: string): Promise<T | null> => {
   const client = getRedis();
+  if (!client) return null;
   const data = await client.get(key);
   return data ? JSON.parse(data) : null;
 };
@@ -65,6 +85,7 @@ export const cacheGet = async <T>(key: string): Promise<T | null> => {
  */
 export const cacheDelete = async (key: string): Promise<void> => {
   const client = getRedis();
+  if (!client) return;
   await client.del(key);
 };
 
@@ -73,6 +94,7 @@ export const cacheDelete = async (key: string): Promise<void> => {
  */
 export const cacheClearPattern = async (pattern: string): Promise<void> => {
   const client = getRedis();
+  if (!client) return;
   const keys = await client.keys(pattern);
   if (keys.length > 0) {
     await client.del(...keys);

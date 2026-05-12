@@ -71,7 +71,7 @@ services:
       - "3100:3100"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:3101/api
+      NEXT_PUBLIC_API_URL: https://app.mengoengine.com/api
       PORT: 3100
     volumes:
       # Mount source code for hot reload
