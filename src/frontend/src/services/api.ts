@@ -5,8 +5,7 @@
 
 import { useAuthStore } from '@/stores';
 
-// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3101/api';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://app.mengoengine.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3101/api';
 
 /**
  * Transform MongoDB _id to id for frontend compatibility
@@ -465,6 +464,56 @@ export const blogExportApi = {
   create: (data: any) => apiRequest('/blog-content-os/exports', { method: 'POST', body: data }),
   update: (id: string, data: any) => apiRequest(`/blog-content-os/exports/${id}`, { method: 'PUT', body: data }),
   delete: (id: string) => apiRequest(`/blog-content-os/exports/${id}`, { method: 'DELETE' }),
+};
+
+// ============== NEWSLETTER CONTENT OS API ==============
+
+export const newsletterStrategyApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletter-content-os/strategies/${companyId}`),
+  getById: (id: string) => apiRequest(`/newsletter-content-os/strategies/detail/${id}`),
+  create: (data: any) => apiRequest('/newsletter-content-os/strategies', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/newsletter-content-os/strategies/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/newsletter-content-os/strategies/${id}`, { method: 'DELETE' }),
+};
+
+export const newsletterCalendarApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletter-content-os/calendars/${companyId}`),
+  getById: (id: string) => apiRequest(`/newsletter-content-os/calendars/detail/${id}`),
+  create: (data: any) => apiRequest('/newsletter-content-os/calendars', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/newsletter-content-os/calendars/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/newsletter-content-os/calendars/${id}`, { method: 'DELETE' }),
+};
+
+export const newsletterTitleApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletter-content-os/titles/${companyId}`),
+  getById: (id: string) => apiRequest(`/newsletter-content-os/titles/detail/${id}`),
+  create: (data: any) => apiRequest('/newsletter-content-os/titles', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/newsletter-content-os/titles/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/newsletter-content-os/titles/${id}`, { method: 'DELETE' }),
+};
+
+export const newsletterPostApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletter-content-os/posts/${companyId}`),
+  getById: (id: string) => apiRequest(`/newsletter-content-os/posts/detail/${id}`),
+  create: (data: any) => apiRequest('/newsletter-content-os/posts', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/newsletter-content-os/posts/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/newsletter-content-os/posts/${id}`, { method: 'DELETE' }),
+};
+
+export const newsletterContentChunkApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletter-content-os/chunks/${companyId}`),
+  getById: (id: string) => apiRequest(`/newsletter-content-os/chunks/detail/${id}`),
+  create: (data: any) => apiRequest('/newsletter-content-os/chunks', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/newsletter-content-os/chunks/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/newsletter-content-os/chunks/${id}`, { method: 'DELETE' }),
+};
+
+export const newsletterExportApi = {
+  getAll: (companyId: string) => apiRequest(`/newsletter-content-os/exports/${companyId}`),
+  getById: (id: string) => apiRequest(`/newsletter-content-os/exports/detail/${id}`),
+  create: (data: any) => apiRequest('/newsletter-content-os/exports', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/newsletter-content-os/exports/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/newsletter-content-os/exports/${id}`, { method: 'DELETE' }),
 };
 
 // ============== MODULE DATA API (Generic) ==============

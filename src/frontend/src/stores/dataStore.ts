@@ -57,6 +57,14 @@ import type {
   BlogContentChunk,
   BlogExport,
   BlogContentSystem,
+  // Newsletter Content OS
+  NewsletterStrategy,
+  NewsletterContentTypeConfig,
+  NewsletterCalendar,
+  NewsletterTitle,
+  NewsletterPost,
+  NewsletterExport,
+  NewsletterContentSystem,
 } from '@/types/entities';
 
 // ============================================
@@ -98,6 +106,16 @@ interface ModuleData {
   blogPosts: BlogPost[];
   blogContentChunks: BlogContentChunk[];
   blogExports: BlogExport[];
+
+  // Newsletter Content OS
+  newsletterContentSystem: any | null;
+  newsletterStrategies: any[];
+  newsletterContentTypes: any[];
+  newsletterCalendars: any[];
+  newsletterTitles: any[];
+  newsletterPosts: any[];
+  newsletterContentChunks: any[];
+  newsletterExports: any[];
 
   // Sales
   landingPageSystem: LandingPageSystem | null;
@@ -171,6 +189,16 @@ const createEmptyModuleData = (): ModuleData => ({
   blogPosts: [],
   blogContentChunks: [],
   blogExports: [],
+
+  // Newsletter Content OS
+  newsletterContentSystem: null,
+  newsletterStrategies: [],
+  newsletterContentTypes: [],
+  newsletterCalendars: [],
+  newsletterTitles: [],
+  newsletterPosts: [],
+  newsletterContentChunks: [],
+  newsletterExports: [],
 
   landingPageSystem: null,
   landingPages: [],

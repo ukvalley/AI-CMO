@@ -91,6 +91,7 @@ const loadRoutes = () => {
   const websitePageRoutes = require('./routes/websitePages').default;
   const blogRoutes = require('./routes/blogs').default;
   const blogContentOsRoutes = require('./routes/blogContentOs').default;
+  const newsletterContentOsRoutes = require('./routes/newsletterContentOs').default;
   const newsletterRoutes = require('./routes/newsletters').default;
   const faqRoutes = require('./routes/faqs').default;
   const moduleDataRoutes = require('./routes/moduleData').default;
@@ -118,6 +119,7 @@ const loadRoutes = () => {
   app.use('/api/website-pages', websitePageRoutes);
   app.use('/api/blogs', blogRoutes);
   app.use('/api/blog-content-os', blogContentOsRoutes);
+  app.use('/api/newsletter-content-os', newsletterContentOsRoutes);
   app.use('/api/newsletters', newsletterRoutes);
   app.use('/api/faqs', faqRoutes);
   app.use('/api/module-data', moduleDataRoutes);

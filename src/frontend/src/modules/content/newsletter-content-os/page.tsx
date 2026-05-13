@@ -1,30 +1,8 @@
-/**
- * Blog Content Operating System
- *
- * A comprehensive AI-powered blog planning, strategy, and content generation system.
- * Acts as: SEO Strategist + Content Manager + AI Blog Writer + Brand Copywriter
- *
- * Features:
- * - Blog Strategy Setup (goals, audience, funnel stage)
- * - Content Type Selector (20+ types with allocation)
- * - Calendar System (frequency, seasonal campaigns)
- * - AI Title Generator (Ollama Cloud GLM 5.1)
- * - Title Selection & Reorder Flow
- * - AI Content Writing Engine (chunked generation)
- * - Human-like Content Rules
- * - SEO Content Engine
- * - Content Chunking System
- * - Quality Control
- * - Asset Suggestions
- * - Versioning & Approval
- * - Export System
- */
-
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
-  FileEdit,
+  Mail,
   Target,
   Calendar,
   Type,
@@ -36,99 +14,54 @@ import {
   Settings,
   Plus,
   Trash2,
-  GripVertical,
-  ChevronDown,
-  ChevronRight,
-  Copy,
   Check,
   RefreshCw,
-  Save,
-  Eye,
-  EyeOff,
-  Bot,
-  Globe,
-  TrendingUp,
-  Users,
-  Search,
-  Zap,
-  ArrowRight,
-  ArrowUpDown,
   X,
+  Zap,
   Link,
   FileText,
-  MessageSquare,
-  Clock,
-  BarChart3,
-  Palette,
-  BookOpen,
-  Lightbulb,
-  Award,
-  Share2,
-  MoreHorizontal,
-  Play,
-  Pause,
-  RotateCcw,
-  Send,
-  PenTool,
-  Layers,
-  AlignLeft,
-  Heading,
-  List,
-  Table,
-  Quote,
-  Hash,
-  Tag,
-  FolderOpen,
-  Filter,
-  SortAsc,
-  Grid,
-  List as ListIcon,
+  Globe,
+  Users,
   AlertCircle,
+  Palette,
   Building2,
   Package,
   Swords,
+  Share2,
+  BarChart3,
   PanelTop,
+  PenTool,
+  RotateCcw,
+  Eye,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useDataStore, useCompanyStore, useTaskStore } from '@/stores';
 import {
-  blogStrategyApi,
-  blogCalendarApi,
-  blogTitleApi,
-  blogPostApi,
-  blogContentChunkApi,
-  blogExportApi,
+  newsletterStrategyApi,
+  newsletterCalendarApi,
+  newsletterTitleApi,
+  newsletterPostApi,
+  newsletterContentChunkApi,
+  newsletterExportApi,
 } from '@/services/api';
 import type {
-  BlogStrategy,
-  BlogGoal,
+  NewsletterStrategy,
+  NewsletterGoal,
   FunnelStage,
   ContentDepth,
-  BlogContentTypeConfig,
-  ContentTypeCategory,
-  SEOIntent,
-  BlogCalendar,
-  BloggingFrequency,
+  NewsletterContentTypeConfig,
+  NewsletterCalendar,
+  NewsletterFrequency,
   SeasonalCampaign,
-  BlogCalendarItem,
-  BlogTitle,
-  TitleStyle,
-  BlogPost,
-  BlogContentStatus,
-  ContentChunkType,
-  BlogContentChunk,
-  ChunkStatus,
-  BlogSection,
-  BlogFAQ,
-  BlogVersion,
-  BlogComment,
-  BlogApproval,
-  ApprovalStage,
-  ApprovalStatus,
-  BlogAssetSuggestion,
-  AssetSuggestionType,
-  BlogSEOAnalysis,
-  BlogExport,
+  NewsletterCalendarItem,
+  NewsletterTitle,
+  SubjectLineStyle,
+  NewsletterPost,
+  NewsletterContentStatus,
+  NewsletterSection,
+  NewsletterAssetSuggestion,
+  NewsletterExport,
   ExportFormat,
   Brand,
   BusinessProfile,
@@ -142,15 +75,16 @@ import type {
 // CONSTANTS & CONFIGURATION
 // ============================================
 
-const BLOG_GOALS: { value: BlogGoal; label: string; description: string }[] = [
-  { value: 'seo', label: 'SEO', description: 'Improve search rankings and organic traffic' },
+const NEWSLETTER_GOALS: { value: NewsletterGoal; label: string; description: string }[] = [
+  { value: 'education', label: 'Education', description: 'Teach subscribers valuable skills and knowledge' },
+  { value: 'product-awareness', label: 'Product Awareness', description: 'Keep subscribers informed about product updates' },
+  { value: 'community-building', label: 'Community Building', description: 'Foster engagement and belonging' },
   { value: 'brand-awareness', label: 'Brand Awareness', description: 'Increase visibility and recognition' },
-  { value: 'lead-generation', label: 'Lead Generation', description: 'Capture qualified leads' },
-  { value: 'product-education', label: 'Product Education', description: 'Teach customers about products' },
-  { value: 'authority-building', label: 'Authority Building', description: 'Establish thought leadership' },
-  { value: 'traffic-growth', label: 'Traffic Growth', description: 'Drive more website visitors' },
-  { value: 'conversion', label: 'Conversion', description: 'Convert readers to customers' },
-  { value: 'community-building', label: 'Community Building', description: 'Build engaged audience' },
+  { value: 'customer-engagement', label: 'Customer Engagement', description: 'Drive interaction and loyalty' },
+  { value: 'retention', label: 'Retention', description: 'Reduce churn and keep subscribers active' },
+  { value: 'updates', label: 'Company Updates', description: 'Share news, milestones, and announcements' },
+  { value: 'founder-communication', label: 'Founder Communication', description: 'Personal updates from leadership' },
+  { value: 'thought-leadership', label: 'Thought Leadership', description: 'Establish expertise and authority' },
 ];
 
 const FUNNEL_STAGES: { value: FunnelStage; label: string; description: string }[] = [
@@ -160,57 +94,45 @@ const FUNNEL_STAGES: { value: FunnelStage; label: string; description: string }[
 ];
 
 const CONTENT_DEPTH_OPTIONS: { value: ContentDepth; label: string; wordRange: string }[] = [
-  { value: 'brief', label: 'Brief', wordRange: '300-600 words' },
-  { value: 'standard', label: 'Standard', wordRange: '800-1200 words' },
-  { value: 'deep', label: 'Deep Dive', wordRange: '1500-2500 words' },
-  { value: 'comprehensive', label: 'Comprehensive', wordRange: '3000+ words' },
+  { value: 'brief', label: 'Brief', wordRange: '150-300 words' },
+  { value: 'standard', label: 'Standard', wordRange: '400-800 words' },
+  { value: 'deep', label: 'Deep Dive', wordRange: '1000-2000 words' },
+  { value: 'comprehensive', label: 'Comprehensive', wordRange: '2500+ words' },
 ];
 
-const DEFAULT_CONTENT_TYPES: Array<Partial<BlogContentTypeConfig>> = [
-  { name: 'Educational Blogs', type: 'educational', enabled: true, percentageAllocation: 20, priority: 1, seoIntent: 'informational', recommendedLength: 1200, funnelPosition: 'tofu', ctaStrategy: 'Subscribe to newsletter', conversionGoal: 'Email capture' },
-  { name: 'How-To Guides', type: 'how-to-guide', enabled: true, percentageAllocation: 15, priority: 2, seoIntent: 'informational', recommendedLength: 1500, funnelPosition: 'tofu', ctaStrategy: 'Download resource', conversionGoal: 'Lead magnet' },
-  { name: 'Industry Trends', type: 'industry-trends', enabled: true, percentageAllocation: 10, priority: 3, seoIntent: 'informational', recommendedLength: 1000, funnelPosition: 'tofu', ctaStrategy: 'Share on social', conversionGoal: 'Social engagement' },
-  { name: 'Case Studies', type: 'case-study', enabled: true, percentageAllocation: 10, priority: 4, seoIntent: 'commercial', recommendedLength: 2000, funnelPosition: 'mofu', ctaStrategy: 'Book consultation', conversionGoal: 'Demo request' },
-  { name: 'Comparison Blogs', type: 'comparison', enabled: true, percentageAllocation: 10, priority: 5, seoIntent: 'commercial', recommendedLength: 1800, funnelPosition: 'mofu', ctaStrategy: 'Start free trial', conversionGoal: 'Trial signup' },
-  { name: 'Product Focused', type: 'product-focused', enabled: true, percentageAllocation: 10, priority: 6, seoIntent: 'transactional', recommendedLength: 1500, funnelPosition: 'bofu', ctaStrategy: 'Purchase now', conversionGoal: 'Direct sale' },
-  { name: 'Listicles', type: 'listicle', enabled: true, percentageAllocation: 10, priority: 7, seoIntent: 'informational', recommendedLength: 1200, funnelPosition: 'tofu', ctaStrategy: 'Read related', conversionGoal: 'Page views' },
-  { name: 'Problem-Solution', type: 'problem-solution', enabled: true, percentageAllocation: 8, priority: 8, seoIntent: 'commercial', recommendedLength: 1500, funnelPosition: 'mofu', ctaStrategy: 'Get solution', conversionGoal: 'Lead capture' },
-  { name: 'Thought Leadership', type: 'thought-leadership', enabled: true, percentageAllocation: 7, priority: 9, seoIntent: 'informational', recommendedLength: 1800, funnelPosition: 'tofu', ctaStrategy: 'Follow author', conversionGoal: 'Authority building' },
+const DEFAULT_CONTENT_TYPES: Array<Partial<NewsletterContentTypeConfig>> = [
+  { name: 'Educational Newsletter', type: 'educational', enabled: true, percentageAllocation: 25, priority: 1, recommendedLength: 600, funnelPosition: 'tofu', ctaStrategy: 'Read full guide', conversionGoal: 'Click-through' },
+  { name: 'Product Updates', type: 'product-update', enabled: true, percentageAllocation: 15, priority: 2, recommendedLength: 400, funnelPosition: 'mofu', ctaStrategy: 'Try new feature', conversionGoal: 'Product adoption' },
+  { name: 'Curated Content', type: 'curated', enabled: true, percentageAllocation: 15, priority: 3, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Read article', conversionGoal: 'Engagement' },
+  { name: 'Community Digest', type: 'community', enabled: true, percentageAllocation: 10, priority: 4, recommendedLength: 400, funnelPosition: 'tofu', ctaStrategy: 'Join community', conversionGoal: 'Community growth' },
+  { name: 'Founder Letter', type: 'founder-letter', enabled: true, percentageAllocation: 10, priority: 5, recommendedLength: 800, funnelPosition: 'mofu', ctaStrategy: 'Reply to founder', conversionGoal: 'Relationship building' },
+  { name: 'Case Study', type: 'case-study', enabled: true, percentageAllocation: 10, priority: 6, recommendedLength: 700, funnelPosition: 'mofu', ctaStrategy: 'Book demo', conversionGoal: 'Lead capture' },
+  { name: 'Industry News', type: 'industry-news', enabled: true, percentageAllocation: 8, priority: 7, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Share opinion', conversionGoal: 'Social engagement' },
+  { name: 'Promotional', type: 'promotional', enabled: true, percentageAllocation: 7, priority: 8, recommendedLength: 350, funnelPosition: 'bofu', ctaStrategy: 'Claim offer', conversionGoal: 'Direct sale' },
 ];
 
-const TITLE_STYLES: { value: TitleStyle; label: string; description: string }[] = [
-  { value: 'seo', label: 'SEO Optimized', description: 'Keyword-rich, search-friendly titles' },
-  { value: 'viral', label: 'Viral/Clickbait', description: 'Emotional, curiosity-driven titles' },
-  { value: 'authority', label: 'Authority', description: 'Expert, credible positioning titles' },
-  { value: 'technical', label: 'Technical', description: 'Precise, industry-specific titles' },
-  { value: 'emotional', label: 'Emotional', description: 'Feeling-driven, relatable titles' },
-  { value: 'founder', label: 'Founder Voice', description: 'Personal, authentic founder-style' },
-  { value: 'linkedin', label: 'LinkedIn Style', description: 'Professional, shareable titles' },
-  { value: 'thought-leadership', label: 'Thought Leadership', description: 'Visionary, perspective titles' },
+const SUBJECT_LINE_STYLES: { value: SubjectLineStyle; label: string; description: string }[] = [
+  { value: 'educational', label: 'Educational', description: 'Informative, value-driven subject lines' },
+  { value: 'conversational', label: 'Conversational', description: 'Casual, friendly tone like a friend' },
+  { value: 'founder-style', label: 'Founder Style', description: 'Personal, authentic founder voice' },
+  { value: 'authority', label: 'Authority', description: 'Expert, data-backed subject lines' },
+  { value: 'emotional', label: 'Emotional', description: 'Feeling-driven, relatable lines' },
+  { value: 'insight', label: 'Insight', description: 'Curiosity-driven, teaser-style lines' },
+  { value: 'minimal', label: 'Minimal', description: 'Short, punchy, under 5 words' },
 ];
 
-const BLOG_STATUS_CONFIG: Record<BlogContentStatus, { label: string; color: string; icon: any }> = {
-  planning: { label: 'Planning', color: 'text-slate-400', icon: Lightbulb },
-  outlining: { label: 'Outlining', color: 'text-blue-400', icon: Layout },
-  generating: { label: 'Generating', color: 'text-amber-400', icon: RefreshCw },
-  draft: { label: 'Draft', color: 'text-yellow-400', icon: FileEdit },
+const NEWSLETTER_STATUS_CONFIG: Record<NewsletterContentStatus, { label: string; color: string; icon: any }> = {
+  planning: { label: 'Planning', color: 'text-slate-400', icon: Target },
+  draft: { label: 'Draft', color: 'text-yellow-400', icon: FileText },
   review: { label: 'In Review', color: 'text-purple-400', icon: Eye },
-  revisions: { label: 'Revisions', color: 'text-orange-400', icon: PenTool },
   approved: { label: 'Approved', color: 'text-green-400', icon: CheckCircle },
   published: { label: 'Published', color: 'text-primary-400', icon: Globe },
+  archived: { label: 'Archived', color: 'text-slate-500', icon: BookOpen },
 };
 
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
-
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .substring(0, 60);
-}
 
 function getEstimatedReadTime(wordCount: number): number {
   return Math.ceil(wordCount / 200);
@@ -220,7 +142,7 @@ function getEstimatedReadTime(wordCount: number): number {
 // MAIN COMPONENT
 // ============================================
 
-export default function BlogContentOSModule() {
+export default function NewsletterContentOSModule() {
   const companyStore = useCompanyStore();
   const dataStore = useDataStore();
   const taskStore = useTaskStore();
@@ -236,12 +158,11 @@ export default function BlogContentOSModule() {
   }, [companyId, activeCompanyId, setActiveCompany]);
 
   // Get data from store
-  const strategies = useMemo(() => (getItems('blogStrategies') as BlogStrategy[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const contentTypes = useMemo(() => (getItems('blogContentTypes') as BlogContentTypeConfig[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const calendars = useMemo(() => (getItems('blogCalendars') as BlogCalendar[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const titles = useMemo(() => (getItems('blogTitles') as BlogTitle[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const posts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const chunks = useMemo(() => (getItems('blogContentChunks') as BlogContentChunk[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const strategies = useMemo(() => (getItems('newsletterStrategies') as NewsletterStrategy[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const contentTypes = useMemo(() => (getItems('newsletterContentTypes') as NewsletterContentTypeConfig[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const calendars = useMemo(() => (getItems('newsletterCalendars') as NewsletterCalendar[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const titles = useMemo(() => (getItems('newsletterTitles') as NewsletterTitle[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const posts = useMemo(() => (getItems('newsletterPosts') as NewsletterPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
 
   // Linked data
   const brand = useMemo(() => getItems('brand') as Brand | null, [getItems]);
@@ -261,31 +182,27 @@ export default function BlogContentOSModule() {
 
     const loadFromApi = async () => {
       setIsLoading(true);
-      const [sRes, cRes, tRes, pRes, chRes, eRes] = await Promise.all([
-        blogStrategyApi.getAll(companyId),
-        blogCalendarApi.getAll(companyId),
-        blogTitleApi.getAll(companyId),
-        blogPostApi.getAll(companyId),
-        blogContentChunkApi.getAll(companyId),
-        blogExportApi.getAll(companyId),
+      const [sRes, cRes, tRes, pRes, eRes] = await Promise.all([
+        newsletterStrategyApi.getAll(companyId),
+        newsletterCalendarApi.getAll(companyId),
+        newsletterTitleApi.getAll(companyId),
+        newsletterPostApi.getAll(companyId),
+        newsletterExportApi.getAll(companyId),
       ]);
 
-      // Log API errors for debugging
       const responses = [
         { name: 'strategies', res: sRes },
         { name: 'calendars', res: cRes },
         { name: 'titles', res: tRes },
         { name: 'posts', res: pRes },
-        { name: 'chunks', res: chRes },
         { name: 'exports', res: eRes },
       ];
       responses.forEach(({ name, res }) => {
         if (res.error) {
-          console.error(`[BlogContentOS] API load failed for ${name}:`, res.error, `(status: ${res.status})`);
+          console.error(`[NewsletterContentOS] API load failed for ${name}:`, res.error, `(status: ${res.status})`);
         }
       });
 
-      // Merge API data with local store — never overwrite with empty arrays
       const mergeById = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
         const map = new Map<string, T>();
         local.forEach((item) => map.set(item.id, item));
@@ -296,28 +213,24 @@ export default function BlogContentOSModule() {
       };
 
       if (sRes.data && Array.isArray(sRes.data) && sRes.data.length > 0) {
-        const local = (getItems('blogStrategies') as BlogStrategy[]) || [];
-        dataStore.setItems('blogStrategies', mergeById(local, sRes.data as BlogStrategy[]));
+        const local = (getItems('newsletterStrategies') as NewsletterStrategy[]) || [];
+        dataStore.setItems('newsletterStrategies', mergeById(local, sRes.data as NewsletterStrategy[]));
       }
       if (cRes.data && Array.isArray(cRes.data) && cRes.data.length > 0) {
-        const local = (getItems('blogCalendars') as BlogCalendar[]) || [];
-        dataStore.setItems('blogCalendars', mergeById(local, cRes.data as BlogCalendar[]));
+        const local = (getItems('newsletterCalendars') as NewsletterCalendar[]) || [];
+        dataStore.setItems('newsletterCalendars', mergeById(local, cRes.data as NewsletterCalendar[]));
       }
       if (tRes.data && Array.isArray(tRes.data) && tRes.data.length > 0) {
-        const local = (getItems('blogTitles') as BlogTitle[]) || [];
-        dataStore.setItems('blogTitles', mergeById(local, tRes.data as BlogTitle[]));
+        const local = (getItems('newsletterTitles') as NewsletterTitle[]) || [];
+        dataStore.setItems('newsletterTitles', mergeById(local, tRes.data as NewsletterTitle[]));
       }
       if (pRes.data && Array.isArray(pRes.data) && pRes.data.length > 0) {
-        const local = (getItems('blogPosts') as BlogPost[]) || [];
-        dataStore.setItems('blogPosts', mergeById(local, pRes.data as BlogPost[]));
-      }
-      if (chRes.data && Array.isArray(chRes.data) && chRes.data.length > 0) {
-        const local = (getItems('blogContentChunks') as BlogContentChunk[]) || [];
-        dataStore.setItems('blogContentChunks', mergeById(local, chRes.data as BlogContentChunk[]));
+        const local = (getItems('newsletterPosts') as NewsletterPost[]) || [];
+        dataStore.setItems('newsletterPosts', mergeById(local, pRes.data as NewsletterPost[]));
       }
       if (eRes.data && Array.isArray(eRes.data) && eRes.data.length > 0) {
-        const local = (getItems('blogExports') as BlogExport[]) || [];
-        dataStore.setItems('blogExports', mergeById(local, eRes.data as BlogExport[]));
+        const local = (getItems('newsletterExports') as NewsletterExport[]) || [];
+        dataStore.setItems('newsletterExports', mergeById(local, eRes.data as NewsletterExport[]));
       }
 
       setIsLoading(false);
@@ -331,85 +244,79 @@ export default function BlogContentOSModule() {
   const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
   const [showCreateStrategyModal, setShowCreateStrategyModal] = useState(false);
 
-  // Get active strategy
   const activeStrategy = useMemo(() => strategies.find((s) => s.id === activeStrategyId), [strategies, activeStrategyId]);
 
   // Strategy actions
-  const handleCreateStrategy = useCallback(async (data: Partial<BlogStrategy>) => {
+  const handleCreateStrategy = useCallback(async (data: Partial<NewsletterStrategy>) => {
     if (!companyId) return;
-    const localId = addItem('blogStrategies', {
+    const localId = addItem('newsletterStrategies', {
       ...data,
       companyId,
       linkedData: {},
     } as any);
     setActiveStrategyId(localId);
 
-    // Create default content types for this strategy
-    DEFAULT_CONTENT_TYPES.forEach((type, index) => {
-      addItem('blogContentTypes', {
+    DEFAULT_CONTENT_TYPES.forEach((type) => {
+      addItem('newsletterContentTypes', {
         ...type,
         strategyId: localId,
         companyId,
       } as any);
     });
 
-    // Sync to backend
-    const response = await blogStrategyApi.create({
+    const response = await newsletterStrategyApi.create({
       ...data,
       companyId,
       id: localId,
       linkedData: {},
     });
     if (response.data && (response.data as any).id && (response.data as any).id !== localId) {
-      updateItem('blogStrategies', localId, { id: (response.data as any).id });
+      updateItem('newsletterStrategies', localId, { id: (response.data as any).id });
       setActiveStrategyId((response.data as any).id);
     }
   }, [companyId, addItem, updateItem]);
 
-  const handleUpdateStrategy = useCallback(async (id: string, updates: Partial<BlogStrategy>) => {
-    updateItem('blogStrategies', id, updates);
-    await blogStrategyApi.update(id, updates);
+  const handleUpdateStrategy = useCallback(async (id: string, updates: Partial<NewsletterStrategy>) => {
+    updateItem('newsletterStrategies', id, updates);
+    await newsletterStrategyApi.update(id, updates);
   }, [updateItem]);
 
   const handleDeleteStrategy = useCallback(async (id: string) => {
     if (confirm('Are you sure? This will delete the strategy and all associated data.')) {
-      deleteItem('blogStrategies', id);
+      deleteItem('newsletterStrategies', id);
       if (activeStrategyId === id) setActiveStrategyId(null);
-      await blogStrategyApi.delete(id);
+      await newsletterStrategyApi.delete(id);
     }
   }, [deleteItem, activeStrategyId]);
 
-  // Title generation (simulated - would connect to Ollama Cloud)
-  const handleGenerateTitles = useCallback(async (count: number = 10, style: TitleStyle = 'seo') => {
+  // Title generation
+  const handleGenerateTitles = useCallback(async (count: number = 10, style: SubjectLineStyle = 'educational') => {
     if (!activeStrategyId || !activeStrategy) return;
 
-    // Create background task
     const taskId = taskStore.createTask(
-      `Generate ${count} Blog Titles`,
-      'blog-content-os',
+      `Generate ${count} Newsletter Titles`,
+      'newsletter-content-os',
       count
     );
 
-    // Simulate AI generation with context
     const brandContext = brand ? `Brand: ${brand.voice || 'professional'}, Tone: ${brand.personality || 'friendly'}` : '';
     const businessContext = businessProfile ? `Industry: ${businessProfile.primaryIndustry || 'general'}` : '';
-
-    // Generate titles based on content types
     const enabledTypes = contentTypes.filter((t) => t.enabled && t.strategyId === activeStrategyId);
 
     setTimeout(async () => {
       const titlesToCreate: any[] = [];
       for (let i = 0; i < count; i++) {
         const contentType = enabledTypes[i % enabledTypes.length] || enabledTypes[0];
-        const title = generateSampleTitle(contentType?.type || 'educational', style, brandContext, businessContext);
+        const result = generateSampleTitle(contentType?.type || 'educational', style, brandContext, businessContext);
 
         const titleData = {
           strategyId: activeStrategyId,
-          title,
+          title: result.title,
+          subjectLine: result.subjectLine,
+          previewText: result.previewText,
           contentType: contentType?.type || 'educational',
           style,
-          seoScore: Math.floor(Math.random() * 30) + 70,
-          searchIntent: contentType?.seoIntent || 'informational',
+          engagementScore: Math.floor(Math.random() * 30) + 70,
           funnelStage: contentType?.funnelPosition || 'tofu',
           suggestedKeywords: generateKeywords(contentType?.type || 'educational'),
           suggestedCTA: contentType?.ctaStrategy || 'Learn more',
@@ -418,13 +325,11 @@ export default function BlogContentOSModule() {
           companyId,
         };
 
-        addItem('blogTitles', titleData as any);
+        addItem('newsletterTitles', titleData as any);
         titlesToCreate.push(titleData);
       }
 
-      // Sync to backend in parallel
-      await Promise.all(titlesToCreate.map((t) => blogTitleApi.create(t)));
-
+      await Promise.all(titlesToCreate.map((t) => newsletterTitleApi.create(t)));
       taskStore.completeBatch(taskId, 0, Array(count).fill('title'));
     }, 2000);
   }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, addItem, taskStore, companyId]);
@@ -433,9 +338,20 @@ export default function BlogContentOSModule() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <Mail className="w-16 h-16 text-slate-600 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">Select a Company</h2>
-          <p className="text-slate-400">Please select a company to access the Blog Content OS.</p>
+          <p className="text-slate-400">Please select a company to access the Newsletter Content OS.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <RefreshCw className="w-10 h-10 text-primary-400 animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Loading newsletter data...</p>
         </div>
       </div>
     );
@@ -449,11 +365,11 @@ export default function BlogContentOSModule() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <FileEdit className="w-6 h-6 text-white" />
+                <Mail className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Blog Content OS</h1>
-                <p className="text-sm text-slate-400">AI-Powered Content Strategy & Generation</p>
+                <h1 className="text-2xl font-bold text-white">Newsletter Content OS</h1>
+                <p className="text-sm text-slate-400">AI-Powered Newsletter Strategy & Generation</p>
               </div>
             </div>
 
@@ -494,7 +410,7 @@ export default function BlogContentOSModule() {
             { id: 'types', label: 'Content Types', icon: Layout },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
             { id: 'titles', label: 'Titles', icon: Type },
-            { id: 'content', label: 'Content', icon: FileEdit },
+            { id: 'content', label: 'Content', icon: FileText },
             { id: 'assets', label: 'Assets', icon: Image },
             { id: 'review', label: 'Review', icon: CheckCircle },
             { id: 'export', label: 'Export', icon: Download },
@@ -539,7 +455,7 @@ export default function BlogContentOSModule() {
               <ContentTypesTab
                 strategyId={activeStrategy.id}
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
-                onUpdate={(id, updates) => updateItem('blogContentTypes', id, updates)}
+                onUpdate={(id, updates) => updateItem('newsletterContentTypes', id, updates)}
               />
             )}
 
@@ -548,15 +464,15 @@ export default function BlogContentOSModule() {
                 strategy={activeStrategy}
                 calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
                 onCreateCalendar={async (data) => {
-                  const localId = addItem('blogCalendars', { ...data, strategyId: activeStrategy.id } as any);
-                  const res = await blogCalendarApi.create({ ...data, strategyId: activeStrategy.id, id: localId, companyId });
+                  const localId = addItem('newsletterCalendars', { ...data, strategyId: activeStrategy.id } as any);
+                  const res = await newsletterCalendarApi.create({ ...data, strategyId: activeStrategy.id, id: localId, companyId });
                   if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
-                    updateItem('blogCalendars', localId, { id: (res.data as any).id });
+                    updateItem('newsletterCalendars', localId, { id: (res.data as any).id });
                   }
                 }}
                 onUpdateCalendar={async (id, updates) => {
-                  updateItem('blogCalendars', id, updates);
-                  await blogCalendarApi.update(id, updates);
+                  updateItem('newsletterCalendars', id, updates);
+                  await newsletterCalendarApi.update(id, updates);
                 }}
               />
             )}
@@ -568,12 +484,12 @@ export default function BlogContentOSModule() {
                 titles={titles.filter((t) => t.strategyId === activeStrategy.id)}
                 onGenerate={handleGenerateTitles}
                 onUpdate={async (id, updates) => {
-                  updateItem('blogTitles', id, updates);
-                  await blogTitleApi.update(id, updates);
+                  updateItem('newsletterTitles', id, updates);
+                  await newsletterTitleApi.update(id, updates);
                 }}
                 onDelete={async (id) => {
-                  deleteItem('blogTitles', id);
-                  await blogTitleApi.delete(id);
+                  deleteItem('newsletterTitles', id);
+                  await newsletterTitleApi.delete(id);
                 }}
               />
             )}
@@ -585,19 +501,19 @@ export default function BlogContentOSModule() {
                 titles={titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected')}
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
                 onCreatePost={async (data) => {
-                  const localId = addItem('blogPosts', data as any);
-                  const res = await blogPostApi.create({ ...data, id: localId, companyId });
+                  const localId = addItem('newsletterPosts', data as any);
+                  const res = await newsletterPostApi.create({ ...data, id: localId, companyId });
                   if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
-                    updateItem('blogPosts', localId, { id: (res.data as any).id });
+                    updateItem('newsletterPosts', localId, { id: (res.data as any).id });
                   }
                 }}
                 onUpdatePost={async (id, updates) => {
-                  updateItem('blogPosts', id, updates);
-                  await blogPostApi.update(id, updates);
+                  updateItem('newsletterPosts', id, updates);
+                  await newsletterPostApi.update(id, updates);
                 }}
                 onDeletePost={async (id) => {
-                  deleteItem('blogPosts', id);
-                  await blogPostApi.delete(id);
+                  deleteItem('newsletterPosts', id);
+                  await newsletterPostApi.delete(id);
                 }}
               />
             )}
@@ -614,8 +530,8 @@ export default function BlogContentOSModule() {
                 strategy={activeStrategy}
                 posts={posts.filter((p) => p.strategyId === activeStrategy.id)}
                 onUpdatePost={async (id, updates) => {
-                  updateItem('blogPosts', id, updates);
-                  await blogPostApi.update(id, updates);
+                  updateItem('newsletterPosts', id, updates);
+                  await newsletterPostApi.update(id, updates);
                 }}
               />
             )}
@@ -650,11 +566,11 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
     <div className="flex items-center justify-center h-[calc(100vh-200px)]">
       <div className="text-center max-w-md">
         <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <BookOpen className="w-10 h-10 text-slate-400" />
+          <Mail className="w-10 h-10 text-slate-400" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">No Blog Strategy Yet</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">No Newsletter Strategy Yet</h2>
         <p className="text-slate-400 mb-6">
-          Create your first blog content strategy to start planning SEO-focused, brand-aligned content that drives results.
+          Create your first newsletter content strategy to start planning engaging, brand-aligned newsletters that build subscriber loyalty.
         </p>
         <button
           onClick={onCreate}
@@ -682,26 +598,17 @@ function StrategyTab({
   competitors,
   onUpdate,
 }: {
-  strategy: BlogStrategy;
+  strategy: NewsletterStrategy;
   brand: Brand | null;
   businessProfile: BusinessProfile | undefined;
   icps: ICP[];
   personas: Persona[];
   products: Product[];
   competitors: Competitor[];
-  onUpdate: (updates: Partial<BlogStrategy>) => void;
+  onUpdate: (updates: Partial<NewsletterStrategy>) => void;
 }) {
   const [activeSection, setActiveSection] = useState<'goals' | 'audience' | 'linked'>('goals');
-
   const linkedData = strategy.linkedData || {};
-
-  const toggleGoal = (goal: BlogGoal) => {
-    const currentGoals = strategy.goals || [];
-    const newGoals = currentGoals.includes(goal)
-      ? currentGoals.filter((g) => g !== goal)
-      : [...currentGoals, goal];
-    onUpdate({ goals: newGoals });
-  };
 
   const toggleLinkedId = (type: string, id: string) => {
     const key = `${type}Ids` as keyof typeof linkedData;
@@ -734,23 +641,21 @@ function StrategyTab({
               value={strategy.name}
               onChange={(e) => onUpdate({ name: e.target.value })}
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
-              placeholder="e.g., Q1 2026 Content Strategy"
+              placeholder="e.g., Q1 2026 Newsletter Strategy"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Language</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Objective</label>
               <select
-                value={strategy.language || 'en'}
-                onChange={(e) => onUpdate({ language: e.target.value })}
+                value={strategy.objective || 'education'}
+                onChange={(e) => onUpdate({ objective: e.target.value as NewsletterGoal })}
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
               >
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-                <option value="hi">Hindi</option>
+                {NEWSLETTER_GOALS.map((g) => (
+                  <option key={g.value} value={g.value}>{g.label}</option>
+                ))}
               </select>
             </div>
 
@@ -771,22 +676,22 @@ function StrategyTab({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Target Region</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Industry</label>
             <input
               type="text"
-              value={strategy.targetRegion || ''}
-              onChange={(e) => onUpdate({ targetRegion: e.target.value })}
-              placeholder="e.g., North America"
+              value={strategy.industry || ''}
+              onChange={(e) => onUpdate({ industry: e.target.value })}
+              placeholder="e.g., SaaS"
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Target Audience</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Audience</label>
             <input
               type="text"
-              value={strategy.targetAudience || ''}
-              onChange={(e) => onUpdate({ targetAudience: e.target.value })}
+              value={strategy.audience || ''}
+              onChange={(e) => onUpdate({ audience: e.target.value })}
               placeholder="e.g., Marketing Managers"
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
             />
@@ -807,38 +712,32 @@ function StrategyTab({
         </div>
 
         <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-400 mb-2">Competitor Blogs to Monitor</label>
+          <label className="block text-sm font-medium text-slate-400 mb-2">CTA Goal</label>
           <input
             type="text"
-            value={strategy.competitorBlogs?.join(', ') || ''}
-            onChange={(e) => onUpdate({ competitorBlogs: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
-            placeholder="e.g., competitor1.com/blog, competitor2.com/blog"
+            value={strategy.ctaGoal || ''}
+            onChange={(e) => onUpdate({ ctaGoal: e.target.value })}
+            placeholder="e.g., Drive traffic to blog"
             className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
           />
         </div>
 
         <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-400 mb-2">AI Creativity Level</label>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500">Conservative</span>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={strategy.creativityLevel || 5}
-              onChange={(e) => onUpdate({ creativityLevel: parseInt(e.target.value) })}
-              className="flex-1"
-            />
-            <span className="text-sm text-slate-500">Creative</span>
-            <span className="text-lg font-semibold text-primary-400 w-8 text-center">{strategy.creativityLevel || 5}</span>
-          </div>
+          <label className="block text-sm font-medium text-slate-400 mb-2">Communication Tone</label>
+          <input
+            type="text"
+            value={strategy.communicationTone || ''}
+            onChange={(e) => onUpdate({ communicationTone: e.target.value })}
+            placeholder="e.g., Friendly, professional, conversational"
+            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+          />
         </div>
       </div>
 
       {/* Section Tabs */}
       <div className="flex gap-2 border-b border-slate-800">
         {[
-          { id: 'goals', label: 'Blog Goals', icon: Target },
+          { id: 'goals', label: 'Objective', icon: Target },
           { id: 'audience', label: 'Audience Context', icon: Users },
           { id: 'linked', label: 'Linked Modules', icon: Link },
         ].map((section) => (
@@ -863,15 +762,15 @@ function StrategyTab({
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
             <Target className="w-5 h-5 text-primary-400" />
-            Select Your Blogging Goals
+            Newsletter Objective
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {BLOG_GOALS.map((goal) => {
-              const isSelected = strategy.goals?.includes(goal.value);
+            {NEWSLETTER_GOALS.map((goal) => {
+              const isSelected = strategy.objective === goal.value;
               return (
                 <button
                   key={goal.value}
-                  onClick={() => toggleGoal(goal.value)}
+                  onClick={() => onUpdate({ objective: goal.value })}
                   className={cn(
                     'p-4 rounded-xl border text-left transition-all',
                     isSelected
@@ -904,7 +803,6 @@ function StrategyTab({
       {activeSection === 'audience' && (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Brand Voice */}
             {brand && (
               <div className="space-y-4">
                 <h4 className="font-medium text-slate-200 flex items-center gap-2">
@@ -919,10 +817,6 @@ function StrategyTab({
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Personality</div>
                     <div className="text-slate-200">{brand.personalityPrimary?.join(', ') || brand.personality || 'Not defined'}</div>
-                  </div>
-                  <div className="bg-slate-900/50 rounded-lg p-3">
-                    <div className="text-xs text-slate-500">Writing Style</div>
-                    <div className="text-slate-200">{brand.voiceWritingStyle || 'Not defined'}</div>
                   </div>
                 </div>
               </div>
@@ -942,7 +836,6 @@ function StrategyTab({
               </div>
             )}
 
-            {/* Business Context */}
             <div className="space-y-4">
               <h4 className="font-medium text-slate-200 flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-primary-400" />
@@ -977,12 +870,11 @@ function StrategyTab({
       {activeSection === 'linked' && (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
           <p className="text-slate-400 mb-6">
-            Link data from other modules to enrich your content generation with business context,
+            Link data from other modules to enrich your newsletter generation with business context,
             ICP insights, product details, and competitive intelligence.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* ICPs */}
             {icps.length > 0 && (
               <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
                 <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
@@ -1017,7 +909,6 @@ function StrategyTab({
               </div>
             )}
 
-            {/* Personas */}
             {personas.length > 0 && (
               <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
                 <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
@@ -1052,7 +943,6 @@ function StrategyTab({
               </div>
             )}
 
-            {/* Products */}
             {products.length > 0 && (
               <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
                 <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
@@ -1087,7 +977,6 @@ function StrategyTab({
               </div>
             )}
 
-            {/* Competitors */}
             {competitors.length > 0 && (
               <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
                 <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
@@ -1149,8 +1038,8 @@ function ContentTypesTab({
   onUpdate,
 }: {
   strategyId: string;
-  contentTypes: BlogContentTypeConfig[];
-  onUpdate: (id: string, updates: Partial<BlogContentTypeConfig>) => void;
+  contentTypes: NewsletterContentTypeConfig[];
+  onUpdate: (id: string, updates: Partial<NewsletterContentTypeConfig>) => void;
 }) {
   const enabledTypes = contentTypes.filter((t) => t.enabled);
   const totalAllocation = enabledTypes.reduce((sum, t) => sum + t.percentageAllocation, 0);
@@ -1165,7 +1054,6 @@ function ContentTypesTab({
 
   return (
     <div className="space-y-6">
-      {/* Allocation Summary */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -1185,7 +1073,6 @@ function ContentTypesTab({
           </div>
         </div>
 
-        {/* Visual Bar */}
         <div className="h-4 bg-slate-900 rounded-full overflow-hidden flex">
           {enabledTypes.map((type, index) => {
             const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-cyan-500', 'bg-lime-500', 'bg-rose-500', 'bg-violet-500'];
@@ -1214,7 +1101,6 @@ function ContentTypesTab({
         </div>
       </div>
 
-      {/* Content Types List */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-700">
           <h3 className="text-lg font-semibold text-slate-200">Configure Content Types</h3>
@@ -1239,17 +1125,6 @@ function ContentTypesTab({
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="font-medium text-slate-200">{type.name}</span>
-                      <span
-                        className={cn(
-                          'px-2 py-0.5 text-xs rounded-full',
-                          type.seoIntent === 'informational' && 'bg-blue-500/20 text-blue-400',
-                          type.seoIntent === 'commercial' && 'bg-purple-500/20 text-purple-400',
-                          type.seoIntent === 'transactional' && 'bg-green-500/20 text-green-400',
-                          type.seoIntent === 'navigational' && 'bg-slate-500/20 text-slate-400'
-                        )}
-                      >
-                        {type.seoIntent}
-                      </span>
                       <span className="px-2 py-0.5 text-xs rounded-full bg-slate-700 text-slate-300">{type.funnelPosition.toUpperCase()}</span>
                     </div>
 
@@ -1317,24 +1192,25 @@ function CalendarTab({
   onCreateCalendar,
   onUpdateCalendar,
 }: {
-  strategy: BlogStrategy;
-  calendars: BlogCalendar[];
-  onCreateCalendar: (data: Partial<BlogCalendar>) => void;
-  onUpdateCalendar: (id: string, updates: Partial<BlogCalendar>) => void;
+  strategy: NewsletterStrategy;
+  calendars: NewsletterCalendar[];
+  onCreateCalendar: (data: Partial<NewsletterCalendar>) => void;
+  onUpdateCalendar: (id: string, updates: Partial<NewsletterCalendar>) => void;
 }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const activeCalendar = calendars[0];
 
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const getPublishingDayLabel = (day: string) => {
+  const getFrequencyLabel = (freq: string) => {
     const labels: Record<string, string> = {
       daily: 'Every Day',
       weekly: 'Once per week',
       'bi-weekly': 'Twice per week',
       monthly: 'Once per month',
+      quarterly: 'Once per quarter',
     };
-    return labels[day] || day;
+    return labels[freq] || freq;
   };
 
   return (
@@ -1343,7 +1219,7 @@ function CalendarTab({
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
           <Calendar className="w-12 h-12 text-slate-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-200 mb-2">No Calendar Created</h3>
-          <p className="text-slate-400 mb-6 max-w-md mx-auto">Create a publishing calendar to schedule your blog content and track your content pipeline.</p>
+          <p className="text-slate-400 mb-6 max-w-md mx-auto">Create a publishing calendar to schedule your newsletters and track your content pipeline.</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg mx-auto transition-colors"
@@ -1354,14 +1230,13 @@ function CalendarTab({
         </div>
       ) : (
         <>
-          {/* Calendar Overview */}
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-slate-200">{activeCalendar.name}</h3>
                 <div className="flex items-center gap-4 mt-2">
-                  <span className="text-sm text-slate-400">Frequency: {getPublishingDayLabel(activeCalendar.frequency)}</span>
-                  <span className="text-sm text-slate-400">Posts per cycle: {activeCalendar.postsPerCycle}</span>
+                  <span className="text-sm text-slate-400">Frequency: {getFrequencyLabel(activeCalendar.frequency)}</span>
+                  <span className="text-sm text-slate-400">Newsletters per cycle: {activeCalendar.newslettersPerCycle}</span>
                 </div>
               </div>
               <button
@@ -1373,7 +1248,6 @@ function CalendarTab({
               </button>
             </div>
 
-            {/* Publishing Schedule */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-slate-400 mb-3">Publishing Schedule</h4>
               <div className="grid grid-cols-7 gap-2">
@@ -1397,9 +1271,8 @@ function CalendarTab({
               </div>
             </div>
 
-            {/* Timeline */}
             <div>
-              <h4 className="text-sm font-medium text-slate-400 mb-3">Content Pipeline ({activeCalendar.timeline.length} posts)</h4>
+              <h4 className="text-sm font-medium text-slate-400 mb-3">Content Pipeline ({activeCalendar.timeline.length} newsletters)</h4>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {activeCalendar.timeline.slice(0, 20).map((item, index) => (
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
@@ -1445,14 +1318,14 @@ function CreateCalendarModal({
   onClose,
   onCreate,
 }: {
-  strategy: BlogStrategy;
+  strategy: NewsletterStrategy;
   onClose: () => void;
-  onCreate: (data: Partial<BlogCalendar>) => void;
+  onCreate: (data: Partial<NewsletterCalendar>) => void;
 }) {
   const [name, setName] = useState(strategy.name + ' Calendar');
-  const [frequency, setFrequency] = useState<BloggingFrequency>('weekly');
-  const [postsPerCycle, setPostsPerCycle] = useState(4);
-  const [publishingDays, setPublishingDays] = useState<string[]>(['monday']);
+  const [frequency, setFrequency] = useState<NewsletterFrequency>('weekly');
+  const [newslettersPerCycle, setNewslettersPerCycle] = useState(4);
+  const [publishingDays, setPublishingDays] = useState<string[]>(['tuesday']);
 
   const weekDays = [
     { value: 'sunday', label: 'Sunday' },
@@ -1469,11 +1342,10 @@ function CreateCalendarModal({
   };
 
   const handleSubmit = () => {
-    // Generate timeline
-    const timeline: BlogCalendarItem[] = [];
+    const timeline: NewsletterCalendarItem[] = [];
     const startDate = new Date();
 
-    for (let i = 0; i < postsPerCycle; i++) {
+    for (let i = 0; i < newslettersPerCycle; i++) {
       timeline.push({
         id: `calendar-item-${i}`,
         scheduledDate: new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1484,7 +1356,7 @@ function CreateCalendarModal({
     onCreate({
       name,
       frequency,
-      postsPerCycle,
+      newslettersPerCycle,
       publishingDays,
       timeline,
       startDate: startDate.toISOString(),
@@ -1498,7 +1370,7 @@ function CreateCalendarModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-800">
-          <h2 className="text-lg font-semibold text-slate-200">Create Blog Calendar</h2>
+          <h2 className="text-lg font-semibold text-slate-200">Create Newsletter Calendar</h2>
           <p className="text-sm text-slate-400">Set up your publishing schedule</p>
         </div>
 
@@ -1517,24 +1389,25 @@ function CreateCalendarModal({
             <label className="block text-sm font-medium text-slate-400 mb-2">Publishing Frequency</label>
             <select
               value={frequency}
-              onChange={(e) => setFrequency(e.target.value as BloggingFrequency)}
+              onChange={(e) => setFrequency(e.target.value as NewsletterFrequency)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
               <option value="bi-weekly">Bi-weekly</option>
               <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Posts per Cycle</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Newsletters per Cycle</label>
             <input
               type="number"
               min="1"
               max="52"
-              value={postsPerCycle}
-              onChange={(e) => setPostsPerCycle(parseInt(e.target.value))}
+              value={newslettersPerCycle}
+              onChange={(e) => setNewslettersPerCycle(parseInt(e.target.value))}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
             />
           </div>
@@ -1579,7 +1452,7 @@ function CreateCalendarModal({
 }
 
 // ============================================
-// TITLES TAB - AI Title Generation
+// TITLES TAB
 // ============================================
 
 function TitlesTab({
@@ -1590,14 +1463,14 @@ function TitlesTab({
   onUpdate,
   onDelete,
 }: {
-  strategy: BlogStrategy;
-  contentTypes: BlogContentTypeConfig[];
-  titles: BlogTitle[];
-  onGenerate: (count: number, style: TitleStyle) => void;
-  onUpdate: (id: string, updates: Partial<BlogTitle>) => void;
+  strategy: NewsletterStrategy;
+  contentTypes: NewsletterContentTypeConfig[];
+  titles: NewsletterTitle[];
+  onGenerate: (count: number, style: SubjectLineStyle) => void;
+  onUpdate: (id: string, updates: Partial<NewsletterTitle>) => void;
   onDelete: (id: string) => void;
 }) {
-  const [selectedStyle, setSelectedStyle] = useState<TitleStyle>('seo');
+  const [selectedStyle, setSelectedStyle] = useState<SubjectLineStyle>('educational');
   const [generateCount, setGenerateCount] = useState(10);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -1610,32 +1483,31 @@ function TitlesTab({
     setIsGenerating(false);
   };
 
-  const handleSelect = (title: BlogTitle) => {
+  const handleSelect = (title: NewsletterTitle) => {
     onUpdate(title.id, { status: 'selected', order: selectedTitles.length });
   };
 
-  const handleReject = (title: BlogTitle) => {
+  const handleReject = (title: NewsletterTitle) => {
     onUpdate(title.id, { status: 'rejected' });
   };
 
   return (
     <div className="space-y-6">
-      {/* Generation Controls */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary-400" />
-          AI Title Generator
+          AI Title & Subject Line Generator
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Title Style</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Subject Line Style</label>
             <select
               value={selectedStyle}
-              onChange={(e) => setSelectedStyle(e.target.value as TitleStyle)}
+              onChange={(e) => setSelectedStyle(e.target.value as SubjectLineStyle)}
               className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
             >
-              {TITLE_STYLES.map((style) => (
+              {SUBJECT_LINE_STYLES.map((style) => (
                 <option key={style.value} value={style.value}>{style.label}</option>
               ))}
             </select>
@@ -1670,13 +1542,12 @@ function TitlesTab({
 
         <div className="text-sm text-slate-500">
           Using: <span className="text-primary-400">Ollama Cloud GLM 5.1</span> |
-          Context: {strategy.targetAudience || 'General audience'} |
+          Context: {strategy.audience || 'General audience'} |
           Content types: {contentTypes.filter((t) => t.enabled).length} enabled
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Selected Titles */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Editorial Pipeline ({selectedTitles.length})</h3>
@@ -1691,8 +1562,10 @@ function TitlesTab({
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <div className="font-medium text-slate-200">{title.title}</div>
+                      <div className="text-sm text-primary-400 mt-1">{title.subjectLine}</div>
+                      <div className="text-xs text-slate-500 mt-1">{title.previewText}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-slate-500">SEO Score: {title.seoScore}/100</span>
+                        <span className="text-xs text-slate-500">Engagement: {title.engagementScore}/100</span>
                         <span className="text-xs text-slate-500">{title.funnelStage.toUpperCase()}</span>
                       </div>
                     </div>
@@ -1706,10 +1579,9 @@ function TitlesTab({
                 </div>
               ))
             )}
-            </div>
           </div>
+        </div>
 
-        {/* Generated Titles */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-700">
             <h3 className="font-semibold text-slate-200">Generated Titles ({generatedTitles.length})</h3>
@@ -1724,14 +1596,16 @@ function TitlesTab({
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <div className="font-medium text-slate-200">{title.title}</div>
+                      <div className="text-sm text-primary-400 mt-1">{title.subjectLine}</div>
+                      <div className="text-xs text-slate-500 mt-1">{title.previewText}</div>
                       <div className="flex items-center gap-3 mt-1">
                         <span className={cn(
                           'text-xs px-2 py-0.5 rounded-full',
-                          title.seoScore >= 80 && 'bg-green-500/20 text-green-400',
-                          title.seoScore >= 60 && title.seoScore < 80 && 'bg-yellow-500/20 text-yellow-400',
-                          title.seoScore < 60 && 'bg-red-500/20 text-red-400'
+                          title.engagementScore >= 80 && 'bg-green-500/20 text-green-400',
+                          title.engagementScore >= 60 && title.engagementScore < 80 && 'bg-yellow-500/20 text-yellow-400',
+                          title.engagementScore < 60 && 'bg-red-500/20 text-red-400'
                         )}>
-                          SEO {title.seoScore}
+                          Engagement {title.engagementScore}
                         </span>
                         <span className="text-xs text-slate-500 capitalize">{title.contentType}</span>
                       </div>
@@ -1772,115 +1646,141 @@ function generateSampleTitle(
   style: string,
   _brandContext: string,
   _businessContext: string
-): string {
+): { title: string; subjectLine: string; previewText: string } {
   const topics = [
-    'Marketing Automation',
-    'SEO Strategy',
-    'Content Marketing',
-    'Social Media Growth',
-    'Lead Generation',
-    'Brand Building',
-    'Customer Retention',
-    'Email Marketing',
-    'Conversion Optimisation',
-    'Data Analytics',
-    'AI in Marketing',
-    'Influencer Partnerships',
-    'Video Marketing',
-    'Podcasting',
-    'Webinar Strategy',
+    'Marketing Automation', 'SEO Strategy', 'Content Marketing', 'Social Media Growth',
+    'Lead Generation', 'Brand Building', 'Customer Retention', 'Email Marketing',
+    'Conversion Optimisation', 'Data Analytics', 'AI in Marketing', 'Influencer Partnerships',
+    'Video Marketing', 'Podcasting', 'Webinar Strategy',
   ];
-  const actions = [
-    'Increase Conversions',
-    'Drive Traffic',
-    'Build Authority',
-    'Generate Leads',
-    'Boost Engagement',
-    'Reduce Churn',
-    'Scale Revenue',
-    'Improve ROI',
-  ];
-  const numbers = ['5', '7', '10', '12', '15', '21', '30', '101'];
   const topic = topics[Math.floor(Math.random() * topics.length)];
-  const action = actions[Math.floor(Math.random() * actions.length)];
-  const number = numbers[Math.floor(Math.random() * numbers.length)];
 
-  const templates: Record<string, string[]> = {
-    seo: [
-      `How to ${action} with ${topic} in ${number} Steps`,
-      `The Complete Guide to ${topic} for ${number}x Growth`,
-      `What is ${topic}? A Comprehensive Guide`,
-      `${number} Proven ${topic} Strategies That Work`,
-      `Why ${topic} Matters for Your Business`,
+  const titleTemplates: Record<string, string[]> = {
+    educational: [
+      `The Complete Guide to ${topic}`,
+      `How to Master ${topic} in 30 Days`,
+      `${topic}: Everything You Need to Know`,
+      `Top Strategies for ${topic} Success`,
+      `Understanding ${topic} from Scratch`,
     ],
-    viral: [
-      `The Shocking Truth About ${topic} Nobody Talks About`,
-      `I Tried ${topic} for 30 Days. Here's What Happened.`,
-      `Stop Doing ${topic} Wrong: ${number} Mistakes to Avoid`,
-      `This ${topic} Hack Changed Everything for Me`,
-      `Why 90% of Businesses Fail at ${topic}`,
+    conversational: [
+      `Let us Talk About ${topic}`,
+      `What No One Tells You About ${topic}`,
+      `I Was Wrong About ${topic}`,
+      `Quick Thought on ${topic}`,
+      `Here is What I Learned About ${topic}`,
+    ],
+    'founder-style': [
+      `Why ${topic} Matters to Our Mission`,
+      `How ${topic} Shaped Our Journey`,
+      `A Personal Note on ${topic}`,
+      `What ${topic} Taught Me as a Founder`,
+      `Our Team's Take on ${topic}`,
     ],
     authority: [
-      `The State of ${topic}: Industry Report`,
-      `Expert Insights: How Top Brands Approach ${topic}`,
-      `A Data-Driven Look at ${topic} Trends`,
-      `The Science Behind ${topic}`,
-      `What ${number} Years in ${topic} Taught Me`,
-    ],
-    technical: [
-      `${topic}: Architecture, Implementation, and Best Practices`,
-      `Deep Dive: How ${topic} Algorithms Work`,
-      `${topic} API Integration Guide`,
-      `Optimising ${topic} Performance: A Technical Analysis`,
-      `Building Scalable ${topic} Systems`,
+      `The State of ${topic}: 2026 Report`,
+      `Data-Driven Insights on ${topic}`,
+      `Industry Experts on ${topic}`,
+      `Proven Frameworks for ${topic}`,
+      `Research-Backed ${topic} Strategies`,
     ],
     emotional: [
       `The Frustration of ${topic} (And How to Fix It)`,
-      `Feeling Overwhelmed by ${topic}? Read This.`,
-      `The Relief of Finally Getting ${topic} Right`,
+      `Feeling Overwhelmed by ${topic}? Read This`,
       `Why ${topic} Keeps You Up at Night`,
-      `Finding Peace Through Better ${topic}`,
+      `The Relief of Finally Nailing ${topic}`,
+      `Stop Stressing About ${topic} — Here is How`,
     ],
-    founder: [
-      `Why I Built Our ${topic} Strategy from Scratch`,
-      `The ${topic} Lessons I Learned the Hard Way`,
-      `How We 10x'd Our ${topic} in 6 Months`,
-      `What I Wish I Knew About ${topic} Before Starting`,
-      `Our ${topic} Journey: From Zero to One`,
+    insight: [
+      `The Hidden Pattern in ${topic}`,
+      `One Counterintuitive Idea About ${topic}`,
+      `What I Noticed About ${topic} This Week`,
+      `The ${topic} Trend You Cannot Ignore`,
+      `A Different Angle on ${topic}`,
     ],
-    linkedin: [
-      `${number} ${topic} Insights Every Professional Should Know`,
-      `The ${topic} Framework That Got Me Promoted`,
-      `Why Leaders Prioritise ${topic} in 2026`,
-      `The ${topic} Skills Gap (And How to Close It)`,
-      `My Thoughts on the Future of ${topic}`,
-    ],
-    'thought-leadership': [
-      `The Future of ${topic}: A Vision for 2030`,
-      `Rethinking ${topic}: A New Perspective`,
-      `Why ${topic} Needs a Paradigm Shift`,
-      `The Unspoken Rules of ${topic}`,
-      `Beyond ${topic}: What's Next for the Industry`,
+    minimal: [
+      `${topic}`,
+      `On ${topic}`,
+      `${topic} Update`,
+      `Re: ${topic}`,
+      `${topic} Notes`,
     ],
   };
 
-  const styleTemplates = templates[style] || templates.seo;
-  return styleTemplates[Math.floor(Math.random() * styleTemplates.length)];
+  const subjectTemplates: Record<string, string[]> = {
+    educational: [
+      `Your guide to ${topic.toLowerCase()} is here`,
+      `Learn ${topic.toLowerCase()} in 10 minutes`,
+      `The ${topic.toLowerCase()} playbook inside`,
+      `Master ${topic.toLowerCase()} this week`,
+      `Free ${topic.toLowerCase()} training`,
+    ],
+    conversational: [
+      `Quick question about ${topic.toLowerCase()}`,
+      `I was thinking about ${topic.toLowerCase()}...`,
+      `Want to chat about ${topic.toLowerCase()}?`,
+      `Something cool about ${topic.toLowerCase()}`,
+      `Real talk: ${topic.toLowerCase()}`,
+    ],
+    'founder-style': [
+      `A note from the founder on ${topic.toLowerCase()}`,
+      `Why we care about ${topic.toLowerCase()}`,
+      `My honest thoughts on ${topic.toLowerCase()}`,
+      `Behind the scenes: ${topic.toLowerCase()}`,
+      `From our team to you: ${topic.toLowerCase()}`,
+    ],
+    authority: [
+      `New data on ${topic.toLowerCase()}`,
+      `Research: ${topic.toLowerCase()} trends`,
+      `Expert analysis of ${topic.toLowerCase()}`,
+      `The numbers on ${topic.toLowerCase()}`,
+      `Industry report: ${topic.toLowerCase()}`,
+    ],
+    emotional: [
+      `Stop struggling with ${topic.toLowerCase()}`,
+      `Feel confident about ${topic.toLowerCase()}`,
+      `The stress-free way to ${topic.toLowerCase()}`,
+      `You are not alone with ${topic.toLowerCase()}`,
+      `Finally: ${topic.toLowerCase()} made simple`,
+    ],
+    insight: [
+      `The ${topic.toLowerCase()} insight you missed`,
+      `One thing about ${topic.toLowerCase()}...`,
+      `Did you know this about ${topic.toLowerCase()}?`,
+      `The ${topic.toLowerCase()} surprise inside`,
+      `Unpopular opinion: ${topic.toLowerCase()}`,
+    ],
+    minimal: [
+      `${topic}`,
+      `${topic} inside`,
+      `Re: ${topic}`,
+      `Update: ${topic}`,
+      `${topic}?`,
+    ],
+  };
+
+  const styleList = titleTemplates[style] || titleTemplates.educational;
+  const subjectList = subjectTemplates[style] || subjectTemplates.educational;
+
+  return {
+    title: styleList[Math.floor(Math.random() * styleList.length)],
+    subjectLine: subjectList[Math.floor(Math.random() * subjectList.length)],
+    previewText: `Discover actionable insights about ${topic.toLowerCase()} in this week's newsletter.`,
+  };
 }
 
 function generateKeywords(contentType: string): string[] {
   const keywordMap: Record<string, string[]> = {
     educational: ['guide', 'tutorial', 'learn', 'explained', 'basics'],
-    'how-to-guide': ['how to', 'step by step', 'tutorial', 'guide', 'instructions'],
-    'industry-trends': ['trends', 'industry', 'future', 'predictions', 'insights'],
+    'product-update': ['update', 'new feature', 'release', 'changelog', 'product'],
+    curated: ['roundup', 'best of', 'top picks', 'weekly', 'resources'],
+    community: ['community', 'member spotlight', 'discussion', 'event', 'join'],
+    'founder-letter': ['founder', 'letter', 'story', 'journey', 'behind the scenes'],
     'case-study': ['case study', 'success story', 'results', 'example', 'proof'],
-    comparison: ['vs', 'comparison', 'best', 'top', 'review'],
-    'product-focused': ['product', 'features', 'review', 'demo', 'solution'],
-    listicle: ['list', 'best', 'top', 'ways to', 'tips'],
-    'problem-solution': ['solution', 'fix', 'problem', 'how to solve', 'overcome'],
-    'thought-leadership': ['future', 'vision', 'strategy', 'leadership', 'innovation'],
+    'industry-news': ['news', 'trends', 'industry', 'update', 'insights'],
+    promotional: ['offer', 'deal', 'discount', 'limited', 'exclusive'],
   };
-  return keywordMap[contentType] || ['marketing', 'strategy', 'growth', 'business'];
+  return keywordMap[contentType] || ['newsletter', 'marketing', 'growth', 'business'];
 }
 
 // ============================================
@@ -1892,27 +1792,29 @@ function CreateStrategyModal({
   onCreate,
 }: {
   onClose: () => void;
-  onCreate: (data: Partial<BlogStrategy>) => void;
+  onCreate: (data: Partial<NewsletterStrategy>) => void;
 }) {
   const [name, setName] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [targetRegion, setTargetRegion] = useState('');
+  const [audience, setAudience] = useState('');
+  const [industry, setIndustry] = useState('');
   const [funnelStage, setFunnelStage] = useState<FunnelStage>('tofu');
   const [contentDepth, setContentDepth] = useState<ContentDepth>('standard');
-  const [creativityLevel, setCreativityLevel] = useState(5);
+  const [objective, setObjective] = useState<NewsletterGoal>('education');
+  const [communicationTone, setCommunicationTone] = useState('');
+  const [ctaGoal, setCtaGoal] = useState('');
 
   const handleSubmit = () => {
     if (!name.trim()) return;
     onCreate({
       name,
-      targetAudience,
-      targetRegion,
+      audience,
+      industry,
       funnelStage,
       contentDepth,
-      creativityLevel,
-      goals: [],
-      language: 'en',
-      competitorBlogs: [],
+      objective,
+      communicationTone,
+      ctaGoal,
+      linkedData: {},
     });
     onClose();
   };
@@ -1921,8 +1823,8 @@ function CreateStrategyModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-800">
-          <h2 className="text-lg font-semibold text-slate-200">Create Blog Strategy</h2>
-          <p className="text-sm text-slate-400">Define your content strategy foundation</p>
+          <h2 className="text-lg font-semibold text-slate-200">Create Newsletter Strategy</h2>
+          <p className="text-sm text-slate-400">Define your newsletter content strategy foundation</p>
         </div>
 
         <div className="p-6 space-y-4">
@@ -1932,35 +1834,47 @@ function CreateStrategyModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Q3 2026 Content Strategy"
+              placeholder="e.g., Q3 2026 Newsletter Strategy"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Target Audience</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Audience</label>
               <input
                 type="text"
-                value={targetAudience}
-                onChange={(e) => setTargetAudience(e.target.value)}
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
                 placeholder="e.g., Marketing Managers"
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Target Region</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Industry</label>
               <input
                 type="text"
-                value={targetRegion}
-                onChange={(e) => setTargetRegion(e.target.value)}
-                placeholder="e.g., North America"
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                placeholder="e.g., SaaS"
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Objective</label>
+              <select
+                value={objective}
+                onChange={(e) => setObjective(e.target.value as NewsletterGoal)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+              >
+                {NEWSLETTER_GOALS.map((g) => (
+                  <option key={g.value} value={g.value}>{g.label}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">Funnel Stage</label>
               <select
@@ -1973,6 +1887,9 @@ function CreateStrategyModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">Content Depth</label>
               <select
@@ -1985,23 +1902,27 @@ function CreateStrategyModal({
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">CTA Goal</label>
+              <input
+                type="text"
+                value={ctaGoal}
+                onChange={(e) => setCtaGoal(e.target.value)}
+                placeholder="e.g., Drive traffic"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">AI Creativity Level</label>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-500">Conservative</span>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={creativityLevel}
-                onChange={(e) => setCreativityLevel(parseInt(e.target.value))}
-                className="flex-1"
-              />
-              <span className="text-sm text-slate-500">Creative</span>
-              <span className="text-lg font-semibold text-primary-400 w-8 text-center">{creativityLevel}</span>
-            </div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Communication Tone</label>
+            <input
+              type="text"
+              value={communicationTone}
+              onChange={(e) => setCommunicationTone(e.target.value)}
+              placeholder="e.g., Friendly, professional, conversational"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+            />
           </div>
         </div>
 
@@ -2033,79 +1954,55 @@ function ContentTab({
   onUpdatePost,
   onDeletePost,
 }: {
-  strategy: BlogStrategy;
-  posts: BlogPost[];
-  titles: BlogTitle[];
-  contentTypes: BlogContentTypeConfig[];
-  onCreatePost: (data: Partial<BlogPost>) => void;
-  onUpdatePost: (id: string, updates: Partial<BlogPost>) => void;
+  strategy: NewsletterStrategy;
+  posts: NewsletterPost[];
+  titles: NewsletterTitle[];
+  contentTypes: NewsletterContentTypeConfig[];
+  onCreatePost: (data: Partial<NewsletterPost>) => void;
+  onUpdatePost: (id: string, updates: Partial<NewsletterPost>) => void;
   onDeletePost: (id: string) => void;
 }) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const selectedPost = posts.find((p) => p.id === selectedPostId);
 
-  const handleCreateFromTitle = (title: BlogTitle) => {
+  const handleCreateFromTitle = (title: NewsletterTitle) => {
     const contentType = contentTypes.find((t) => t.type === title.contentType);
     onCreatePost({
       strategyId: strategy.id,
       titleId: title.id,
       title: title.title,
-      slug: generateSlug(title.title),
-      excerpt: '',
+      subjectLine: title.subjectLine,
+      previewText: title.previewText,
       contentType: title.contentType,
-      contentTypeId: contentType?.id,
-      primaryKeyword: title.suggestedKeywords[0],
-      secondaryKeywords: title.suggestedKeywords.slice(1),
-      nlpKeywords: [],
-      metaTitle: title.title,
-      metaDescription: '',
+      content: '',
+      sections: [],
+      suggestedCTA: title.suggestedCTA,
       status: 'planning',
       version: 1,
-      versions: [],
-      comments: [],
-      approvals: [],
       suggestedAssets: [],
-      contentChunks: [],
-      sections: [],
-      faqs: [],
-      internalLinks: [],
-      externalLinks: [],
     });
   };
 
-  const handleGenerateContent = async (post: BlogPost) => {
+  const handleGenerateContent = async (post: NewsletterPost) => {
     setIsGenerating(true);
     setTimeout(() => {
-      const sections: BlogSection[] = [
-        { id: `sec-${Date.now()}-1`, type: 'heading', content: `Introduction to ${post.title}`, order: 1, level: 1 },
-        { id: `sec-${Date.now()}-2`, type: 'paragraph', content: `In today's competitive landscape, understanding ${post.title.toLowerCase()} is essential for businesses looking to grow. This comprehensive guide explores everything you need to know.`, order: 2 },
-        { id: `sec-${Date.now()}-3`, type: 'heading', content: 'Key Strategies and Best Practices', order: 3, level: 2 },
-        { id: `sec-${Date.now()}-4`, type: 'paragraph', content: 'Successful implementation requires a structured approach. Start by analysing your current position, then identify gaps and opportunities for improvement.', order: 4 },
-        { id: `sec-${Date.now()}-5`, type: 'list', content: 'Research your target audience thoroughly\nDevelop a clear value proposition\nCreate consistent, high-quality content\nMeasure and optimise continuously', order: 5 },
-        { id: `sec-${Date.now()}-6`, type: 'heading', content: 'Common Mistakes to Avoid', order: 6, level: 2 },
-        { id: `sec-${Date.now()}-7`, type: 'paragraph', content: 'Many businesses fail because they lack patience and consistency. Avoid shortcuts and focus on building sustainable systems that compound over time.', order: 7 },
-        { id: `sec-${Date.now()}-8`, type: 'heading', content: 'Conclusion', order: 8, level: 2 },
-        { id: `sec-${Date.now()}-9`, type: 'paragraph', content: `${post.title} is not just a tactic—it is a strategic imperative. By following the frameworks outlined in this article, you can drive meaningful results for your business.`, order: 9 },
+      const sections: NewsletterSection[] = [
+        { id: `sec-${Date.now()}-1`, type: 'heading', content: `Welcome to ${post.title}`, order: 1 },
+        { id: `sec-${Date.now()}-2`, type: 'paragraph', content: `Hey there! In this edition, we dive into ${post.title.toLowerCase()} and what it means for you. Let us get started.`, order: 2 },
+        { id: `sec-${Date.now()}-3`, type: 'heading', content: 'What You Will Learn', order: 3 },
+        { id: `sec-${Date.now()}-4`, type: 'list', content: 'Key insight #1\nKey insight #2\nActionable takeaway\nResource recommendation', order: 4 },
+        { id: `sec-${Date.now()}-5`, type: 'heading', content: 'Deep Dive', order: 5 },
+        { id: `sec-${Date.now()}-6`, type: 'paragraph', content: 'Here is where we unpack the details. Whether you are new to this or a seasoned pro, there is something here for you.', order: 6 },
+        { id: `sec-${Date.now()}-7`, type: 'quote', content: '"The best way to predict the future is to create it." — Peter Drucker', order: 7 },
+        { id: `sec-${Date.now()}-8`, type: 'cta', content: post.suggestedCTA || 'Check out our latest resources', order: 8 },
       ];
 
+      const content = sections.map((s) => s.content).join('\n\n');
       onUpdatePost(post.id, {
         status: 'draft',
-        content: sections.map((s) => s.content).join('\n\n'),
+        content,
         sections,
-        seoAnalysis: {
-          readabilityScore: 72,
-          readingTime: getEstimatedReadTime(1200),
-          keywordDensity: { [post.primaryKeyword || 'marketing']: 2.4 },
-          headingStructureValid: true,
-          internalLinkCount: 0,
-          externalLinkCount: 0,
-          suggestedSchema: ['Article', 'FAQPage'],
-          wordCount: 1200,
-          paragraphCount: 6,
-          avgSentenceLength: 18,
-          passiveVoicePercentage: 12,
-        },
       });
       setIsGenerating(false);
     }, 2000);
@@ -2117,14 +2014,14 @@ function ContentTab({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-slate-200">Content Pipeline</h3>
-            <p className="text-sm text-slate-400 mt-1">{posts.length} posts in pipeline</p>
+            <p className="text-sm text-slate-400 mt-1">{posts.length} newsletters in pipeline</p>
           </div>
         </div>
       </div>
 
       {titles.filter((t) => t.status === 'selected').length > 0 && posts.length === 0 && (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Create Posts from Selected Titles</h3>
+          <h3 className="text-sm font-medium text-slate-300 mb-3">Create Newsletters from Selected Titles</h3>
           <div className="space-y-2">
             {titles
               .filter((t) => t.status === 'selected')
@@ -2136,7 +2033,7 @@ function ContentTab({
                     className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
                   >
                     <Plus className="w-3 h-3" />
-                    Create Post
+                    Create Newsletter
                   </button>
                 </div>
               ))}
@@ -2147,10 +2044,10 @@ function ContentTab({
       <div className="space-y-4">
         {posts.length === 0 ? (
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
-            <FileEdit className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-200 mb-2">No Posts Yet</h3>
+            <FileText className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-200 mb-2">No Newsletters Yet</h3>
             <p className="text-slate-400 mb-6 max-w-md mx-auto">
-              Select titles from the Titles tab and create posts, or start writing from scratch.
+              Select titles from the Titles tab and create newsletters, or start writing from scratch.
             </p>
           </div>
         ) : (
@@ -2168,6 +2065,7 @@ function ContentTab({
               >
                 <div className="flex-1">
                   <div className="font-medium text-slate-200">{post.title}</div>
+                  <div className="text-sm text-primary-400 mt-0.5">{post.subjectLine}</div>
                   <div className="flex items-center gap-3 mt-1">
                     <span
                       className={cn(
@@ -2182,9 +2080,6 @@ function ContentTab({
                       {post.status}
                     </span>
                     <span className="text-xs text-slate-500">{post.contentType}</span>
-                    {post.seoAnalysis && (
-                      <span className="text-xs text-slate-500">{post.seoAnalysis.wordCount} words</span>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -2224,23 +2119,23 @@ function ContentTab({
                     </div>
                   )}
 
-                  {post.seoAnalysis && (
+                  {post.sections && post.sections.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.seoAnalysis.wordCount}</div>
-                        <div className="text-xs text-slate-500">Words</div>
+                        <div className="text-lg font-semibold text-slate-200">{post.sections.length}</div>
+                        <div className="text-xs text-slate-500">Sections</div>
                       </div>
                       <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.seoAnalysis.readingTime}m</div>
+                        <div className="text-lg font-semibold text-slate-200">{getEstimatedReadTime(post.content?.length || 0)}m</div>
                         <div className="text-xs text-slate-500">Read Time</div>
                       </div>
                       <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.seoAnalysis.readabilityScore}</div>
-                        <div className="text-xs text-slate-500">Readability</div>
+                        <div className="text-lg font-semibold text-slate-200">{post.version}</div>
+                        <div className="text-xs text-slate-500">Version</div>
                       </div>
                       <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.seoAnalysis.paragraphCount}</div>
-                        <div className="text-xs text-slate-500">Paragraphs</div>
+                        <div className="text-lg font-semibold text-slate-200">{post.content?.split(' ').length || 0}</div>
+                        <div className="text-xs text-slate-500">Words</div>
                       </div>
                     </div>
                   )}
@@ -2265,7 +2160,7 @@ function ContentTab({
                           Approve
                         </button>
                         <button
-                          onClick={() => onUpdatePost(post.id, { status: 'revisions' })}
+                          onClick={() => onUpdatePost(post.id, { status: 'draft' })}
                           className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors"
                         >
                           <PenTool className="w-3 h-3" />
@@ -2301,8 +2196,8 @@ function AssetsTab({
   strategy,
   posts,
 }: {
-  strategy: BlogStrategy;
-  posts: BlogPost[];
+  strategy: NewsletterStrategy;
+  posts: NewsletterPost[];
 }) {
   const draftPosts = posts.filter((p) => ['draft', 'review', 'approved'].includes(p.status));
 
@@ -2314,14 +2209,14 @@ function AssetsTab({
           Asset Suggestions
         </h3>
         <p className="text-sm text-slate-400 mb-6">
-          AI-recommended visual assets for your blog content based on strategy and post topics.
+          AI-recommended visual assets for your newsletters based on strategy and content topics.
         </p>
 
         {draftPosts.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <Image className="w-10 h-10 mx-auto mb-3 opacity-50" />
-            <p>No draft posts available for asset suggestions.</p>
-            <p className="text-sm mt-1">Create and draft posts in the Content tab first.</p>
+            <p>No draft newsletters available for asset suggestions.</p>
+            <p className="text-sm mt-1">Create and draft newsletters in the Content tab first.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -2336,20 +2231,20 @@ function AssetsTab({
                   <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
                     <div className="flex items-center gap-2 mb-2">
                       <Image className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm font-medium text-slate-300">Featured Image</span>
+                      <span className="text-sm font-medium text-slate-300">Hero Image</span>
                     </div>
                     <p className="text-xs text-slate-500">
-                      Hero image for the blog post. Recommended: 1200x630px.
+                      Top banner image for the newsletter. Recommended: 600x300px.
                     </p>
                   </div>
 
                   <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
                     <div className="flex items-center gap-2 mb-2">
                       <Share2 className="w-4 h-4 text-green-400" />
-                      <span className="text-sm font-medium text-slate-300">Social Post</span>
+                      <span className="text-sm font-medium text-slate-300">Social Card</span>
                     </div>
                     <p className="text-xs text-slate-500">
-                      LinkedIn + Twitter promotional graphics for this article.
+                      Open Graph image for social sharing. Recommended: 1200x630px.
                     </p>
                   </div>
 
@@ -2369,7 +2264,7 @@ function AssetsTab({
                       <span className="text-sm font-medium text-slate-300">CTA Banner</span>
                     </div>
                     <p className="text-xs text-slate-500">
-                      End-of-article call-to-action banner graphic.
+                      Call-to-action banner graphic for the newsletter footer.
                     </p>
                   </div>
                 </div>
@@ -2391,11 +2286,11 @@ function ReviewTab({
   posts,
   onUpdatePost,
 }: {
-  strategy: BlogStrategy;
-  posts: BlogPost[];
-  onUpdatePost: (id: string, updates: Partial<BlogPost>) => void;
+  strategy: NewsletterStrategy;
+  posts: NewsletterPost[];
+  onUpdatePost: (id: string, updates: Partial<NewsletterPost>) => void;
 }) {
-  const reviewPosts = posts.filter((p) => ['review', 'revisions', 'approved'].includes(p.status));
+  const reviewPosts = posts.filter((p) => ['review', 'draft', 'approved'].includes(p.status));
 
   return (
     <div className="space-y-6">
@@ -2408,8 +2303,8 @@ function ReviewTab({
         {reviewPosts.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <Eye className="w-10 h-10 mx-auto mb-3 opacity-50" />
-            <p>No posts in review.</p>
-            <p className="text-sm mt-1">Send posts to review from the Content tab.</p>
+            <p>No newsletters in review.</p>
+            <p className="text-sm mt-1">Send newsletters to review from the Content tab.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -2418,22 +2313,20 @@ function ReviewTab({
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="font-medium text-slate-200">{post.title}</div>
+                    <div className="text-sm text-primary-400 mt-0.5">{post.subjectLine}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span
                         className={cn(
                           'text-xs px-2 py-0.5 rounded-full',
                           post.status === 'review' && 'bg-purple-500/20 text-purple-400',
-                          post.status === 'revisions' && 'bg-orange-500/20 text-orange-400',
+                          post.status === 'draft' && 'bg-orange-500/20 text-orange-400',
                           post.status === 'approved' && 'bg-green-500/20 text-green-400'
                         )}
                       >
                         {post.status === 'review' && 'In Review'}
-                        {post.status === 'revisions' && 'Needs Revisions'}
+                        {post.status === 'draft' && 'Needs Revisions'}
                         {post.status === 'approved' && 'Approved'}
                       </span>
-                      {post.seoAnalysis && (
-                        <span className="text-xs text-slate-500">Readability: {post.seoAnalysis.readabilityScore}/100</span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -2448,41 +2341,14 @@ function ReviewTab({
                   {post.status === 'review' && (
                     <>
                       <button
-                        onClick={() =>
-                          onUpdatePost(post.id, {
-                            status: 'approved',
-                            approvals: [
-                              ...(post.approvals || []),
-                              {
-                                stage: 'content-review',
-                                status: 'approved',
-                                userName: 'Editor',
-                                completedAt: new Date().toISOString(),
-                              },
-                            ],
-                          })
-                        }
+                        onClick={() => onUpdatePost(post.id, { status: 'approved' })}
                         className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
                       >
                         <CheckCircle className="w-3 h-3" />
                         Approve
                       </button>
                       <button
-                        onClick={() =>
-                          onUpdatePost(post.id, {
-                            status: 'revisions',
-                            approvals: [
-                              ...(post.approvals || []),
-                              {
-                                stage: 'content-review',
-                                status: 'rejected',
-                                userName: 'Editor',
-                                comment: 'Needs revisions.',
-                                completedAt: new Date().toISOString(),
-                              },
-                            ],
-                          })
-                        }
+                        onClick={() => onUpdatePost(post.id, { status: 'draft' })}
                         className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors"
                       >
                         <PenTool className="w-3 h-3" />
@@ -2490,7 +2356,7 @@ function ReviewTab({
                       </button>
                     </>
                   )}
-                  {post.status === 'revisions' && (
+                  {post.status === 'draft' && (
                     <button
                       onClick={() => onUpdatePost(post.id, { status: 'review' })}
                       className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
@@ -2505,7 +2371,7 @@ function ReviewTab({
                       className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
                     >
                       <Globe className="w-3 h-3" />
-                      Publish Now
+                      Publish
                     </button>
                   )}
                 </div>
@@ -2526,32 +2392,31 @@ function ExportTab({
   strategy,
   posts,
 }: {
-  strategy: BlogStrategy;
-  posts: BlogPost[];
+  strategy: NewsletterStrategy;
+  posts: NewsletterPost[];
 }) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('markdown');
 
   const formats: { value: ExportFormat; label: string; description: string }[] = [
-    { value: 'markdown', label: 'Markdown', description: 'Clean .md files for GitHub, dev blogs, or static sites' },
-    { value: 'html', label: 'HTML', description: 'Fully formatted HTML for direct publishing' },
+    { value: 'markdown', label: 'Markdown', description: 'Clean .md files for documentation' },
+    { value: 'html', label: 'HTML', description: 'Fully formatted HTML for email clients' },
     { value: 'docx', label: 'Word Document', description: 'Microsoft Word compatible .docx format' },
-    { value: 'wordpress', label: 'WordPress', description: 'Ready-to-paste WordPress Gutenberg blocks' },
-    { value: 'seo-brief', label: 'SEO Brief', description: 'Technical SEO document with meta and schema' },
+    { value: 'wordpress', label: 'WordPress', description: 'Ready-to-paste WordPress blocks' },
   ];
 
-  const handleExport = (post: BlogPost) => {
+  const handleExport = (post: NewsletterPost) => {
     let content = '';
-    const fileName = `${generateSlug(post.title)}.${selectedFormat === 'markdown' ? 'md' : selectedFormat === 'html' ? 'html' : selectedFormat === 'docx' ? 'docx' : 'txt'}`;
+    const fileName = `${post.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').substring(0, 60)}.${selectedFormat === 'markdown' ? 'md' : selectedFormat === 'html' ? 'html' : selectedFormat === 'docx' ? 'docx' : 'txt'}`;
 
     switch (selectedFormat) {
       case 'markdown':
-        content = `# ${post.title}\n\n${post.excerpt || ''}\n\n${post.content || ''}\n\n---\n*Generated by Mengo Blog Content OS*`;
+        content = `# ${post.title}\n\n**Subject:** ${post.subjectLine}\n\n**Preview:** ${post.previewText}\n\n${post.content || ''}\n\n---\n*Generated by Mengo Newsletter Content OS*`;
         break;
       case 'html':
-        content = `<article>\n  <h1>${post.title}</h1>\n  <p class="excerpt">${post.excerpt || ''}</p>\n  <div class="content">\n    ${(post.content || '').replace(/\n/g, '<br/>')}\n  </div>\n</article>`;
+        content = `<!DOCTYPE html>\n<html>\n<head><title>${post.title}</title></head>\n<body>\n<h1>${post.title}</h1>\n<p><strong>Subject:</strong> ${post.subjectLine}</p>\n<p><strong>Preview:</strong> ${post.previewText}</p>\n<hr/>\n${(post.content || '').replace(/\n/g, '<br/>')}\n</body>\n</html>`;
         break;
-      case 'seo-brief':
-        content = `Title: ${post.title}\nMeta Title: ${post.metaTitle || post.title}\nMeta Description: ${post.metaDescription || ''}\nPrimary Keyword: ${post.primaryKeyword || ''}\nSecondary Keywords: ${post.secondaryKeywords?.join(', ') || ''}\n\n${post.content || ''}`;
+      case 'wordpress':
+        content = `<!-- wp:heading -->\n<h1>${post.title}</h1>\n<!-- /wp:heading -->\n<!-- wp:paragraph -->\n<p><strong>Subject:</strong> ${post.subjectLine}</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p><strong>Preview:</strong> ${post.previewText}</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p>${(post.content || '').replace(/\n/g, '</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p>')}</p>\n<!-- /wp:paragraph -->`;
         break;
       default:
         content = post.content || '';
@@ -2573,7 +2438,7 @@ function ExportTab({
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
           <Download className="w-5 h-5 text-primary-400" />
-          Export Content
+          Export Newsletters
         </h3>
 
         <div className="mb-6">
@@ -2600,8 +2465,8 @@ function ExportTab({
         {posts.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <Download className="w-10 h-10 mx-auto mb-3 opacity-50" />
-            <p>No approved or published posts to export.</p>
-            <p className="text-sm mt-1">Approve posts in the Review tab to make them available for export.</p>
+            <p>No approved or published newsletters to export.</p>
+            <p className="text-sm mt-1">Approve newsletters in the Review tab to make them available for export.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -2611,9 +2476,7 @@ function ExportTab({
                   <div className="font-medium text-slate-200">{post.title}</div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-500">{post.contentType}</span>
-                    {post.seoAnalysis && (
-                      <span className="text-xs text-slate-500">{post.seoAnalysis.wordCount} words</span>
-                    )}
+                    <span className="text-xs text-slate-500">{post.content?.split(' ').length || 0} words</span>
                   </div>
                 </div>
                 <button

@@ -1009,8 +1009,6 @@ export type NewsletterCategory =
   | 'custom';
 
 export type NewsletterType = 'common' | 'unique';
-export type NewsletterFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
-
 export interface Newsletter extends BaseEntity {
   name: string;
   category: NewsletterCategory;
@@ -2372,6 +2370,156 @@ export interface BlogContentSystem extends BaseEntity {
     aiModel: string;
     autoGenerateOutline: boolean;
     autoGenerateMeta: boolean;
+    enableChunking: boolean;
+    qualityThreshold: number;
+  };
+}
+
+// ============================================
+// NEWSLETTER CONTENT OS
+// ============================================
+
+export type NewsletterGoal =
+  | 'education'
+  | 'product-awareness'
+  | 'community-building'
+  | 'brand-awareness'
+  | 'customer-engagement'
+  | 'retention'
+  | 'updates'
+  | 'founder-communication'
+  | 'thought-leadership';
+
+export type NewsletterFrequency = 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'quarterly';
+
+export type NewsletterContentStatus = 'planning' | 'draft' | 'review' | 'approved' | 'published' | 'archived';
+
+export type SubjectLineStyle = 'educational' | 'conversational' | 'founder-style' | 'authority' | 'emotional' | 'insight' | 'minimal';
+
+export interface NewsletterStrategy extends BaseEntity {
+  name: string;
+  description?: string;
+  objective: NewsletterGoal;
+  audience: string;
+  industry: string;
+  funnelStage: FunnelStage;
+  communicationTone: string;
+  contentDepth: ContentDepth;
+  ctaGoal: string;
+  linkedData: {
+    brandId?: string;
+    businessProfileId?: string;
+    icpIds?: string[];
+    personaIds?: string[];
+    productIds?: string[];
+    competitorIds?: string[];
+  };
+}
+
+export interface NewsletterContentTypeConfig extends BaseEntity {
+  strategyId: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  percentageAllocation: number;
+  priority: number;
+  recommendedLength: number;
+  funnelPosition: FunnelStage;
+  ctaStrategy: string;
+  conversionGoal: string;
+}
+
+export interface NewsletterCalendarItem {
+  id: string;
+  scheduledDate: string;
+  contentTypeId?: string;
+  status: 'empty' | 'planned' | 'title-generated' | 'assigned' | 'in-progress' | 'ready';
+  titleId?: string;
+  postId?: string;
+}
+
+export interface NewsletterCalendar extends BaseEntity {
+  name: string;
+  strategyId: string;
+  frequency: NewsletterFrequency;
+  newslettersPerCycle: number;
+  publishingDays: string[];
+  priorityTopics: string[];
+  seasonalCampaigns: SeasonalCampaign[];
+  startDate: string;
+  endDate?: string;
+  timeline: NewsletterCalendarItem[];
+}
+
+export interface NewsletterTitle extends BaseEntity {
+  strategyId: string;
+  calendarId?: string;
+  contentTypeId?: string;
+  title: string;
+  subjectLine: string;
+  previewText: string;
+  contentType: string;
+  style: SubjectLineStyle;
+  engagementScore: number;
+  funnelStage: FunnelStage;
+  suggestedKeywords: string[];
+  suggestedCTA: string;
+  status: 'generated' | 'selected' | 'rejected' | 'edited';
+  order: number;
+  aiPrompt?: string;
+  aiModel?: string;
+}
+
+export interface NewsletterSection {
+  id: string;
+  type: 'heading' | 'subheading' | 'paragraph' | 'list' | 'quote' | 'cta' | 'image';
+  content: string;
+  order: number;
+}
+
+export interface NewsletterAssetSuggestion {
+  id: string;
+  type: AssetSuggestionType;
+  description: string;
+  prompt?: string;
+  dimensions?: string;
+}
+
+export interface NewsletterPost extends BaseEntity {
+  strategyId: string;
+  calendarId?: string;
+  titleId?: string;
+  title: string;
+  subjectLine: string;
+  previewText: string;
+  contentType: string;
+  content?: string;
+  sections: NewsletterSection[];
+  suggestedCTA: string;
+  status: NewsletterContentStatus;
+  version: number;
+  suggestedAssets: NewsletterAssetSuggestion[];
+  publishedAt?: string;
+  scheduledPublishAt?: string;
+}
+
+export interface NewsletterExport extends BaseEntity {
+  postId: string;
+  format: ExportFormat;
+  fileUrl?: string;
+  content: string;
+  fileName: string;
+  fileSize?: number;
+}
+
+export interface NewsletterContentSystem extends BaseEntity {
+  name: string;
+  activeStrategyId?: string;
+  activeCalendarId?: string;
+  settings: {
+    defaultLanguage: string;
+    aiModel: string;
+    autoGenerateSubject: boolean;
     enableChunking: boolean;
     qualityThreshold: number;
   };
