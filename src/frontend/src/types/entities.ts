@@ -1872,11 +1872,31 @@ export interface WebsitePlanner extends BaseEntity {
   owner?: string;
   version: number;
 
-  // Brand Integration
-  brandId?: string;
+  // Module Integrations (References to other ERP modules)
+  linkedData: {
+    // Foundation
+    businessProfileId?: string;
+    founderIds?: string[];
+    employeeIds?: string[];
 
-  // Business Foundation Integration
-  businessProfileId?: string;
+    // ICPs & Personas
+    icpIds?: string[];
+    personaIds?: string[];
+
+    // Products
+    productIds?: string[];
+    productCategoryIds?: string[];
+
+    // Competitors
+    competitorIds?: string[];
+
+    // Brand
+    brandId?: string;
+    brandAssetIds?: string[];
+
+    // Visual Identity
+    visualIdentityId?: string;
+  };
 
   // Structure
   sections: WebsiteSection[];

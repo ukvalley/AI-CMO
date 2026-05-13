@@ -53,6 +53,12 @@ import {
   Clock,
   AlertCircle,
   X,
+  Building2,
+  Users2,
+  Package,
+  FolderOpen,
+  Swords,
+  UserCircle,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useDataStore, useCompanyStore } from '@/stores';
@@ -175,15 +181,29 @@ const WEBSITE_TYPES: { value: WebsiteType; label: string }[] = [
 // ============================================
 
 export default function WebsitePlannerModule() {
-  const { activeCompanyId: companyId } = useCompanyStore();
-  const { getItems, addItem, updateItem, deleteItem } = useDataStore();
+  const companyStore = useCompanyStore();
+  const dataStore = useDataStore();
+  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
 
+  // Sync company from companyStore to dataStore
+  const companyId = companyStore.activeCompanyId;
+  useMemo(() => {
+    if (companyId && companyId !== activeCompanyId) {
+      setActiveCompany(companyId);
+    }
+  }, [companyId, activeCompanyId, setActiveCompany]);
+
+  // Get websites from store - use dataStore.data directly for reactivity
   const websites = useMemo(
-    () => (getItems('websitePlanners') as WebsitePlanner[]) || [],
-    [getItems]
+    () => {
+      const items = (getItems('websitePlanners') as WebsitePlanner[]) || [];
+      console.log('Fetching websites:', items.length);
+      return items;
+    },
+    [getItems, dataStore.data, activeCompanyId] // Add dataStore.data as dependency
   );
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'structure' | 'pages' | 'content' | 'seo' | 'features' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'structure' | 'pages' | 'content' | 'seo' | 'features' | 'ai' | 'data'>('overview');
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -196,36 +216,69 @@ export default function WebsitePlannerModule() {
 
   // Create new website
   const handleCreateWebsite = (data: { name: string; websiteType: WebsiteType; language: string }) => {
-    if (!companyId) return;
+    console.log('=== Creating website ===', { companyId, data, activeCompanyId });
 
-    const newWebsite: WebsitePlanner = {
-      id: crypto.randomUUID(),
-      companyId,
-      name: data.name,
-      websiteType: data.websiteType,
-      language: data.language,
-      status: 'planning',
-      version: 1,
-      sections: DEFAULT_SECTIONS.map((s, i) => ({ ...s, id: `section-${i}` })),
-      pages: DEFAULT_PAGES.map((p, i) => ({ ...p, id: `page-${i}`, sections: [] })),
-      features: DEFAULT_FEATURES.map((f, i) => ({ ...f, id: `feature-${i}` })),
-      contentBlocks: [],
-      caseStudies: [],
-      faqs: [],
-      seoClusters: [],
-      targetKeywords: [],
-      aiPrompts: [],
-      documents: [],
-      comments: [],
-      approvals: [],
-      versions: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    if (!companyId) {
+      alert('Please select a company first before creating a website.');
+      console.error('No companyId available');
+      return;
+    }
 
-    addItem('websitePlanners', newWebsite);
-    setSelectedWebsiteId(newWebsite.id);
-    setShowCreateModal(false);
+    if (!activeCompanyId) {
+      console.log('Syncing company to data store:', companyId);
+      setActiveCompany(companyId);
+    }
+
+    try {
+      // Generate ID - fallback for older browsers
+      const websiteId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      console.log('Generated website ID:', websiteId);
+
+      const newWebsite: WebsitePlanner = {
+        id: websiteId,
+        companyId,
+        name: data.name,
+        websiteType: data.websiteType,
+        language: data.language,
+        status: 'planning',
+        version: 1,
+        sections: DEFAULT_SECTIONS.map((s, i) => ({ ...s, id: `section-${i}` })),
+        pages: DEFAULT_PAGES.map((p, i) => ({ ...p, id: `page-${i}`, sections: [] })),
+        features: DEFAULT_FEATURES.map((f, i) => ({ ...f, id: `feature-${i}` })),
+        contentBlocks: [],
+        caseStudies: [],
+        faqs: [],
+        seoClusters: [],
+        targetKeywords: [],
+        aiPrompts: [],
+        documents: [],
+        comments: [],
+        approvals: [],
+        versions: [],
+        linkedData: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log('Adding website to store:', newWebsite);
+      const addedId = addItem('websitePlanners', newWebsite);
+      console.log('Website added with ID:', addedId);
+
+      // Verify it was added
+      const currentWebsites = getItems('websitePlanners') as WebsitePlanner[];
+      console.log('Current websites in store:', currentWebsites.length, currentWebsites.map(w => w.name));
+
+      // Force update
+      setSelectedWebsiteId(addedId || websiteId);
+      setShowCreateModal(false);
+      console.log('Website created successfully');
+    } catch (error) {
+      console.error('Failed to create website:', error);
+      alert('Failed to create website. Check console for details.');
+    }
   };
 
   // Update website
@@ -467,6 +520,7 @@ ${selectedWebsite.targetKeywords.map((k) => `- ${k}`).join('\n') || 'None define
                   { id: 'structure', label: 'Structure', icon: Layers },
                   { id: 'pages', label: 'Pages', icon: FileText },
                   { id: 'content', label: 'Content', icon: PenTool },
+                  { id: 'data', label: 'Data Sources', icon: Link },
                   { id: 'seo', label: 'SEO', icon: Search },
                   { id: 'features', label: 'Features', icon: Zap },
                   { id: 'ai', label: 'AI Prompts', icon: Bot },
@@ -504,6 +558,9 @@ ${selectedWebsite.targetKeywords.map((k) => `- ${k}`).join('\n') || 'None define
               )}
               {activeTab === 'content' && (
                 <ContentTab website={selectedWebsite} onUpdate={handleUpdateWebsite} />
+              )}
+              {activeTab === 'data' && (
+                <DataSourcesTab website={selectedWebsite} onUpdate={handleUpdateWebsite} />
               )}
               {activeTab === 'seo' && (
                 <SEOTab website={selectedWebsite} onUpdate={handleUpdateWebsite} />
@@ -1846,6 +1903,303 @@ Please provide:
 8. Accessibility considerations
 
 Generate production-ready specifications that can be implemented in ${platform}.`;
+}
+
+// ============================================
+// DATA SOURCES TAB - Link ERP Module Data
+// ============================================
+
+function DataSourcesTab({
+  website,
+  onUpdate,
+}: {
+  website: WebsitePlanner;
+  onUpdate: (updates: Partial<WebsitePlanner>) => void;
+}) {
+  const { getItems } = useDataStore();
+
+  // Fetch data from other modules
+  const businessProfiles = getItems('businessProfiles') as any[];
+  const founders = getItems('founders') as any[];
+  const employees = getItems('employees') as any[];
+  const icps = getItems('icps') as any[];
+  const personas = getItems('personas') as any[];
+  const products = getItems('products') as any[];
+  const productCategories = getItems('productCategories') as any[];
+  const competitors = getItems('competitors') as any[];
+  const brand = getItems('brand') as any;
+  const brandAssets = getItems('brandAssets') as any[];
+
+  const linkedData = website.linkedData || {};
+
+  const toggleLink = (type: string, id: string, isArray = false) => {
+    const currentIds = (linkedData as any)[`${type}Ids`] || [];
+    let newIds: string[];
+
+    if (isArray) {
+      newIds = currentIds.includes(id)
+        ? currentIds.filter((i: string) => i !== id)
+        : [...currentIds, id];
+    } else {
+      newIds = currentIds.includes(id) ? [] : [id];
+    }
+
+    onUpdate({
+      linkedData: {
+        ...linkedData,
+        [`${type}Ids`]: newIds,
+      },
+    });
+  };
+
+  const toggleSingleLink = (type: string, id: string) => {
+    const currentId = (linkedData as any)[`${type}Id`];
+    onUpdate({
+      linkedData: {
+        ...linkedData,
+        [`${type}Id`]: currentId === id ? undefined : id,
+      },
+    });
+  };
+
+  const DataSection = ({
+    title,
+    icon: Icon,
+    items,
+    type,
+    isArray = false,
+    single = false,
+    renderItem,
+  }: {
+    title: string;
+    icon: any;
+    items: any[];
+    type: string;
+    isArray?: boolean;
+    single?: boolean;
+    renderItem: (item: any) => React.ReactNode;
+  }) => {
+    if (!items || items.length === 0) return null;
+
+    const isLinked = (item: any) => {
+      if (single) {
+        return (linkedData as any)[`${type}Id`] === item.id;
+      }
+      const ids = (linkedData as any)[`${type}Ids`] || [];
+      return ids.includes(item.id);
+    };
+
+    return (
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Icon className="w-5 h-5 text-primary-400" />
+          <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
+          <span className="ml-auto text-sm text-slate-500">{items.length} items</span>
+        </div>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              onClick={() =>
+                single ? toggleSingleLink(type, item.id) : toggleLink(type, item.id, isArray)
+              }
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all',
+                isLinked(item)
+                  ? 'bg-primary-500/10 border border-primary-500/30'
+                  : 'bg-slate-900/50 border border-slate-700 hover:border-slate-600'
+              )}
+            >
+              <div
+                className={cn(
+                  'w-5 h-5 rounded border flex items-center justify-center',
+                  isLinked(item)
+                    ? 'bg-primary-500 border-primary-500'
+                    : 'border-slate-600'
+                )}
+              >
+                {isLinked(item) && <Check className="w-3 h-3 text-white" />}
+              </div>
+              <div className="flex-1">{renderItem(item)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-primary-500/5 border border-primary-500/20 rounded-lg p-4 mb-6">
+        <h4 className="font-medium text-primary-400 mb-2 flex items-center gap-2">
+          <Link className="w-4 h-4" />
+          Linked Data for Research & SEO
+        </h4>
+        <p className="text-sm text-slate-400">
+          Link data from other modules to enrich your website content, improve SEO, and generate
+          more accurate AI prompts. Select items to include their data in website planning.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Business Foundation */}
+        <DataSection
+          title="Business Profile"
+          icon={Building2}
+          items={businessProfiles}
+          type="businessProfile"
+          single
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.companyName || 'Business Profile'}</div>
+              {item.industry && <div className="text-xs text-slate-500">{item.industry}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Founders"
+          icon={Users}
+          items={founders}
+          type="founder"
+          isArray
+          renderItem={(item) => (
+            <div className="flex items-center gap-2">
+              {item.avatar && (
+                <img src={item.avatar} alt="" className="w-8 h-8 rounded-full" />
+              )}
+              <div>
+                <div className="font-medium text-slate-200">{item.name}</div>
+                {item.role && <div className="text-xs text-slate-500">{item.role}</div>}
+              </div>
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Team Members"
+          icon={Users2}
+          items={employees}
+          type="employee"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.department && (
+                <div className="text-xs text-slate-500">{item.department}</div>
+              )}
+            </div>
+          )}
+        />
+
+        {/* ICPs & Personas */}
+        <DataSection
+          title="Ideal Customer Profiles (ICPs)"
+          icon={Target}
+          items={icps}
+          type="icp"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.industry && <div className="text-xs text-slate-500">{item.industry}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Buyer Personas"
+          icon={UserCircle}
+          items={personas}
+          type="persona"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.role && <div className="text-xs text-slate-500">{item.role}</div>}
+            </div>
+          )}
+        />
+
+        {/* Products */}
+        <DataSection
+          title="Products"
+          icon={Package}
+          items={products}
+          type="product"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.category && <div className="text-xs text-slate-500">{item.category}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Product Categories"
+          icon={FolderOpen}
+          items={productCategories}
+          type="productCategory"
+          isArray
+          renderItem={(item) => (
+            <div className="font-medium text-slate-200">{item.name}</div>
+          )}
+        />
+
+        {/* Competitors */}
+        <DataSection
+          title="Competitors"
+          icon={Swords}
+          items={competitors}
+          type="competitor"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.website && (
+                <div className="text-xs text-slate-500 truncate">{item.website}</div>
+              )}
+            </div>
+          )}
+        />
+
+        {/* Brand */}
+        <DataSection
+          title="Brand Identity"
+          icon={Palette}
+          items={brand ? [brand] : []}
+          type="brand"
+          single
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.brandName || 'Brand'}</div>
+              {item.tagline && <div className="text-xs text-slate-500">{item.tagline}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Brand Assets"
+          icon={Image}
+          items={brandAssets}
+          type="brandAsset"
+          isArray
+          renderItem={(item) => (
+            <div className="flex items-center gap-2">
+              {item.thumbnailUrl && (
+                <img src={item.thumbnailUrl} alt="" className="w-8 h-8 rounded object-cover" />
+              )}
+              <div>
+                <div className="font-medium text-slate-200">{item.name}</div>
+                <div className="text-xs text-slate-500 capitalize">{item.type}</div>
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
 }
 
 // ============================================
