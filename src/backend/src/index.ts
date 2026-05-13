@@ -90,6 +90,7 @@ const loadRoutes = () => {
   const hrAssetRoutes = require('./routes/hrAssets').default;
   const websitePageRoutes = require('./routes/websitePages').default;
   const blogRoutes = require('./routes/blogs').default;
+  const blogContentOsRoutes = require('./routes/blogContentOs').default;
   const newsletterRoutes = require('./routes/newsletters').default;
   const faqRoutes = require('./routes/faqs').default;
   const moduleDataRoutes = require('./routes/moduleData').default;
@@ -116,6 +117,7 @@ const loadRoutes = () => {
   app.use('/api/hr-assets', hrAssetRoutes);
   app.use('/api/website-pages', websitePageRoutes);
   app.use('/api/blogs', blogRoutes);
+  app.use('/api/blog-content-os', blogContentOsRoutes);
   app.use('/api/newsletters', newsletterRoutes);
   app.use('/api/faqs', faqRoutes);
   app.use('/api/module-data', moduleDataRoutes);

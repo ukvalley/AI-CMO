@@ -48,6 +48,15 @@ import type {
   SOP,
   Event,
   LegalDocument,
+  // Blog Content OS
+  BlogStrategy,
+  BlogContentTypeConfig,
+  BlogCalendar,
+  BlogTitle,
+  BlogPost,
+  BlogContentChunk,
+  BlogExport,
+  BlogContentSystem,
 } from '@/types/entities';
 
 // ============================================
@@ -79,6 +88,16 @@ interface ModuleData {
   contentItems: ContentItem[];
   stories: StoryCampaign[];
   testimonials: Testimonial[];
+
+  // Blog Content OS
+  blogContentSystem: BlogContentSystem | null;
+  blogStrategies: BlogStrategy[];
+  blogContentTypes: BlogContentTypeConfig[];
+  blogCalendars: BlogCalendar[];
+  blogTitles: BlogTitle[];
+  blogPosts: BlogPost[];
+  blogContentChunks: BlogContentChunk[];
+  blogExports: BlogExport[];
 
   // Sales
   landingPageSystem: LandingPageSystem | null;
@@ -142,6 +161,17 @@ const createEmptyModuleData = (): ModuleData => ({
   contentItems: [],
   stories: [],
   testimonials: [],
+
+  // Blog Content OS
+  blogContentSystem: null,
+  blogStrategies: [],
+  blogContentTypes: [],
+  blogCalendars: [],
+  blogTitles: [],
+  blogPosts: [],
+  blogContentChunks: [],
+  blogExports: [],
+
   landingPageSystem: null,
   landingPages: [],
   salesScripts: [],
@@ -246,7 +276,7 @@ export const useDataStore = create<DataStore>()(
           const { activeCompanyId, getItems, setItems } = get();
           if (!activeCompanyId) return '';
 
-          const items = getItems(module) as unknown as Array<{ id: string }>;
+          const items = (getItems(module) || []) as unknown as Array<{ id: string }>;
           const newItem = {
             ...itemData,
             id: `${module.slice(0, -1)}-${Date.now()}`,
@@ -261,7 +291,7 @@ export const useDataStore = create<DataStore>()(
 
         updateItem: (module, id, updates) => {
           const { getItems, setItems } = get();
-          const items = getItems(module) as unknown as Array<{ id: string }>;
+          const items = (getItems(module) || []) as unknown as Array<{ id: string }>;
           const updatedItems = items.map((item) =>
             item.id === id
               ? { ...item, ...updates, updatedAt: new Date().toISOString() }
@@ -272,7 +302,7 @@ export const useDataStore = create<DataStore>()(
 
         deleteItem: (module, id) => {
           const { getItems, setItems } = get();
-          const items = getItems(module) as unknown as Array<{ id: string }>;
+          const items = (getItems(module) || []) as unknown as Array<{ id: string }>;
           setItems(
             module,
             items.filter((item) => item.id !== id) as unknown as ModuleData[typeof module]
@@ -337,6 +367,7 @@ export const useDataStore = create<DataStore>()(
         name: 'ai-cmo-data',
         partialize: (state) => ({
           data: state.data,
+          activeCompanyId: state.activeCompanyId,
           lastSaved: new Date().toISOString(),
         }),
       }

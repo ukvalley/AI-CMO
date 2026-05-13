@@ -1946,3 +1946,433 @@ export interface WebsitePlanner extends BaseEntity {
   // Activity
   lastActivityAt?: string;
 }
+
+// ============================================
+// BLOG CONTENT OPERATING SYSTEM
+// ============================================
+
+// Blog Strategy Goals
+export type BlogGoal =
+  | 'seo'
+  | 'brand-awareness'
+  | 'lead-generation'
+  | 'product-education'
+  | 'authority-building'
+  | 'traffic-growth'
+  | 'conversion'
+  | 'community-building';
+
+// Funnel Stage
+export type FunnelStage = 'tofu' | 'mofu' | 'bofu';
+
+// Content Depth
+export type ContentDepth = 'brief' | 'standard' | 'deep' | 'comprehensive';
+
+// SEO Intent
+export type SEOIntent = 'informational' | 'navigational' | 'transactional' | 'commercial';
+
+// Content Type Categories
+export type ContentTypeCategory =
+  | 'educational'
+  | 'how-to-guide'
+  | 'industry-trends'
+  | 'case-study'
+  | 'comparison'
+  | 'product-focused'
+  | 'listicle'
+  | 'problem-solution'
+  | 'thought-leadership'
+  | 'beginner-guide'
+  | 'technical'
+  | 'pillar-content'
+  | 'cluster-content'
+  | 'news-based'
+  | 'customer-story'
+  | 'faq-based'
+  | 'data-driven'
+  | 'myth-busting'
+  | 'opinion'
+  | 'tool-guide'
+  | 'tutorial'
+  | 'checklist'
+  | 'framework'
+  | 'research-based';
+
+// Title Generation Styles
+export type TitleStyle =
+  | 'seo'
+  | 'viral'
+  | 'authority'
+  | 'technical'
+  | 'emotional'
+  | 'founder'
+  | 'linkedin'
+  | 'thought-leadership';
+
+// Blogging Frequency
+export type BloggingFrequency = 'daily' | 'weekly' | 'bi-weekly' | 'monthly';
+
+// Blog Content Status
+export type BlogContentStatus =
+  | 'planning'
+  | 'outlining'
+  | 'generating'
+  | 'draft'
+  | 'review'
+  | 'revisions'
+  | 'approved'
+  | 'published';
+
+// Content Chunk Types
+export type ContentChunkType =
+  | 'outline'
+  | 'intro'
+  | 'section'
+  | 'faq'
+  | 'conclusion'
+  | 'seo-pass'
+  | 'humanize-pass';
+
+// Chunk Status
+export type ChunkStatus = 'pending' | 'generating' | 'completed' | 'failed';
+
+// Approval Stages
+export type ApprovalStage = 'content-review' | 'seo-review' | 'editorial-review' | 'final-approval';
+
+// Approval Status
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+// Asset Suggestion Types
+export type AssetSuggestionType =
+  | 'featured-image'
+  | 'infographic'
+  | 'chart'
+  | 'social-post'
+  | 'linkedin-post'
+  | 'twitter-thread'
+  | 'cta-banner'
+  | 'youtube-video';
+
+// Export Formats
+export type ExportFormat = 'markdown' | 'html' | 'docx' | 'wordpress' | 'seo-brief';
+
+// ============================================
+// BLOG STRATEGY
+// ============================================
+
+export interface BlogStrategy extends BaseEntity {
+  name: string;
+  goals: BlogGoal[];
+  targetAudience: string;
+  targetRegion: string;
+  language: string;
+  funnelStage: FunnelStage;
+  competitorBlogs: string[];
+  contentDepth: ContentDepth;
+  creativityLevel: number; // 1-10
+  linkedData: {
+    brandId?: string;
+    businessProfileId?: string;
+    icpIds?: string[];
+    personaIds?: string[];
+    productIds?: string[];
+    competitorIds?: string[];
+  };
+}
+
+// ============================================
+// BLOG CONTENT TYPE
+// ============================================
+
+export interface BlogContentTypeConfig extends BaseEntity {
+  strategyId: string;
+  name: string;
+  type: ContentTypeCategory;
+  enabled: boolean;
+  percentageAllocation: number; // 0-100
+  priority: number;
+  seoIntent: SEOIntent;
+  recommendedLength: number; // word count
+  funnelPosition: FunnelStage;
+  ctaStrategy: string;
+  conversionGoal: string;
+}
+
+// ============================================
+// SEASONAL CAMPAIGNS
+// ============================================
+
+export interface SeasonalCampaign {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  theme: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+// ============================================
+// BLOG CALENDAR
+// ============================================
+
+export interface BlogCalendarItem {
+  id: string;
+  scheduledDate: string;
+  contentTypeId?: string;
+  status: 'empty' | 'planned' | 'title-generated' | 'assigned' | 'in-progress' | 'ready';
+  titleId?: string;
+  postId?: string;
+}
+
+export interface BlogCalendar extends BaseEntity {
+  name: string;
+  strategyId: string;
+  frequency: BloggingFrequency;
+  postsPerCycle: number;
+  publishingDays: string[]; // e.g., ['monday', 'wednesday', 'friday']
+  priorityTopics: string[];
+  seasonalCampaigns: SeasonalCampaign[];
+  startDate: string;
+  endDate?: string;
+  timeline: BlogCalendarItem[];
+}
+
+// ============================================
+// BLOG TITLE (AI Generated)
+// ============================================
+
+export interface BlogTitle extends BaseEntity {
+  strategyId: string;
+  calendarId?: string;
+  contentTypeId?: string;
+  title: string;
+  contentType: ContentTypeCategory;
+  style: TitleStyle;
+  seoScore: number; // 0-100
+  searchIntent: SEOIntent;
+  funnelStage: FunnelStage;
+  suggestedKeywords: string[];
+  suggestedCTA: string;
+  status: 'generated' | 'selected' | 'rejected' | 'edited';
+  order: number;
+  aiPrompt?: string;
+  aiModel?: string;
+}
+
+// ============================================
+// BLOG SECTION
+// ============================================
+
+export interface BlogSection {
+  id: string;
+  type: 'heading' | 'subheading' | 'paragraph' | 'list' | 'quote' | 'table' | 'image' | 'cta';
+  content: string;
+  order: number;
+  level?: number; // for headings (1-3)
+}
+
+// ============================================
+// BLOG FAQ
+// ============================================
+
+export interface BlogFAQ {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+}
+
+// ============================================
+// BLOG LINKS
+// ============================================
+
+export interface BlogInternalLink {
+  id: string;
+  text: string;
+  targetPostId?: string;
+  url?: string;
+  placement: string; // context of link
+}
+
+export interface BlogExternalLink {
+  id: string;
+  text: string;
+  url: string;
+  domain: string;
+  isNofollow: boolean;
+}
+
+// ============================================
+// CONTENT CHUNKS
+// ============================================
+
+export interface BlogContentChunk extends BaseEntity {
+  postId: string;
+  type: ContentChunkType;
+  order: number;
+  content?: string;
+  status: ChunkStatus;
+  generationTaskId?: string;
+  errorMessage?: string;
+  tokensUsed?: number;
+}
+
+// ============================================
+// BLOG VERSIONING
+// ============================================
+
+export interface BlogVersion {
+  version: number;
+  title: string;
+  content: string;
+  excerpt: string;
+  createdAt: string;
+  createdBy?: string;
+  changeSummary?: string;
+}
+
+// ============================================
+// BLOG COMMENTS
+// ============================================
+
+export interface BlogComment {
+  id: string;
+  userId: string;
+  userName: string;
+  content: string;
+  createdAt: string;
+  resolved: boolean;
+  sectionId?: string; // optional reference to specific section
+}
+
+// ============================================
+// BLOG APPROVALS
+// ============================================
+
+export interface BlogApproval {
+  stage: ApprovalStage;
+  status: ApprovalStatus;
+  userId?: string;
+  userName?: string;
+  comment?: string;
+  completedAt?: string;
+}
+
+// ============================================
+// ASSET SUGGESTIONS
+// ============================================
+
+export interface BlogAssetSuggestion {
+  id: string;
+  type: AssetSuggestionType;
+  description: string;
+  prompt?: string;
+  dimensions?: string;
+}
+
+// ============================================
+// SEO ANALYSIS
+// ============================================
+
+export interface BlogSEOAnalysis {
+  readabilityScore: number;
+  readingTime: number; // minutes
+  keywordDensity: Record<string, number>;
+  headingStructureValid: boolean;
+  internalLinkCount: number;
+  externalLinkCount: number;
+  suggestedSchema: string[];
+  snippetOptimization?: string;
+  wordCount: number;
+  paragraphCount: number;
+  avgSentenceLength: number;
+  passiveVoicePercentage: number;
+}
+
+// ============================================
+// BLOG POST (Enhanced)
+// ============================================
+
+export interface BlogPost extends BaseEntity {
+  strategyId: string;
+  calendarId?: string;
+  titleId?: string;
+
+  // Basic Info
+  title: string;
+  slug: string;
+  excerpt: string;
+  featuredImage?: string;
+
+  // Content Type
+  contentType: ContentTypeCategory;
+  contentTypeId?: string;
+
+  // Content
+  outline?: string;
+  content?: string;
+  contentChunks: BlogContentChunk[];
+  sections: BlogSection[];
+
+  // SEO
+  primaryKeyword?: string;
+  secondaryKeywords: string[];
+  nlpKeywords: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+
+  // Structure
+  faqs: BlogFAQ[];
+  internalLinks: BlogInternalLink[];
+  externalLinks: BlogExternalLink[];
+
+  // Status & Workflow
+  status: BlogContentStatus;
+  version: number;
+  versions: BlogVersion[];
+  comments: BlogComment[];
+  approvals: BlogApproval[];
+
+  // Assets
+  suggestedAssets: BlogAssetSuggestion[];
+
+  // Analytics Prep
+  seoAnalysis?: BlogSEOAnalysis;
+
+  // Publishing
+  publishedAt?: string;
+  scheduledPublishAt?: string;
+}
+
+// ============================================
+// BLOG EXPORT
+// ============================================
+
+export interface BlogExport extends BaseEntity {
+  postId: string;
+  format: ExportFormat;
+  fileUrl?: string;
+  content: string;
+  fileName: string;
+  fileSize?: number;
+}
+
+// ============================================
+// BLOG SYSTEM
+// ============================================
+
+export interface BlogContentSystem extends BaseEntity {
+  name: string;
+  activeStrategyId?: string;
+  activeCalendarId?: string;
+  settings: {
+    defaultLanguage: string;
+    defaultRegion: string;
+    aiModel: string;
+    autoGenerateOutline: boolean;
+    autoGenerateMeta: boolean;
+    enableChunking: boolean;
+    qualityThreshold: number;
+  };
+}

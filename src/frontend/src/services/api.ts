@@ -417,6 +417,56 @@ export const hrAssetApi = {
     apiRequest('/hr-assets/bulk', { method: 'POST', body: { items, companyId } }),
 };
 
+// ============== BLOG CONTENT OS API ==============
+
+export const blogStrategyApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/strategies/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/strategies/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/strategies', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/strategies/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/strategies/${id}`, { method: 'DELETE' }),
+};
+
+export const blogCalendarApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/calendars/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/calendars/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/calendars', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/calendars/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/calendars/${id}`, { method: 'DELETE' }),
+};
+
+export const blogTitleApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/titles/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/titles/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/titles', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/titles/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/titles/${id}`, { method: 'DELETE' }),
+};
+
+export const blogPostApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/posts/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/posts/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/posts', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/posts/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/posts/${id}`, { method: 'DELETE' }),
+};
+
+export const blogContentChunkApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/chunks/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/chunks/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/chunks', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/chunks/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/chunks/${id}`, { method: 'DELETE' }),
+};
+
+export const blogExportApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/exports/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/exports/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/exports', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/exports/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/exports/${id}`, { method: 'DELETE' }),
+};
+
 // ============== MODULE DATA API (Generic) ==============
 
 export const moduleDataApi = {

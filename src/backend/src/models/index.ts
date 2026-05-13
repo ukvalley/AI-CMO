@@ -132,6 +132,7 @@ export const loadModels = () => {
       HRAsset: createMockModel('hrAssets'),
       WebsitePage: createMockModel('websitePages'),
       Blog: createMockModel('blogs'),
+      BlogContentOS: createMockModel('blogContentOS'),
       Newsletter: createMockModel('newsletters'),
       FAQ: createMockModel('faqs'),
     };
@@ -152,6 +153,7 @@ export const loadModels = () => {
     const { HRAsset: RealHRAsset } = require('./HRAsset');
     const { WebsitePage: RealWebsitePage } = require('./WebsitePage');
     const { Blog: RealBlog } = require('./Blog');
+    const { BlogContentOS: RealBlogContentOS } = require('./BlogContentOS');
     const { Newsletter: RealNewsletter } = require('./Newsletter');
     const { FAQ: RealFAQ } = require('./FAQ');
 
@@ -172,6 +174,7 @@ export const loadModels = () => {
       HRAsset: RealHRAsset,
       WebsitePage: RealWebsitePage,
       Blog: RealBlog,
+      BlogContentOS: RealBlogContentOS,
       Newsletter: RealNewsletter,
       FAQ: RealFAQ,
     };
@@ -199,5 +202,6 @@ export type { IStationery } from './Stationery';
 export type { IHRAsset } from './HRAsset';
 export type { IWebsitePage } from './WebsitePage';
 export type { IBlog } from './Blog';
+export type { IBlogContentOS } from './BlogContentOS';
 export type { INewsletter } from './Newsletter';
 export type { IFAQ } from './FAQ';
