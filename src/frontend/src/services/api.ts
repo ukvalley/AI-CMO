@@ -574,6 +574,32 @@ export const newsletterExportApi = {
   delete: (id: string) => apiRequest(`/newsletter-content-os/exports/${id}`, { method: 'DELETE' }),
 };
 
+// ============== LANDING PAGE CONTENT OS API ==============
+
+export const landingPageApi = {
+  getAll: (companyId: string) => apiRequest(`/landing-page-content-os/pages/${companyId}`),
+  getById: (id: string) => apiRequest(`/landing-page-content-os/pages/detail/${id}`),
+  create: (data: any) => apiRequest('/landing-page-content-os/pages', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/landing-page-content-os/pages/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/landing-page-content-os/pages/${id}`, { method: 'DELETE' }),
+};
+
+export const landingPageTemplateApi = {
+  getAll: (companyId: string) => apiRequest(`/landing-page-content-os/templates/${companyId}`),
+  getById: (id: string) => apiRequest(`/landing-page-content-os/templates/detail/${id}`),
+  create: (data: any) => apiRequest('/landing-page-content-os/templates', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/landing-page-content-os/templates/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/landing-page-content-os/templates/${id}`, { method: 'DELETE' }),
+};
+
+export const landingPageExportApi = {
+  getAll: (companyId: string) => apiRequest(`/landing-page-content-os/exports/${companyId}`),
+  getById: (id: string) => apiRequest(`/landing-page-content-os/exports/detail/${id}`),
+  create: (data: any) => apiRequest('/landing-page-content-os/exports', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/landing-page-content-os/exports/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/landing-page-content-os/exports/${id}`, { method: 'DELETE' }),
+};
+
 // ============== MODULE DATA API (Generic) ==============
 
 export const moduleDataApi = {

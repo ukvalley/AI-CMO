@@ -93,6 +93,7 @@ const loadRoutes = () => {
   const blogContentOsRoutes = require('./routes/blogContentOs').default;
   const newsletterContentOsRoutes = require('./routes/newsletterContentOs').default;
   const newsletterRoutes = require('./routes/newsletters').default;
+  const landingPageContentOsRoutes = require('./routes/landingPageContentOs').default;
   const faqRoutes = require('./routes/faqs').default;
   const faqBankRoutes = require('./routes/faqBank').default;
   const moduleDataRoutes = require('./routes/moduleData').default;
@@ -122,6 +123,7 @@ const loadRoutes = () => {
   app.use('/api/blog-content-os', blogContentOsRoutes);
   app.use('/api/newsletter-content-os', newsletterContentOsRoutes);
   app.use('/api/newsletters', newsletterRoutes);
+  app.use('/api/landing-page-content-os', landingPageContentOsRoutes);
   app.use('/api/faqs', faqRoutes);
   app.use('/api/faq-bank', faqBankRoutes);
   app.use('/api/module-data', moduleDataRoutes);

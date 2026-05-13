@@ -342,14 +342,15 @@ export const MODULES: ModuleDefinition[] = [
   {
     id: 'landing-pages',
     name: 'Landing Pages',
-    description: 'High-converting landing page copy',
+    description: 'AI-powered landing page strategy, conversion architecture, and planning system',
     group: 'sales',
     icon: 'FileCode',
     path: '/landing-pages',
     status: 'active',
     permissions: ['admin', 'editor'],
     hasAI: true,
-    hasBulkGeneration: false,
+    hasBulkGeneration: true,
+    badge: 'AI',
   },
   {
     id: 'sales-scripts',

@@ -66,6 +66,9 @@ import type {
   NewsletterPost,
   NewsletterExport,
   NewsletterContentSystem,
+  // Landing Page Content OS
+  LandingPageTemplate,
+  LandingPageExport,
 } from '@/types/entities';
 
 // ============================================
@@ -122,6 +125,8 @@ interface ModuleData {
   // Sales
   landingPageSystem: LandingPageSystem | null;
   landingPages: LandingPage[];
+  landingPageTemplates: LandingPageTemplate[];
+  landingPageExports: LandingPageExport[];
   salesScripts: SalesScript[];
   salesCollateral: SalesCollateral[];
   videoContent: VideoContent[];
@@ -205,6 +210,8 @@ const createEmptyModuleData = (): ModuleData => ({
 
   landingPageSystem: null,
   landingPages: [],
+  landingPageTemplates: [],
+  landingPageExports: [],
   salesScripts: [],
   salesCollateral: [],
   videoContent: [],

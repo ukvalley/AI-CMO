@@ -135,6 +135,7 @@ export const loadModels = () => {
       BlogContentOS: createMockModel('blogContentOS'),
       NewsletterContentOS: createMockModel('newsletterContentOS'),
       Newsletter: createMockModel('newsletters'),
+      LandingPageContentOS: createMockModel('landingPageContentOS'),
       FAQ: createMockModel('faqs'),
       FAQCategory: createMockModel('faqCategories'),
     };
@@ -158,6 +159,7 @@ export const loadModels = () => {
     const { BlogContentOS: RealBlogContentOS } = require('./BlogContentOS');
     const { NewsletterContentOS: RealNewsletterContentOS } = require('./NewsletterContentOS');
     const { Newsletter: RealNewsletter } = require('./Newsletter');
+    const { LandingPageContentOS: RealLandingPageContentOS } = require('./LandingPageContentOS');
     const { FAQ: RealFAQ, FAQCategory: RealFAQCategory } = require('./FAQ');
 
     models = {
@@ -180,6 +182,7 @@ export const loadModels = () => {
       BlogContentOS: RealBlogContentOS,
       NewsletterContentOS: RealNewsletterContentOS,
       Newsletter: RealNewsletter,
+      LandingPageContentOS: RealLandingPageContentOS,
       FAQ: RealFAQ,
       FAQCategory: RealFAQCategory,
     };
@@ -210,4 +213,5 @@ export type { IBlog } from './Blog';
 export type { IBlogContentOS } from './BlogContentOS';
 export type { INewsletterContentOS } from './NewsletterContentOS';
 export type { INewsletter } from './Newsletter';
+export type { ILandingPageContentOS } from './LandingPageContentOS';
 export type { IFAQ, IFAQCategory } from './FAQ';

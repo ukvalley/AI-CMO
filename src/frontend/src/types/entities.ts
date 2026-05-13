@@ -1191,21 +1191,205 @@ export interface ContentItem extends BaseEntity {
 }
 
 // ============================================
-// LANDING PAGE
+// LANDING PAGE OPERATING SYSTEM
 // ============================================
 
-export type LandingPageFramework = 'brunson' | 'hormozi' | 'ogilvy' | 'storybrand';
+export type LandingPageFramework = 'brunson' | 'hormozi' | 'ogilvy' | 'storybrand' | 'custom';
+
+export type LandingPageType =
+  | 'lead-generation'
+  | 'product'
+  | 'service'
+  | 'saas'
+  | 'webinar'
+  | 'event'
+  | 'app-download'
+  | 'sales'
+  | 'long-form-sales'
+  | 'course'
+  | 'founder-brand'
+  | 'employee-portfolio'
+  | 'consultation-booking'
+  | 'demo-booking'
+  | 'offer'
+  | 'discount-campaign'
+  | 'launch'
+  | 'waitlist'
+  | 'recruitment'
+  | 'affiliate'
+  | 'referral'
+  | 'case-study'
+  | 'industry-specific'
+  | 'location-based';
+
+export type LandingPageGoal =
+  | 'lead-generation'
+  | 'demo-booking'
+  | 'call-booking'
+  | 'product-purchase'
+  | 'webinar-registration'
+  | 'whatsapp-lead'
+  | 'form-submission'
+  | 'download'
+  | 'consultation-booking'
+  | 'email-collection';
+
+export type LandingPageStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
+
+export type LandingPageTrafficSource =
+  | 'facebook-ads'
+  | 'google-ads'
+  | 'seo'
+  | 'email'
+  | 'social-organic'
+  | 'affiliate'
+  | 'direct'
+  | 'referral';
+
+export type LandingPageSectionType =
+  | 'hero'
+  | 'sticky-cta'
+  | 'floating-cta'
+  | 'lead-form'
+  | 'multi-step-form'
+  | 'exit-intent'
+  | 'testimonials'
+  | 'video-testimonials'
+  | 'case-studies'
+  | 'client-logos'
+  | 'ratings-reviews'
+  | 'certifications'
+  | 'media-mentions'
+  | 'pain-points'
+  | 'problem-amplification'
+  | 'solution-explanation'
+  | 'before-after'
+  | 'transformation-journey'
+  | 'pricing'
+  | 'offer-breakdown'
+  | 'bonuses'
+  | 'limited-offer'
+  | 'scarcity'
+  | 'guarantee'
+  | 'risk-reversal'
+  | 'features'
+  | 'benefits'
+  | 'comparison-table'
+  | 'how-it-works'
+  | 'process-explanation'
+  | 'faqs'
+  | 'industry-insights'
+  | 'founder-story'
+  | 'team'
+  | 'mission'
+  | 'expertise'
+  | 'achievements'
+  | 'social-proof'
+  | 'interactive-faqs'
+  | 'timeline'
+  | 'statistics'
+  | 'video-block'
+  | 'demo-video'
+  | 'product-walkthrough'
+  | 'cta-section'
+  | 'custom';
+
+export interface LandingPageSection {
+  id: string;
+  type: LandingPageSectionType;
+  name: string;
+  enabled: boolean;
+  order: number;
+  headline?: string;
+  subheadline?: string;
+  description?: string;
+  cta?: string;
+  media?: string[];
+  icons?: string[];
+  bulletPoints?: string[];
+  trustStatements?: string[];
+  seoNotes?: string;
+  aiPrompt?: string;
+  uiNotes?: string;
+  conversionNotes?: string;
+}
+
+export interface LandingPageComment {
+  id: string;
+  userName: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface LandingPageActivity {
+  id: string;
+  action: string;
+  userName: string;
+  createdAt: string;
+}
 
 export interface LandingPage extends BaseEntity {
   name: string;
-  framework: LandingPageFramework;
-  productId?: string;
-  icpIds: string[];
-  audienceType: AudienceType;
+  description?: string;
+  pageType: LandingPageType;
+  primaryGoal: LandingPageGoal;
+  secondaryGoal?: LandingPageGoal;
+  conversionGoal?: string;
+  funnelStage: FunnelStage;
+  ctaGoal?: string;
+  framework?: LandingPageFramework;
+  trafficSource?: LandingPageTrafficSource;
+  linkedData: {
+    brandId?: string;
+    businessProfileId?: string;
+    productIds?: string[];
+    serviceIds?: string[];
+    founderIds?: string[];
+    employeeIds?: string[];
+    icpIds?: string[];
+    personaIds?: string[];
+    competitorIds?: string[];
+    campaignIds?: string[];
+  };
   headline?: string;
   subHeadline?: string;
   ctaText?: string;
   content?: string;
+  sections: LandingPageSection[];
+  seoKeywords?: string[];
+  searchIntent?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  imageUrls?: string[];
+  videoUrls?: string[];
+  figmaLink?: string;
+  canvaLink?: string;
+  designReferences?: string[];
+  competitorReferences?: string[];
+  status: LandingPageStatus;
+  version: number;
+  comments?: LandingPageComment[];
+  activityLog?: LandingPageActivity[];
+  aiPrompt?: string;
+  // Backwards compatibility
+  productId?: string;
+  icpIdsLegacy?: string[];
+  audienceType?: AudienceType;
+}
+
+export interface LandingPageTemplate extends BaseEntity {
+  name: string;
+  description?: string;
+  pageType: LandingPageType;
+  sections: LandingPageSection[];
+  prefillData?: Partial<LandingPage>;
+}
+
+export interface LandingPageExport extends BaseEntity {
+  landingPageId: string;
+  format: ExportFormat;
+  content: string;
+  fileName: string;
 }
 
 // ============================================
