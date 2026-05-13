@@ -94,6 +94,7 @@ const loadRoutes = () => {
   const newsletterContentOsRoutes = require('./routes/newsletterContentOs').default;
   const newsletterRoutes = require('./routes/newsletters').default;
   const faqRoutes = require('./routes/faqs').default;
+  const faqBankRoutes = require('./routes/faqBank').default;
   const moduleDataRoutes = require('./routes/moduleData').default;
   const chatRoutes = require('./routes/chat').default;
   const taskRoutes = require('./routes/tasks').default;
@@ -122,6 +123,7 @@ const loadRoutes = () => {
   app.use('/api/newsletter-content-os', newsletterContentOsRoutes);
   app.use('/api/newsletters', newsletterRoutes);
   app.use('/api/faqs', faqRoutes);
+  app.use('/api/faq-bank', faqBankRoutes);
   app.use('/api/module-data', moduleDataRoutes);
   app.use('/api/chat', chatRoutes);
   app.use('/api/tasks', taskRoutes);
@@ -177,9 +179,6 @@ const startServer = async () => {
 
     // Connect to Redis (optional — won't block startup)
     await connectRedis();
-
-    // Load routes after database connection
-    loadRoutes();
 
     // Load routes after database connection
     loadRoutes();

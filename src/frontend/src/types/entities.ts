@@ -1025,25 +1025,125 @@ export interface Newsletter extends BaseEntity {
 }
 
 // ============================================
-// FAQ
+// FAQ BANK
 // ============================================
 
-export type FAQCategory =
+export type FAQCategoryType =
   | 'general'
-  | 'product-specific'
-  | 'billing-subscription'
-  | 'technical-troubleshooting'
-  | 'security-privacy'
-  | 'feature-based'
-  | 'competitor-comparison'
+  | 'product'
+  | 'service'
+  | 'pricing'
+  | 'technical'
+  | 'support'
+  | 'billing'
+  | 'onboarding'
+  | 'legal'
+  | 'hr'
+  | 'sop'
   | 'custom';
 
-export interface FAQ extends BaseEntity {
-  question: string;
-  answer?: string;
-  category: FAQCategory;
-  productId?: string;
+export type FAQType =
+  | 'customer'
+  | 'sales'
+  | 'technical'
+  | 'internal'
+  | 'ai-training'
+  | 'website'
+  | 'blog'
+  | 'newsletter'
+  | 'support'
+  | 'onboarding'
+  | 'legal'
+  | 'hr'
+  | 'sop';
+
+export type FAQStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
+export type FAQPriority = 'low' | 'medium' | 'high' | 'critical';
+export type FAQAudienceType = 'public' | 'internal' | 'team-specific' | 'department-specific' | 'admin-only';
+export type FAQFunnelStage = 'tofu' | 'mofu' | 'bofu' | 'post-sale' | 'general';
+export type FAQSearchIntent = 'informational' | 'navigational' | 'transactional' | 'commercial';
+
+export interface FAQCategoryItem extends BaseEntity {
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  icon?: string;
+  colour?: string;
   order: number;
+  faqCount: number;
+  isActive: boolean;
+}
+
+export interface FAQMediaAttachment {
+  url: string;
+  type: string;
+  description?: string;
+}
+
+export interface FAQ extends BaseEntity {
+  // Core Content
+  title: string;
+  question: string;
+  answer: string;
+  shortAnswer?: string;
+  detailedAnswer?: string;
+
+  // Classification
+  categoryId?: string;
+  subcategoryId?: string;
+  faqType: FAQType;
+  tags: string[];
+
+  // Status & Workflow
+  status: FAQStatus;
+  priority: FAQPriority;
+  order: number;
+
+  // Audience & Funnel
+  audienceType: FAQAudienceType;
+  funnelStage: FAQFunnelStage;
+  department?: string;
+
+  // Product/Service Mapping
+  productId?: string;
+  serviceIds?: string[];
+
+  // SEO
+  seoKeywords?: string[];
+  searchIntent?: FAQSearchIntent;
+  metaTitle?: string;
+  metaDescription?: string;
+  schemaEnabled: boolean;
+  voiceSearchOptimised: boolean;
+
+  // AI Readiness
+  aiContextWeight: number;
+  aiPriority: FAQPriority;
+  aiSuggestedUsage?: string;
+  searchRelevance: number;
+
+  // Relationships
+  parentFaqId?: string;
+  relatedFaqIds: string[];
+  clusterId?: string;
+
+  // Media & References
+  referenceLinks?: string[];
+  mediaAttachments?: FAQMediaAttachment[];
+  documentUrls?: string[];
+
+  // Usage Tracking
+  usedIn: string[];
+  viewCount: number;
+  helpfulCount: number;
+  notHelpfulCount: number;
+
+  // Approval & Versioning
+  version: number;
+  approvedBy?: string;
+  approvedAt?: string;
+  reviewNotes?: string;
 }
 
 // ============================================

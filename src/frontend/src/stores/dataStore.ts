@@ -26,6 +26,7 @@ import type {
   HrSystem,
   Newsletter,
   FAQ,
+  FAQCategoryItem,
   ContentItem,
   LandingPage,
   Banner,
@@ -93,6 +94,7 @@ interface ModuleData {
   blogs: Blog[];
   newsletters: Newsletter[];
   faqs: FAQ[];
+  faqCategories: FAQCategoryItem[];
   contentItems: ContentItem[];
   stories: StoryCampaign[];
   testimonials: Testimonial[];
@@ -176,6 +178,7 @@ const createEmptyModuleData = (): ModuleData => ({
   blogs: [],
   newsletters: [],
   faqs: [],
+  faqCategories: [],
   contentItems: [],
   stories: [],
   testimonials: [],

@@ -352,6 +352,64 @@ export const faqApi = {
   delete: (id: string) => apiRequest(`/faqs/${id}`, { method: 'DELETE' }),
 };
 
+// ============== FAQ BANK API ==============
+
+export const faqCategoryApi = {
+  getAll: (companyId: string) => apiRequest(`/faq-bank/categories/${companyId}`),
+
+  getById: (id: string) => apiRequest(`/faq-bank/categories/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/faq-bank/categories', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/faq-bank/categories/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/faq-bank/categories/${id}`, { method: 'DELETE' }),
+};
+
+export const faqBankApi = {
+  // CRUD
+  getAll: (companyId: string, params?: Record<string, string>) => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/faq-bank/faqs/${companyId}${query}`);
+  },
+
+  getById: (id: string) => apiRequest(`/faq-bank/faqs/detail/${id}`),
+
+  create: (data: any) =>
+    apiRequest('/faq-bank/faqs', { method: 'POST', body: data }),
+
+  update: (id: string, data: any) =>
+    apiRequest(`/faq-bank/faqs/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) => apiRequest(`/faq-bank/faqs/${id}`, { method: 'DELETE' }),
+
+  // Bulk Operations
+  bulkImport: (data: any) =>
+    apiRequest('/faq-bank/faqs/bulk-import', { method: 'POST', body: data }),
+
+  bulkUpdate: (data: any) =>
+    apiRequest('/faq-bank/faqs/bulk-update', { method: 'PUT', body: data }),
+
+  bulkDelete: (ids: string[]) =>
+    apiRequest('/faq-bank/faqs/bulk-delete', { method: 'POST', body: { ids } }),
+
+  // Export
+  exportFaqs: (companyId: string, format: string) =>
+    apiRequest(`/faq-bank/faqs/export/${companyId}?format=${format}`),
+
+  // AI Generation
+  generate: (data: any) =>
+    apiRequest('/faq-bank/faqs/generate', { method: 'POST', body: data }),
+
+  suggestMissing: (data: any) =>
+    apiRequest('/faq-bank/faqs/suggest-missing', { method: 'POST', body: data }),
+
+  detectDuplicates: (data: any) =>
+    apiRequest('/faq-bank/faqs/detect-duplicates', { method: 'POST', body: data }),
+};
+
 // ============== STATIONERY API ==============
 
 export const stationeryApi = {

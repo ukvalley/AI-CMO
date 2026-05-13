@@ -313,14 +313,15 @@ export const MODULES: ModuleDefinition[] = [
   {
     id: 'faq-bank',
     name: 'FAQ Bank',
-    description: 'Frequently asked questions by category',
+    description: 'Centralised FAQ repository with categories, AI generation, and multi-channel publishing',
     group: 'content',
     icon: 'HelpCircle',
     path: '/faq-bank',
     status: 'active',
     permissions: ['admin', 'editor'],
     hasAI: true,
-    hasBulkGeneration: false,
+    hasBulkGeneration: true,
+    badge: 'AI',
   },
   {
     id: 'content-library',
