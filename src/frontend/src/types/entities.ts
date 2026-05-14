@@ -1434,35 +1434,140 @@ export interface Banner extends BaseEntity {
 // ============================================
 
 export type VideoType =
-  | 'explainer'
-  | 'demo'
-  | 'testimonial'
-  | 'bts'
-  | 'webinar'
-  | 'qa'
-  | 'reel'
-  | 'tutorial'
-  | 'announcement'
-  | 'podcast'
-  | 'audiobook';
+  | 'educational'
+  | 'product-demo'
+  | 'service-walkthrough'
+  | 'sop-video'
+  | 'company-policy'
+  | 'hr-training'
+  | 'technical-tutorial'
+  | 'sales-training'
+  | 'founder-message'
+  | 'customer-onboarding'
+  | 'webinar-recording'
+  | 'team-training'
+  | 'interview'
+  | 'feature-update'
+  | 'marketing-strategy'
+  | 'internal-communication'
+  | 'compliance-training'
+  | 'support-tutorial';
 
-export type VideoPlatform =
-  | 'youtube'
-  | 'instagram-reels'
-  | 'tiktok'
-  | 'linkedin'
-  | 'facebook'
-  | 'website';
+export type VideoCategory =
+  | 'product-training'
+  | 'service-training'
+  | 'educational'
+  | 'company-policies'
+  | 'hr-training'
+  | 'sop-videos'
+  | 'sales-training'
+  | 'technical-tutorials'
+  | 'customer-support'
+  | 'founder-sessions'
+  | 'team-onboarding'
+  | 'compliance'
+  | 'marketing-training'
+  | 'crm-training'
+  | 'software-tutorials'
+  | 'internal-meetings'
+  | 'webinar-recordings'
+  | 'client-training'
+  | 'knowledge-sharing';
 
-export type VideoDuration = '15s' | '30s' | '60s' | '3min' | '5min' | '10min' | '30min' | '60min' | '60min+';
+export type VideoStatus = 'draft' | 'approved' | 'archived';
+
+export type VideoSource = 'youtube' | 'vimeo' | 'loom' | 'google-drive' | 'dropbox' | 'wistia' | 'internal-cdn' | 'other';
+
+export type VideoAccessLevel = 'public' | 'team' | 'department' | 'manager-only' | 'hr-only';
+
+export type WatchStatus = 'unwatched' | 'in-progress' | 'watched' | 'completed';
+
+export type LearningPathStatus = 'draft' | 'active' | 'completed' | 'archived';
 
 export interface VideoContent extends BaseEntity {
   name: string;
+  description?: string;
   type: VideoType;
-  platform: VideoPlatform;
-  duration: VideoDuration;
+  category?: VideoCategory;
+  subcategory?: string;
+  tags?: string[];
+  language?: string;
+
+  // Source & playback
+  source: VideoSource;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration?: string;
+  embeddedPlayer?: string;
+
+  // Category & organization
+  department?: string;
+  productIds?: string[];
+  serviceIds?: string[];
+  sopIds?: string[];
+  teamIds?: string[];
+
+  // Status & access
+  status: VideoStatus;
+  accessLevel: VideoAccessLevel;
+  version?: string;
+
+  // Watch tracking
+  watchStatus: WatchStatus;
+  watchProgress?: number;
+  lastWatchedAt?: string;
+  completionCount?: number;
+
+  // Favorites
+  isFavorite: boolean;
+  isPinned: boolean;
+  downloadCount?: number;
+
+  // Transcript & docs
+  transcript?: string;
+  summary?: string;
+  keyNotes?: string[];
+  downloadableResources?: string[];
+  pdfReferences?: string[];
+
+  // Linked content
+  linkedData?: {
+    faqIds?: string[];
+    salesScriptIds?: string[];
+    blogPostIds?: string[];
+    documentIds?: string[];
+  };
+
+  // Approval
+  approvedBy?: string;
+  approvedAt?: string;
+
+  // Notes & comments
+  notes?: string;
+  timestampNotes?: { time: string; note: string }[];
+
+  // Legacy
   script?: string;
   shotList?: string;
+}
+
+export interface VideoCategoryInfo extends BaseEntity {
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  videoCount?: number;
+}
+
+export interface VideoPlaylist extends BaseEntity {
+  name: string;
+  description?: string;
+  type: 'playlist' | 'learning-path' | 'series';
+  videoIds: string[];
+  status: LearningPathStatus;
+  isFavorite: boolean;
+  estimatedDuration?: string;
+  thumbnailUrl?: string;
 }
 
 // ============================================

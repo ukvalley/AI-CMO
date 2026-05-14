@@ -688,6 +688,30 @@ export const collateralCategoryApi = {
   delete: (id: string) => apiRequest(`/sales-collateral/categories/${id}`, { method: 'DELETE' }),
 };
 
+export const videoContentApi = {
+  getAll: (companyId: string) => apiRequest(`/video-content/videos/${companyId}`),
+  getById: (id: string) => apiRequest(`/video-content/videos/detail/${id}`),
+  create: (data: any) => apiRequest('/video-content/videos', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/video-content/videos/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/video-content/videos/${id}`, { method: 'DELETE' }),
+};
+
+export const videoCategoryApi = {
+  getAll: (companyId: string) => apiRequest(`/video-content/categories/${companyId}`),
+  getById: (id: string) => apiRequest(`/video-content/categories/detail/${id}`),
+  create: (data: any) => apiRequest('/video-content/categories', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/video-content/categories/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/video-content/categories/${id}`, { method: 'DELETE' }),
+};
+
+export const videoPlaylistApi = {
+  getAll: (companyId: string) => apiRequest(`/video-content/playlists/${companyId}`),
+  getById: (id: string) => apiRequest(`/video-content/playlists/detail/${id}`),
+  create: (data: any) => apiRequest('/video-content/playlists', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/video-content/playlists/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/video-content/playlists/${id}`, { method: 'DELETE' }),
+};
+
 // ============== MODULE DATA API (Generic) ==============
 
 export const moduleDataApi = {

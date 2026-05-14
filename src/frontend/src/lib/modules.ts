@@ -379,7 +379,7 @@ export const MODULES: ModuleDefinition[] = [
   {
     id: 'video-content',
     name: 'Video Content',
-    description: 'Video scripts and shot lists',
+    description: 'Centralized Video Knowledge Repository',
     group: 'sales',
     icon: 'Video',
     path: '/video-content',

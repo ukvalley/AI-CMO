@@ -31,6 +31,8 @@ import type {
   LandingPage,
   Banner,
   VideoContent,
+  VideoCategoryInfo,
+  VideoPlaylist,
   StoryCampaign,
   SalesScript,
   SalesCollateral,
@@ -141,6 +143,8 @@ interface ModuleData {
   salesCollateral: SalesCollateral[];
   collateralCategories: CollateralCategoryInfo[];
   videoContent: VideoContent[];
+  videoCategories: VideoCategoryInfo[];
+  videoPlaylists: VideoPlaylist[];
   banners: Banner[];
   books: Book[];
 
@@ -237,6 +241,8 @@ const createEmptyModuleData = (): ModuleData => ({
   salesCollateral: [],
   collateralCategories: [],
   videoContent: [],
+  videoCategories: [],
+  videoPlaylists: [],
   banners: [],
   books: [],
   seoSystem: null,
