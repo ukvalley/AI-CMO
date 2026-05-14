@@ -562,7 +562,7 @@ export default function TestimonialsModule() {
           founders={founders}
           employees={employees}
           onClose={() => { setShowCreateModal(false); setEditingItem(null); }}
-          onSave={editingItem ? ((id, data) => handleUpdate(id, data)) : ((data) => handleCreate(data))}
+          onSave={editingItem ? ((id: string, data: any) => handleUpdate(id, data)) : ((data: any) => handleCreate(data))}
         />
       )}
 

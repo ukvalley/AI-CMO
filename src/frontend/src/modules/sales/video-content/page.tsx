@@ -121,25 +121,24 @@ const PLAYLIST_TYPE_CONFIG: Record<VideoPlaylist['type'], { label: string; icon:
 export default function VideoContentModule() {
   const companyStore = useCompanyStore();
   const dataStore = useDataStore();
-  const { addItem, updateItem, deleteItem } = dataStore;
-  const activeCompanyId = dataStore.activeCompanyId;
+  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
 
   const companyId = companyStore.activeCompanyId;
-  // Sync company immediately (not in effect) to avoid stale data reads
-  if (companyId && companyId !== activeCompanyId) {
-    dataStore.setActiveCompany(companyId);
-  }
+  useMemo(() => {
+    if (companyId && companyId !== activeCompanyId) {
+      setActiveCompany(companyId);
+    }
+  }, [companyId, activeCompanyId, setActiveCompany]);
 
-  // Data from store - read fresh on every render
-  const getItems = dataStore.getItems;
-  const videos = (getItems('videoContent') as VideoContent[]) || [];
-  const categories = (getItems('videoCategories') as VideoCategoryInfo[]) || [];
-  const playlists = (getItems('videoPlaylists') as VideoPlaylist[]) || [];
-  const products = (getItems('products') as Product[]) || [];
-  const sops = (getItems('sops') as SOP[]) || [];
-  const salesScripts = (getItems('salesScripts') as SalesScript[]) || [];
-  const faqs = (getItems('faqs') as FAQ[]) || [];
-  const blogPosts = (getItems('blogPosts') as BlogPost[]) || [];
+  // Data from store - using exact same pattern as working Blog Content OS module
+  const videos = useMemo(() => (getItems('videoContent') as VideoContent[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const categories = useMemo(() => (getItems('videoCategories') as VideoCategoryInfo[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const playlists = useMemo(() => (getItems('videoPlaylists') as VideoPlaylist[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const sops = useMemo(() => (getItems('sops') as SOP[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const salesScripts = useMemo(() => (getItems('salesScripts') as SalesScript[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const faqs = useMemo(() => (getItems('faqs') as FAQ[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const blogPosts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
 
   // Load from API (gracefully handle missing backend endpoints)
   const [isLoading, setIsLoading] = useState(true);
