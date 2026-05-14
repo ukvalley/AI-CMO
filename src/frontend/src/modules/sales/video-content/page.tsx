@@ -21,6 +21,7 @@ import { cn } from '@/utils/cn';
 import { useDataStore, useCompanyStore } from '@/stores';
 import {
   videoContentApi, videoCategoryApi, videoPlaylistApi,
+  productApi, faqApi, blogPostApi,
 } from '@/services/api';
 import type {
   VideoContent, VideoType, VideoCategory, VideoStatus,
@@ -145,10 +146,13 @@ export default function VideoContentModule() {
   useEffect(() => {
     if (!companyId) { setIsLoading(false); return; }
     const loadFromApi = async () => {
-      const [vidRes, catRes, plRes] = await Promise.all([
+      const [vidRes, catRes, plRes, prodRes, faqRes, blogRes] = await Promise.all([
         videoContentApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         videoCategoryApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         videoPlaylistApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
+        productApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
+        faqApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
+        blogPostApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
       ]);
 
       const mergeById = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
@@ -169,6 +173,21 @@ export default function VideoContentModule() {
       if (plRes.data && Array.isArray(plRes.data) && (plRes.data as any[]).length > 0) {
         const local = (getItems('videoPlaylists') as VideoPlaylist[]) || [];
         dataStore.setItems('videoPlaylists', mergeById(local, plRes.data as VideoPlaylist[]));
+      }
+      // Cross-module data: Products
+      if (prodRes.data && Array.isArray(prodRes.data) && (prodRes.data as any[]).length > 0) {
+        const local = (getItems('products') as Product[]) || [];
+        dataStore.setItems('products', mergeById(local, prodRes.data as Product[]));
+      }
+      // Cross-module data: FAQs
+      if (faqRes.data && Array.isArray(faqRes.data) && (faqRes.data as any[]).length > 0) {
+        const local = (getItems('faqs') as FAQ[]) || [];
+        dataStore.setItems('faqs', mergeById(local, faqRes.data as FAQ[]));
+      }
+      // Cross-module data: Blog Posts
+      if (blogRes.data && Array.isArray(blogRes.data) && (blogRes.data as any[]).length > 0) {
+        const local = (getItems('blogPosts') as BlogPost[]) || [];
+        dataStore.setItems('blogPosts', mergeById(local, blogRes.data as BlogPost[]));
       }
       setIsLoading(false);
     };
