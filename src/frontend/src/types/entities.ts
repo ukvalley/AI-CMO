@@ -3375,3 +3375,226 @@ export interface SocialExport extends BaseEntity {
   content: string;
   fileName: string;
 }
+
+// ============================================
+// SALES SCRIPTS
+// ============================================
+
+export type ScriptType =
+  | 'cold-call'
+  | 'warm-call'
+  | 'qualification'
+  | 'discovery'
+  | 'demo'
+  | 'sales-pitch'
+  | 'follow-up'
+  | 'negotiation'
+  | 'closing'
+  | 'whatsapp'
+  | 'email'
+  | 'linkedin'
+  | 'voice-note'
+  | 'appointment'
+  | 'reactivation'
+  | 'referral'
+  | 'upselling'
+  | 'cross-selling'
+  | 'retention'
+  | 'renewal'
+  | 'customer-success'
+  | 'objection-handling';
+
+export type ScriptStatus =
+  | 'draft'
+  | 'review'
+  | 'approved'
+  | 'published'
+  | 'archived';
+
+export type FunnelStage =
+  | 'awareness'
+  | 'interest'
+  | 'consideration'
+  | 'decision'
+  | 'purchase'
+  | 'retention'
+  | 'advocacy';
+
+export type AudienceType =
+  | 'prospect'
+  | 'lead'
+  | 'opportunity'
+  | 'customer'
+  | 'partner'
+  | 'investor';
+
+export type CommunicationChannel =
+  | 'phone'
+  | 'whatsapp'
+  | 'linkedin'
+  | 'email'
+  | 'zoom'
+  | 'google-meet'
+  | 'in-person'
+  | 'sms'
+  | 'voice-note';
+
+export type ScriptPriority =
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'critical';
+
+export interface IQualificationQuestion {
+  id: string;
+  question: string;
+  purpose?: string;
+  followUpIfYes?: string;
+  followUpIfNo?: string;
+  order: number;
+}
+
+export interface IObjectionResponse {
+  id: string;
+  objection: string;
+  response: string;
+  counterQuestions?: string[];
+  caseStudyReference?: string;
+  trustBuildingLine?: string;
+  ctaSuggestion?: string;
+  emotionalApproach?: string;
+  order: number;
+}
+
+export interface IScriptSection {
+  id: string;
+  type: 'opening' | 'hook' | 'qualification' | 'pain-discovery' | 'value-position' | 'offer' | 'objection' | 'trust' | 'social-proof' | 'closing' | 'follow-up' | 'exit';
+  title: string;
+  content: string;
+  order: number;
+  isRequired: boolean;
+  tips?: string[];
+}
+
+export interface IConversationBranch {
+  id: string;
+  trigger: string;
+  response: string;
+  nextSection?: string;
+  order: number;
+}
+
+export interface IPerformanceMetrics {
+  usageCount: number;
+  successRate: number;
+  avgConversionTime: number;
+  lastUsedAt?: string;
+  feedbackScore?: number;
+}
+
+export interface IScriptAIGenerationContext {
+  brandVoice?: string;
+  persona?: string;
+  goal?: string;
+  objections?: string[];
+}
+
+export interface IScriptTranslation {
+  language: string;
+  title?: string;
+  content?: string;
+}
+
+export interface SalesScript extends BaseEntity {
+  // Basic Information
+  title: string;
+  description?: string;
+  scriptType: ScriptType;
+  status: ScriptStatus;
+  priority: ScriptPriority;
+
+  // Product/Service Mapping
+  companyId: string;
+  productId?: string;
+  serviceId?: string;
+  productIds?: string[];
+  serviceIds?: string[];
+
+  // Audience & Targeting
+  funnelStage: FunnelStage;
+  audienceType: AudienceType;
+  targetIndustry?: string;
+  targetPersona?: string;
+
+  // Communication
+  channels: CommunicationChannel[];
+
+  // Script Content
+  openingLine?: string;
+  hook?: string;
+  valueProposition?: string;
+  offerPresentation?: string;
+  closingCTA?: string;
+  followUpCTA?: string;
+  exitResponse?: string;
+
+  // Structured Sections
+  sections: IScriptSection[];
+
+  // Qualification Questions
+  qualificationQuestions: IQualificationQuestion[];
+
+  // Objection Handling
+  objectionResponses: IObjectionResponse[];
+
+  // Conversation Flow
+  conversationBranches: IConversationBranch[];
+
+  // Brand Integration
+  brandTone?: string;
+  communicationStyle?: string;
+  messagingGuidelines?: string;
+
+  // Playbook
+  playbookId?: string;
+  playbookName?: string;
+
+  // Training
+  trainingNotes?: string;
+  bestPractices?: string[];
+  callExamples?: string[];
+  coachingNotes?: string;
+
+  // Performance
+  performanceMetrics?: IPerformanceMetrics;
+
+  // Version Control
+  version: number;
+  parentScriptId?: string;
+  revisionNotes?: string[];
+
+  // Approval Workflow
+  createdBy?: string;
+  reviewedBy?: string;
+  approvedBy?: string;
+  reviewedAt?: string;
+  approvedAt?: string;
+  reviewComments?: string;
+
+  // Access Control
+  isPublic: boolean;
+  allowedRoles?: string[];
+  allowedTeams?: string[];
+
+  // AI Generation
+  aiGenerated: boolean;
+  aiGenerationContext?: IScriptAIGenerationContext;
+
+  // Multi-language
+  language: string;
+  translations?: IScriptTranslation[];
+
+  // Tags & Categories
+  tags?: string[];
+  category?: string;
+}

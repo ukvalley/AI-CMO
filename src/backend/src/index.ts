@@ -97,6 +97,7 @@ const loadRoutes = () => {
   const faqRoutes = require('./routes/faqs').default;
   const faqBankRoutes = require('./routes/faqBank').default;
   const testimonialRoutes = require('./routes/testimonials').default;
+  const salesScriptRoutes = require('./routes/salesScripts').default;
   const moduleDataRoutes = require('./routes/moduleData').default;
   const chatRoutes = require('./routes/chat').default;
   const taskRoutes = require('./routes/tasks').default;
@@ -128,6 +129,7 @@ const loadRoutes = () => {
   app.use('/api/faqs', faqRoutes);
   app.use('/api/faq-bank', faqBankRoutes);
   app.use('/api/testimonials', testimonialRoutes);
+  app.use('/api/sales-scripts', salesScriptRoutes);
   app.use('/api/module-data', moduleDataRoutes);
   app.use('/api/chat', chatRoutes);
   app.use('/api/tasks', taskRoutes);
