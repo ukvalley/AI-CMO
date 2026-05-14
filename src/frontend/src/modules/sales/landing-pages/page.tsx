@@ -287,15 +287,13 @@ export default function LandingPagesModule() {
   const founders = (getItems('founders') as Founder[]) || [];
   const employees = (getItems('employees') as Employee[]) || [];
 
-  const [isLoading, setIsLoading] = useState(true);
+  // Background API sync — never block the UI
+  const [isSyncing, setIsSyncing] = useState(false);
   useEffect(() => {
-    if (!companyId) {
-      setIsLoading(false);
-      return;
-    }
+    if (!companyId) return;
 
-    const loadFromApi = async () => {
-      setIsLoading(true);
+    const syncFromApi = async () => {
+      setIsSyncing(true);
       const [pRes, tRes, eRes] = await Promise.all([
         landingPageApi.getAll(companyId),
         landingPageTemplateApi.getAll(companyId),
@@ -309,7 +307,7 @@ export default function LandingPagesModule() {
       ];
       responses.forEach(({ name, res }) => {
         if (res.error) {
-          console.error(`[LandingPages] API load failed for ${name}:`, res.error, `(status: ${res.status})`);
+          console.error(`[LandingPages] API sync failed for ${name}:`, res.error, `(status: ${res.status})`);
         }
       });
 
@@ -335,15 +333,10 @@ export default function LandingPagesModule() {
         dataStore.setItems('landingPageExports', mergeById(local, eRes.data as LandingPageExport[]));
       }
 
-      setIsLoading(false);
+      setIsSyncing(false);
     };
 
-    // Hard timeout fallback: hide loader after 6s no matter what
-    const fallbackTimer = setTimeout(() => setIsLoading(false), 6000);
-
-    loadFromApi().finally(() => clearTimeout(fallbackTimer));
-
-    return () => clearTimeout(fallbackTimer);
+    syncFromApi();
   }, [companyId]);
 
   const [activePageId, setActivePageId] = useState<string | null>(null);
@@ -413,17 +406,6 @@ export default function LandingPagesModule() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <RefreshCw className="w-10 h-10 text-primary-400 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Loading landing page data...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
@@ -438,6 +420,11 @@ export default function LandingPagesModule() {
                 <h1 className="text-2xl font-bold text-white">Landing Page OS</h1>
                 <p className="text-sm text-slate-400">AI-Powered Conversion Planning & Architecture</p>
               </div>
+              {isSyncing && (
+                <span title="Syncing with server...">
+                  <RefreshCw className="w-4 h-4 text-slate-500 animate-spin" />
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
