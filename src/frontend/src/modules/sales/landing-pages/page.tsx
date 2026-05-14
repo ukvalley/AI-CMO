@@ -422,7 +422,7 @@ export default function LandingPagesModule() {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
-      <header className="bg-slate-900/50 border-b border-slate-800 sticky top-0 z-40">
+      <header className="bg-slate-900/50 border-b border-slate-800 sticky top-16 z-20">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -494,7 +494,7 @@ export default function LandingPagesModule() {
       </header>
 
       {/* Main Content */}
-      <main className="p-6">
+      <div className="p-6">
         {activeTab === 'pages' && (
           <PagesTab
             pages={pages}
@@ -575,7 +575,7 @@ export default function LandingPagesModule() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Modals */}
       {showCreateModal && (
@@ -1032,11 +1032,11 @@ function StrategyTab({
                 <div className="space-y-3">
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Brand Voice</div>
-                    <div className="text-slate-200">{brand.voiceWritingStyle || brand.voice || 'Not defined'}</div>
+                    <div className="text-slate-200">{brand?.voiceWritingStyle || brand?.voice || 'Not defined'}</div>
                   </div>
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Personality</div>
-                    <div className="text-slate-200">{brand.personalityPrimary?.join(', ') || brand.personality || 'Not defined'}</div>
+                    <div className="text-slate-200">{brand?.personalityPrimary?.join(', ') || brand?.personality || 'Not defined'}</div>
                   </div>
                 </div>
               </div>
@@ -1065,11 +1065,11 @@ function StrategyTab({
                 <div className="space-y-3">
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Industry</div>
-                    <div className="text-slate-200">{businessProfile.primaryIndustry || 'Not specified'}</div>
+                    <div className="text-slate-200">{businessProfile?.primaryIndustry || 'Not specified'}</div>
                   </div>
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">USP</div>
-                    <div className="text-slate-200 text-sm">{businessProfile.usp || 'Not specified'}</div>
+                    <div className="text-slate-200 text-sm">{businessProfile?.usp || 'Not specified'}</div>
                   </div>
                 </div>
               ) : (
@@ -1682,8 +1682,8 @@ function ExportTab({ page }: { page: LandingPage }) {
 - **Type**: ${typeLabel}
 - **Primary Goal**: ${goalLabel}
 - **Funnel Stage**: ${(page.funnelStage || 'tofu').toUpperCase()}
-- **Status**: ${page.status}
-- **Version**: ${page.version}
+- **Status**: ${page.status || 'draft'}
+- **Version**: ${page.version || 1}
 
 ## Strategy
 - **Headline**: ${page.headline || 'N/A'}
