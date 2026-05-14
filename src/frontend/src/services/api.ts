@@ -84,11 +84,17 @@ export const apiRequest = async <T>(
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const status = response.status;
 
@@ -125,6 +131,12 @@ export const apiRequest = async <T>(
     return { data, status };
   } catch (error) {
     console.error('API request failed:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        error: 'Request timed out. Backend may be unavailable.',
+        status: 0,
+      };
+    }
     return {
       error: error instanceof Error ? error.message : 'Network error',
       status: 0,
@@ -656,6 +668,24 @@ export const socialExportApi = {
   create: (data: any) => apiRequest('/social-content-os/exports', { method: 'POST', body: data }),
   update: (id: string, data: any) => apiRequest(`/social-content-os/exports/${id}`, { method: 'PUT', body: data }),
   delete: (id: string) => apiRequest(`/social-content-os/exports/${id}`, { method: 'DELETE' }),
+};
+
+// ============== SALES COLLATERAL API ==============
+
+export const salesCollateralApi = {
+  getAll: (companyId: string) => apiRequest(`/sales-collateral/collateral/${companyId}`),
+  getById: (id: string) => apiRequest(`/sales-collateral/collateral/detail/${id}`),
+  create: (data: any) => apiRequest('/sales-collateral/collateral', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/sales-collateral/collateral/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/sales-collateral/collateral/${id}`, { method: 'DELETE' }),
+};
+
+export const collateralCategoryApi = {
+  getAll: (companyId: string) => apiRequest(`/sales-collateral/categories/${companyId}`),
+  getById: (id: string) => apiRequest(`/sales-collateral/categories/detail/${id}`),
+  create: (data: any) => apiRequest('/sales-collateral/categories', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/sales-collateral/categories/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/sales-collateral/categories/${id}`, { method: 'DELETE' }),
 };
 
 // ============== MODULE DATA API (Generic) ==============

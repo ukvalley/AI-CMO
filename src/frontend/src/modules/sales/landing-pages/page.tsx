@@ -269,23 +269,23 @@ export default function LandingPagesModule() {
   const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
 
   const companyId = companyStore.activeCompanyId;
-  useMemo(() => {
+  useEffect(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
     }
   }, [companyId, activeCompanyId, setActiveCompany]);
 
-  const pages = useMemo(() => (getItems('landingPages') as LandingPage[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const templates = useMemo(() => (getItems('landingPageTemplates') as LandingPageTemplate[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const pages = (getItems('landingPages') as LandingPage[]) || [];
+  const templates = (getItems('landingPageTemplates') as LandingPageTemplate[]) || [];
 
-  const brand = useMemo(() => getItems('brand') as Brand | null, [getItems]);
-  const businessProfile = useMemo(() => (getItems('businessProfiles') as BusinessProfile[])[0], [getItems]);
-  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems]);
-  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems]);
-  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems]);
-  const competitors = useMemo(() => (getItems('competitors') as Competitor[]) || [], [getItems]);
-  const founders = useMemo(() => (getItems('founders') as Founder[]) || [], [getItems]);
-  const employees = useMemo(() => (getItems('employees') as Employee[]) || [], [getItems]);
+  const brand = getItems('brand') as Brand | null;
+  const businessProfile = (getItems('businessProfiles') as BusinessProfile[])[0];
+  const icps = (getItems('icps') as ICP[]) || [];
+  const personas = (getItems('personas') as Persona[]) || [];
+  const products = (getItems('products') as Product[]) || [];
+  const competitors = (getItems('competitors') as Competitor[]) || [];
+  const founders = (getItems('founders') as Founder[]) || [];
+  const employees = (getItems('employees') as Employee[]) || [];
 
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
@@ -338,7 +338,12 @@ export default function LandingPagesModule() {
       setIsLoading(false);
     };
 
-    loadFromApi();
+    // Hard timeout fallback: hide loader after 6s no matter what
+    const fallbackTimer = setTimeout(() => setIsLoading(false), 6000);
+
+    loadFromApi().finally(() => clearTimeout(fallbackTimer));
+
+    return () => clearTimeout(fallbackTimer);
   }, [companyId]);
 
   const [activePageId, setActivePageId] = useState<string | null>(null);
@@ -1648,7 +1653,7 @@ Build a high-converting **${typeLabel}** landing page.
         <p className="text-sm text-slate-400 mb-4">
           This prompt is optimized for AI builders like ChatGPT, Claude, Lovable, Bolt, V0, Framer AI, and Webflow AI.
         </p>
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
           <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono">{prompt}</pre>
         </div>
       </div>
@@ -1767,7 +1772,7 @@ ${enabledSections.map((s, i) => `<h3>${i + 1}. ${s.name}</h3><p><strong>Headline
           </div>
         </div>
 
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-6 max-h-96 overflow-y-auto">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 max-h-96 overflow-y-auto">
           <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono">{generateExportContent()}</pre>
         </div>
 

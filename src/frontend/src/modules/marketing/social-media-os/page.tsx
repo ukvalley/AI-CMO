@@ -162,12 +162,12 @@ export default function SocialMediaOSModule() {
   const creatives = useMemo(() => (getItems('socialCreatives') as SocialCreative[]) || [], [getItems, dataStore.data, activeCompanyId]);
 
   // Linked data
-  const brand = useMemo(() => getItems('brand') as Brand | null, [getItems]);
-  const businessProfile = useMemo(() => (getItems('businessProfiles') as BusinessProfile[])[0], [getItems]);
-  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems]);
-  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems]);
-  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems]);
-  const competitors = useMemo(() => (getItems('competitors') as Competitor[]) || [], [getItems]);
+  const brand = useMemo(() => getItems('brand') as Brand | null, [getItems, dataStore.data, activeCompanyId]);
+  const businessProfile = useMemo(() => (getItems('businessProfiles') as BusinessProfile[])[0], [getItems, dataStore.data, activeCompanyId]);
+  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const competitors = useMemo(() => (getItems('competitors') as Competitor[]) || [], [getItems, dataStore.data, activeCompanyId]);
 
   // Load from API
   const [isLoading, setIsLoading] = useState(true);
@@ -317,7 +317,7 @@ export default function SocialMediaOSModule() {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
                 <CalendarDays className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -454,7 +454,7 @@ function CalendarTab({ entries, campaigns, strategy, onCreateEntry, onUpdateEntr
       )}
 
       {/* Monthly calendar grid */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
         <div className="grid grid-cols-7 bg-slate-800/50">
           {DAYS.map((d) => <div key={d} className="px-2 py-3 text-center text-xs font-medium text-slate-400 border-b border-slate-800">{d}</div>)}
         </div>
@@ -506,11 +506,11 @@ function EntryDetailPanel({ entry, onClose, onUpdate, onDelete }: {
   const pConfig = PLATFORM_CONFIG[entry.platform] || PLATFORM_CONFIG.instagram;
   const priorityConfig = PRIORITY_CONFIG[entry.priority] || PRIORITY_CONFIG.medium;
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1"><span className={cn('text-xs px-2 py-0.5 rounded-full', sConfig.bgColor, sConfig.color)}>{sConfig.label}</span><span className={cn('text-xs font-medium', priorityConfig.color)}>{priorityConfig.label}</span></div>
-          <h3 className="text-lg font-semibold text-white">{entry.title}</h3>
+          <h3 className="text-lg font-semibold text-slate-200">{entry.title}</h3>
           <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
             <span className={cn('flex items-center gap-1', pConfig.color)}><pConfig.icon className="w-3.5 h-3.5" />{pConfig.label}</span>
             <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{entry.publishDate}{entry.publishTime && ` at ${entry.publishTime}`}</span>
@@ -575,7 +575,7 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
   return (
     <div className="space-y-6">
       {/* Strategy Header */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             {editField === 'name' ? (
@@ -599,7 +599,7 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
 
         {/* Brand context summary */}
         {brand && (
-          <div className="flex items-center gap-3 mt-3 px-4 py-3 bg-purple-900/10 border border-purple-800/30 rounded-lg">
+          <div className="flex items-center gap-3 mt-3 px-4 py-3 bg-purple-500/5 border border-purple-500/20 rounded-lg">
             <Palette className="w-5 h-5 text-purple-400" />
             <div className="flex-1">
               <span className="text-sm text-purple-300 font-medium">Brand: {brand.voice || 'No brand voice set'}</span>
@@ -610,8 +610,8 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
       </div>
 
       {/* Content Pillars */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Target className="w-5 h-5 text-primary-400" /> Content Pillars</h3>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Target className="w-5 h-5 text-primary-400" /> Content Pillars</h3>
         <p className="text-sm text-slate-400 mb-4">Select the content pillars that define your social media strategy.</p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {PILLAR_OPTIONS.map((pillar) => {
@@ -628,8 +628,8 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
       </div>
 
       {/* Objectives */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary-400" /> Objectives</h3>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary-400" /> Objectives</h3>
         <div className="flex flex-wrap gap-2">
           {(['Brand Awareness', 'Lead Generation', 'Community Building', 'Thought Leadership', 'Product Launch', 'Engagement Growth', 'Website Traffic', 'Customer Retention', 'Event Promotion', 'Sales Conversion'] as const).map((obj) => {
             const isActive = (strategy.objectives || []).includes(obj);
@@ -645,8 +645,8 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
 
       {/* Target Audience & Voice */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary-400" /> Target Audience</h3>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary-400" /> Target Audience</h3>
           {editField === 'targetAudience' ? (
             <textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => saveEdit('targetAudience')}
               className="w-full bg-slate-800 border border-primary-500 rounded-lg px-3 py-2 text-slate-200 focus:outline-none resize-none" rows={4} autoFocus />
@@ -656,8 +656,8 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
             </p>
           )}
         </div>
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-primary-400" /> Tone & Voice</h3>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-primary-400" /> Tone & Voice</h3>
           {editField === 'toneAndVoice' ? (
             <textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => saveEdit('toneAndVoice')}
               className="w-full bg-slate-800 border border-primary-500 rounded-lg px-3 py-2 text-slate-200 focus:outline-none resize-none" rows={4} autoFocus />
@@ -670,8 +670,8 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
       </div>
 
       {/* Posting Frequency */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary-400" /> Posting Frequency Goals</h3>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary-400" /> Posting Frequency Goals</h3>
         <p className="text-sm text-slate-400 mb-4">Set weekly posting targets for each platform.</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(PLATFORM_CONFIG).slice(0, 8).map(([platform, config]) => {
@@ -692,8 +692,8 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
       </div>
 
       {/* Linked Data */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Link className="w-5 h-5 text-primary-400" /> Linked Data</h3>
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Link className="w-5 h-5 text-primary-400" /> Linked Data</h3>
         <p className="text-sm text-slate-400 mb-4">Connect your social media strategy to brand and business data for AI context.</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
@@ -767,22 +767,22 @@ function CreateStrategyModal({ onClose, onCreate, brand, businessProfile }: {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Strategy Name *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Strategy Name *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Q2 2026 Growth Strategy"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the strategy goals and approach..." rows={3}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500 resize-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Target Audience</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Target Audience</label>
             <input value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} placeholder="e.g., SaaS founders, 25-45, tech-savvy"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Tone & Voice</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Tone & Voice</label>
             <input value={toneAndVoice} onChange={(e) => setToneAndVoice(e.target.value)} placeholder={brand?.voice || "e.g., Professional yet approachable"}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
@@ -857,20 +857,20 @@ function CreateEntryModal({ onClose, onCreate, strategyId, campaigns }: {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Title *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Title *</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Product Launch Announcement"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Platform</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Platform</label>
               <select value={platform} onChange={(e) => setPlatform(e.target.value as SocialPlatform)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {Object.entries(PLATFORM_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Content Type</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Content Type</label>
               <select value={contentType} onChange={(e) => setContentType(e.target.value as SocialContentType)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {CONTENT_TYPE_OPTIONS.map((ct) => <option key={ct.value} value={ct.value}>{ct.label}</option>)}
@@ -879,26 +879,26 @@ function CreateEntryModal({ onClose, onCreate, strategyId, campaigns }: {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Publish Date</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Publish Date</label>
               <input type="date" value={publishDate} onChange={(e) => setPublishDate(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Publish Time</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Publish Time</label>
               <input type="time" value={publishTime} onChange={(e) => setPublishTime(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Priority</label>
               <select value={priority} onChange={(e) => setPriority(e.target.value as EntryPriority)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {Object.entries(PRIORITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Campaign</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Campaign</label>
               <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 <option value="">No Campaign</option>
@@ -908,14 +908,14 @@ function CreateEntryModal({ onClose, onCreate, strategyId, campaigns }: {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Content Pillar</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Content Pillar</label>
               <select value={pillar} onChange={(e) => setPillar(e.target.value as ContentPillar)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {PILLAR_OPTIONS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Funnel Stage</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Funnel Stage</label>
               <select value={funnelStage} onChange={(e) => setFunnelStage(e.target.value as SocialFunnelStage)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {FUNNEL_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
@@ -939,15 +939,17 @@ function CreateEntryModal({ onClose, onCreate, strategyId, campaigns }: {
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24">
-      <div className="w-24 h-24 bg-gradient-to-br from-primary-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center mb-6">
-        <CalendarDays className="w-12 h-12 text-primary-400" />
+    <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <CalendarDays className="w-10 h-10 text-slate-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">No Social Media Strategy Yet</h2>
+        <p className="text-slate-400 mb-6">Create your first social media strategy to start planning content, managing workflows, and coordinating your social media production.</p>
+        <button onClick={onCreate} className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium mx-auto transition-colors">
+          <Plus className="w-5 h-5" /> Create Strategy
+        </button>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Social Media Operating System</h2>
-      <p className="text-slate-400 text-center max-w-md mb-8">Create your first social media strategy to start planning content, managing workflows, and coordinating your social media production.</p>
-      <button onClick={onCreate} className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-lg">
-        <Plus className="w-5 h-5" /> Create Strategy
-      </button>
     </div>
   );
 }
@@ -1030,7 +1032,7 @@ function ContentTab({ entries, campaigns, strategy, onUpdateEntry, onDeleteEntry
           <option value="priority">Sort by Priority</option>
         </select>
       </div>
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-800/50">
@@ -1223,12 +1225,12 @@ function CreateTemplateModal({ onClose, onCreate }: {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Template Name *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Template Name *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Product Launch Caption"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Category *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Category *</label>
             <select value={category} onChange={(e) => setCategory(e.target.value as SocialTemplateCategory)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
               {Object.entries(TEMPLATE_CATEGORY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label} — {v.description}</option>)}
@@ -1236,7 +1238,7 @@ function CreateTemplateModal({ onClose, onCreate }: {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Platform</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Platform</label>
               <select value={platform} onChange={(e) => setPlatform(e.target.value as SocialPlatform | '')}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 <option value="">All Platforms</option>
@@ -1244,7 +1246,7 @@ function CreateTemplateModal({ onClose, onCreate }: {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Content Pillar</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Content Pillar</label>
               <select value={pillar} onChange={(e) => setPillar(e.target.value as ContentPillar | '')}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 <option value="">Any Pillar</option>
@@ -1253,12 +1255,12 @@ function CreateTemplateModal({ onClose, onCreate }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Template Content *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Template Content *</label>
             <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your template content here. Use [PLACEHOLDER] for variable parts..."
               rows={5} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500 resize-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Tags (comma-separated)</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Tags (comma-separated)</label>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., product-launch, instagram, reel"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
@@ -1344,7 +1346,7 @@ function HashtagsTab({ hashtagBanks, onCreateHashtagBank, onUpdateHashtagBank, o
             const typeCfg = HASHTAG_TYPE_CONFIG[bank.type] || HASHTAG_TYPE_CONFIG.evergreen;
             const isExpanded = expandedBank === bank.id;
             return (
-              <div key={bank.id} className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+              <div key={bank.id} className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-800/30" onClick={() => setExpandedBank(isExpanded ? null : bank.id)}>
                   <div className="flex items-center gap-3">
                     <button onClick={(e) => { e.stopPropagation(); }} className="p-1 text-slate-400 hover:text-slate-200">
@@ -1439,20 +1441,20 @@ function CreateHashtagBankModal({ onClose, onCreate }: {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Bank Name *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Bank Name *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Instagram Product Launch Hashtags"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Type *</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Type *</label>
               <select value={type} onChange={(e) => setType(e.target.value as HashtagType)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {Object.entries(HASHTAG_TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Platform</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Platform</label>
               <select value={platform} onChange={(e) => setPlatform(e.target.value as SocialPlatform | '')}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 <option value="">All Platforms</option>
@@ -1461,12 +1463,12 @@ function CreateHashtagBankModal({ onClose, onCreate }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Campaign</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Campaign</label>
             <input value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="e.g., Summer 2026 Launch"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Hashtags *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Hashtags *</label>
             <div className="flex gap-2">
               <input value={hashtagInput} onChange={(e) => setHashtagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHashtag(); } }}
@@ -1574,7 +1576,7 @@ function CreativesTab({ creatives, onUpdateCreative, onDeleteCreative, onCreateC
             const mtCfg = MEDIA_TYPE_CONFIG[creative.mediaType] || MEDIA_TYPE_CONFIG.image;
             const MtIcon = mtCfg.icon;
             return (
-              <div key={creative.id} className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden group hover:border-primary-500/50 transition-all">
+              <div key={creative.id} className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden group hover:border-primary-500/50 transition-all">
                 <div className="aspect-square bg-slate-800 flex items-center justify-center relative">
                   {creative.url ? <img src={creative.url} alt={creative.name} className="w-full h-full object-cover" /> : <MtIcon className={cn('w-12 h-12', mtCfg.color)} />}
                   <button onClick={() => toggleFavorite(creative.id, creative.isFavorite)}
@@ -1607,7 +1609,7 @@ function CreativesTab({ creatives, onUpdateCreative, onDeleteCreative, onCreateC
           })}
         </div>
       ) : (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <table className="w-full">
             <thead><tr className="border-b border-slate-800 bg-slate-800/50">
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-400">Name</th>
@@ -1680,20 +1682,20 @@ function UploadCreativeModal({ onClose, onCreate }: {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Name *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Product Hero Banner"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Media Type</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Media Type</label>
               <select value={mediaType} onChange={(e) => setMediaType(e.target.value as CreativeMediaType)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 {Object.entries(MEDIA_TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Platform</label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Platform</label>
               <select value={platform} onChange={(e) => setPlatform(e.target.value as SocialPlatform | '')}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
                 <option value="">All Platforms</option>
@@ -1702,27 +1704,27 @@ function UploadCreativeModal({ onClose, onCreate }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Asset URL</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Asset URL</label>
             <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..."
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of the creative asset..." rows={2}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500 resize-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Category</label>
             <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g., Product, Brand, Campaign"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Tags (comma-separated)</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Tags (comma-separated)</label>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., launch, hero, banner"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Source URL</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Source URL</label>
             <input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="Drive, Figma, or Canva link"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
           </div>
@@ -1799,7 +1801,7 @@ function ReviewTab({ entries, onUpdateEntry }: {
             const prCfg = PRIORITY_CONFIG[entry.priority] || PRIORITY_CONFIG.medium;
             const ctLabel = CONTENT_TYPE_OPTIONS.find((c) => c.value === entry.contentType)?.label || entry.contentType;
             return (
-              <div key={entry.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
+              <div key={entry.id} className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -1910,7 +1912,7 @@ function ApprovalModal({ entry, onClose, onUpdate }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Comment</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Comment</label>
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a review comment..." rows={3}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500 resize-none" />
           </div>
@@ -1978,14 +1980,14 @@ function RepurposeContentModal({ entry, onClose, onCreate }: {
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Repurpose Type</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Repurpose Type</label>
             <select value={repurposeType} onChange={(e) => setRepurposeType(e.target.value as RepurposeType)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
               {REPURPOSE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Target Platform</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Target Platform</label>
             <select value={newPlatform} onChange={(e) => setNewPlatform(e.target.value as SocialPlatform)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500">
               {Object.entries(PLATFORM_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -2106,7 +2108,7 @@ function ExportTab({ entries, strategies, campaigns, templates, hashtagBanks }: 
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1 space-y-4">
-          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
             <h3 className="text-sm font-medium text-white mb-3">Export Format</h3>
             <div className="space-y-2">
               {EXPORT_FORMATS.map((f) => (
@@ -2119,7 +2121,7 @@ function ExportTab({ entries, strategies, campaigns, templates, hashtagBanks }: 
               ))}
             </div>
           </div>
-          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5 space-y-3">
             <h3 className="text-sm font-medium text-white">Filters</h3>
             <select value={filterPlatform} onChange={(e) => { setFilterPlatform(e.target.value as any); setPreview(null); }}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-primary-500">
@@ -2140,7 +2142,7 @@ function ExportTab({ entries, strategies, campaigns, templates, hashtagBanks }: 
         </div>
         <div className="md:col-span-2">
           {preview ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-white">Preview</h3>
                 <button onClick={downloadExport} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm">
@@ -2150,7 +2152,7 @@ function ExportTab({ entries, strategies, campaigns, templates, hashtagBanks }: 
               <pre className="bg-slate-800 rounded-lg p-4 text-sm text-slate-300 overflow-auto max-h-[600px] whitespace-pre-wrap">{preview}</pre>
             </div>
           ) : (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center text-slate-500">
               <Download className="w-12 h-12 mx-auto mb-3 text-slate-600" />
               <p>Select a format and click "Generate Preview" to see the export.</p>
             </div>
