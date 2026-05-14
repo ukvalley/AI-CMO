@@ -20,7 +20,7 @@ import { cn } from '@/utils/cn';
 import { useDataStore, useCompanyStore } from '@/stores';
 import {
   salesCollateralApi, collateralCategoryApi,
-  productApi, faqApi, blogPostApi, testimonialApi,
+  productApi, icpApi, faqApi, blogPostApi, testimonialApi,
 } from '@/services/api';
 import type {
   SalesCollateral, CollateralType, CollateralStatus, CollateralCategory,
@@ -125,10 +125,11 @@ export default function SalesCollateralModule() {
     if (!companyId) { setIsLoading(false); return; }
     const loadFromApi = async () => {
       setIsLoading(true);
-      const [collRes, catRes, prodRes, faqRes, blogRes, testRes] = await Promise.all([
+      const [collRes, catRes, prodRes, icpRes, faqRes, blogRes, testRes] = await Promise.all([
         salesCollateralApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         collateralCategoryApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         productApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
+        icpApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         faqApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         blogPostApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         testimonialApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
@@ -153,6 +154,11 @@ export default function SalesCollateralModule() {
       if (prodRes.data && Array.isArray(prodRes.data) && (prodRes.data as any[]).length > 0) {
         const local = (getItems('products') as Product[]) || [];
         dataStore.setItems('products', mergeById(local, prodRes.data as Product[]));
+      }
+      // Cross-module data: ICPs
+      if (icpRes.data && Array.isArray(icpRes.data) && (icpRes.data as any[]).length > 0) {
+        const local = (getItems('icps') as ICP[]) || [];
+        dataStore.setItems('icps', mergeById(local, icpRes.data as ICP[]));
       }
       // Cross-module data: FAQs
       if (faqRes.data && Array.isArray(faqRes.data) && (faqRes.data as any[]).length > 0) {
