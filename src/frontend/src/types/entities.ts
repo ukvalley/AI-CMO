@@ -1522,14 +1522,122 @@ export type CollateralType =
   | 'case-study'
   | 'whitepaper'
   | 'datasheet'
-  | 'proposal';
+  | 'proposal'
+  | 'product-deck'
+  | 'service-deck'
+  | 'pricing-sheet'
+  | 'pitch-deck'
+  | 'demo-video'
+  | 'product-demo'
+  | 'feature-document'
+  | 'technical-specification'
+  | 'testimonial-asset'
+  | 'roi-document'
+  | 'comparison-sheet'
+  | 'sales-flyer'
+  | 'portfolio'
+  | 'client-presentation'
+  | 'explainer-video';
+
+export type CollateralStatus = 'draft' | 'approved' | 'archived';
+
+export type CollateralCategory =
+  | 'sales-presentation'
+  | 'technical-document'
+  | 'marketing-material'
+  | 'client-proposal'
+  | 'pricing'
+  | 'product-education'
+  | 'demo-material';
+
+export type SalesStage =
+  | 'awareness'
+  | 'discovery'
+  | 'qualification'
+  | 'demo'
+  | 'proposal'
+  | 'negotiation'
+  | 'closing'
+  | 'retention';
+
+export type CollateralAccessLevel =
+  | 'public'
+  | 'team'
+  | 'department'
+  | 'manager-only'
+  | 'product-specific';
 
 export interface SalesCollateral extends BaseEntity {
   name: string;
+  description?: string;
   type: CollateralType;
-  productId?: string;
+  category?: CollateralCategory;
+  subcategory?: string;
+  tags?: string[];
+  industryTags?: string[];
+
+  // Sales stage & department
+  funnelStage?: SalesStage;
+  department?: string;
+
+  // File & URL storage
+  fileUrl?: string;
+  fileType?: string;
+  fileSize?: number;
+  fileName?: string;
+  thumbnailUrl?: string;
+  externalLinks?: {
+    driveUrl?: string;
+    youtubeUrl?: string;
+    figmaUrl?: string;
+    canvaUrl?: string;
+    dropboxUrl?: string;
+    websiteUrl?: string;
+    repoUrl?: string;
+  };
+
+  // Product/service linking
+  productIds?: string[];
+  serviceIds?: string[];
+  packageIds?: string[];
+  planIds?: string[];
+  featureIds?: string[];
   icpIds: string[];
+
+  // Version & status
+  version?: string;
+  status: CollateralStatus;
+  accessLevel: CollateralAccessLevel;
+
+  // Favorites & tracking
+  isFavorite: boolean;
+  isPinned: boolean;
+  downloadCount?: number;
+  usageCount?: number;
+
+  // Linked content
+  linkedData?: {
+    salesScriptIds?: string[];
+    faqIds?: string[];
+    testimonialIds?: string[];
+    blogPostIds?: string[];
+  };
+
+  // Approval
+  approvedBy?: string;
+  approvedAt?: string;
+
+  // Legacy
+  productId?: string;
   designBrief?: string;
+}
+
+export interface CollateralCategoryInfo extends BaseEntity {
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  collateralCount?: number;
 }
 
 // ============================================

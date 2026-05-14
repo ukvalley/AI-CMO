@@ -1,0 +1,1 @@
+export { default as SalesCollateralPage } from './sales-collateral/page';

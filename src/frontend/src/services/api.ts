@@ -658,6 +658,24 @@ export const socialExportApi = {
   delete: (id: string) => apiRequest(`/social-content-os/exports/${id}`, { method: 'DELETE' }),
 };
 
+// ============== SALES COLLATERAL API ==============
+
+export const salesCollateralApi = {
+  getAll: (companyId: string) => apiRequest(`/sales-collateral/collateral/${companyId}`),
+  getById: (id: string) => apiRequest(`/sales-collateral/collateral/detail/${id}`),
+  create: (data: any) => apiRequest('/sales-collateral/collateral', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/sales-collateral/collateral/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/sales-collateral/collateral/${id}`, { method: 'DELETE' }),
+};
+
+export const collateralCategoryApi = {
+  getAll: (companyId: string) => apiRequest(`/sales-collateral/categories/${companyId}`),
+  getById: (id: string) => apiRequest(`/sales-collateral/categories/detail/${id}`),
+  create: (data: any) => apiRequest('/sales-collateral/categories', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/sales-collateral/categories/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/sales-collateral/categories/${id}`, { method: 'DELETE' }),
+};
+
 // ============== MODULE DATA API (Generic) ==============
 
 export const moduleDataApi = {
