@@ -837,6 +837,80 @@ export const testimonialApi = {
     apiRequest(`/testimonials/stats/${companyId}`),
 };
 
+// ============== SALES SCRIPTS API ==============
+
+export const salesScriptApi = {
+  // Get all sales scripts for a company
+  getAll: (companyId: string, filters?: Record<string, any>) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const queryString = params.toString();
+    return apiRequest(`/sales-scripts/${companyId}${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get single sales script
+  getById: (id: string) =>
+    apiRequest(`/sales-scripts/detail/${id}`),
+
+  // Create sales script
+  create: (data: Record<string, any>) =>
+    apiRequest('/sales-scripts', { method: 'POST', body: data }),
+
+  // Update sales script
+  update: (id: string, data: Record<string, any>) =>
+    apiRequest(`/sales-scripts/${id}`, { method: 'PUT', body: data }),
+
+  // Delete sales script
+  delete: (id: string) =>
+    apiRequest(`/sales-scripts/${id}`, { method: 'DELETE' }),
+
+  // Clone sales script
+  clone: (id: string) =>
+    apiRequest(`/sales-scripts/clone/${id}`, { method: 'POST' }),
+
+  // Bulk import sales scripts
+  bulkImport: (companyId: string, scripts: any[]) =>
+    apiRequest('/sales-scripts/bulk-import', {
+      method: 'POST',
+      body: { companyId, scripts },
+    }),
+
+  // Bulk update status
+  bulkUpdate: (ids: string[], updates: Record<string, any>) =>
+    apiRequest('/sales-scripts/bulk-update', {
+      method: 'PUT',
+      body: { ids, updates },
+    }),
+
+  // Advanced search
+  search: (companyId: string, params: Record<string, any>) => {
+    const searchParams = new URLSearchParams({ companyId });
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    return apiRequest(`/sales-scripts/search?${searchParams.toString()}`);
+  },
+
+  // Get dashboard statistics
+  getStats: (companyId: string) =>
+    apiRequest(`/sales-scripts/stats/${companyId}`),
+
+  // Update performance metrics
+  updatePerformance: (id: string, metrics: Record<string, any>) =>
+    apiRequest(`/sales-scripts/${id}/performance`, {
+      method: 'PATCH',
+      body: metrics,
+    }),
+};
+
 // ============== FILE UPLOAD API ==============
 
 export const uploadApi = {
