@@ -20,12 +20,12 @@ import { cn } from '@/utils/cn';
 import { useDataStore, useCompanyStore } from '@/stores';
 import {
   salesCollateralApi, collateralCategoryApi,
-  productApi, icpApi, faqApi, blogPostApi, testimonialApi,
+  productApi, icpApi, personaApi, faqApi, blogPostApi, testimonialApi,
 } from '@/services/api';
 import type {
   SalesCollateral, CollateralType, CollateralStatus, CollateralCategory,
   SalesStage, CollateralAccessLevel, CollateralCategoryInfo,
-  Product, ICP, FAQ, BlogPost, SalesScript, Testimonial,
+  Product, ICP, Persona, FAQ, BlogPost, SalesScript, Testimonial,
 } from '@/types/entities';
 
 // ============================================
@@ -114,6 +114,7 @@ export default function SalesCollateralModule() {
   const categories = useMemo(() => (getItems('collateralCategories') as CollateralCategoryInfo[]) || [], [getItems, dataStore.data, activeCompanyId]);
   const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, dataStore.data, activeCompanyId]);
   const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems, dataStore.data, activeCompanyId]);
   const faqs = useMemo(() => (getItems('faqs') as FAQ[]) || [], [getItems, dataStore.data, activeCompanyId]);
   const blogPosts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
   const salesScripts = useMemo(() => (getItems('salesScripts') as SalesScript[]) || [], [getItems, dataStore.data, activeCompanyId]);
@@ -125,11 +126,12 @@ export default function SalesCollateralModule() {
     if (!companyId) { setIsLoading(false); return; }
     const loadFromApi = async () => {
       setIsLoading(true);
-      const [collRes, catRes, prodRes, icpRes, faqRes, blogRes, testRes] = await Promise.all([
+      const [collRes, catRes, prodRes, icpRes, personaRes, faqRes, blogRes, testRes] = await Promise.all([
         salesCollateralApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         collateralCategoryApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         productApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         icpApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
+        personaApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         faqApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         blogPostApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
         testimonialApi.getAll(companyId).catch(() => ({ error: 'Network error', data: null })),
@@ -159,6 +161,11 @@ export default function SalesCollateralModule() {
       if (icpRes.data && Array.isArray(icpRes.data) && (icpRes.data as any[]).length > 0) {
         const local = (getItems('icps') as ICP[]) || [];
         dataStore.setItems('icps', mergeById(local, icpRes.data as ICP[]));
+      }
+      // Cross-module data: Personas
+      if (personaRes.data && Array.isArray(personaRes.data) && (personaRes.data as any[]).length > 0) {
+        const local = (getItems('personas') as Persona[]) || [];
+        dataStore.setItems('personas', mergeById(local, personaRes.data as Persona[]));
       }
       // Cross-module data: FAQs
       if (faqRes.data && Array.isArray(faqRes.data) && (faqRes.data as any[]).length > 0) {
@@ -294,15 +301,15 @@ export default function SalesCollateralModule() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'library' && <LibraryTab collateral={collateral} products={products} onUpdate={handleUpdate} onDelete={handleDelete} onSelect={setSelectedItem} selectedItem={selectedItem} />}
           {activeTab === 'categories' && <CategoriesTab categories={categories} onCreateCategory={handleCreateCategory} onDeleteCategory={handleDeleteCategory} />}
-          {activeTab === 'upload' && <UploadTab onCreate={handleCreate} products={products} icps={icps} faqs={faqs} salesScripts={salesScripts} testimonials={testimonials} blogPosts={blogPosts} />}
-          {activeTab === 'linked' && <LinkedTab collateral={collateral} products={products} icps={icps} faqs={faqs} salesScripts={salesScripts} testimonials={testimonials} blogPosts={blogPosts} />}
+          {activeTab === 'upload' && <UploadTab onCreate={handleCreate} products={products} icps={icps} personas={personas} faqs={faqs} salesScripts={salesScripts} testimonials={testimonials} blogPosts={blogPosts} />}
+          {activeTab === 'linked' && <LinkedTab collateral={collateral} products={products} icps={icps} personas={personas} faqs={faqs} salesScripts={salesScripts} testimonials={testimonials} blogPosts={blogPosts} />}
           {activeTab === 'favorites' && <FavoritesTab collateral={collateral} onUpdate={handleUpdate} onDelete={handleDelete} />}
           {activeTab === 'review' && <ReviewTab collateral={collateral} onUpdate={handleUpdate} />}
           {activeTab === 'export' && <ExportTab collateral={collateral} />}
         </div>
       </main>
 
-      {showCreateModal && <CreateCollateralModal onClose={() => setShowCreateModal(false)} onCreate={handleCreate} products={products} icps={icps} faqs={faqs} salesScripts={salesScripts} testimonials={testimonials} blogPosts={blogPosts} />}
+      {showCreateModal && <CreateCollateralModal onClose={() => setShowCreateModal(false)} onCreate={handleCreate} products={products} icps={icps} personas={personas} faqs={faqs} salesScripts={salesScripts} testimonials={testimonials} blogPosts={blogPosts} />}
     </div>
   );
 }
@@ -608,10 +615,11 @@ function CategoriesTab({ categories, onCreateCategory, onDeleteCategory }: {
 // LINKED TAB
 // ============================================
 
-function LinkedTab({ collateral, products, icps, faqs, salesScripts, testimonials, blogPosts }: {
+function LinkedTab({ collateral, products, icps, personas, faqs, salesScripts, testimonials, blogPosts }: {
   collateral: SalesCollateral[];
   products: Product[];
   icps: ICP[];
+  personas: Persona[];
   faqs: FAQ[];
   salesScripts: SalesScript[];
   testimonials: Testimonial[];
@@ -622,6 +630,7 @@ function LinkedTab({ collateral, products, icps, faqs, salesScripts, testimonial
   const sections = useMemo(() => {
     const byProduct: Record<string, SalesCollateral[]> = {};
     const byIcp: Record<string, SalesCollateral[]> = {};
+    const byPersona: Record<string, SalesCollateral[]> = {};
     const byFaq: Record<string, SalesCollateral[]> = {};
     const byScript: Record<string, SalesCollateral[]> = {};
     const byTestimonial: Record<string, SalesCollateral[]> = {};
@@ -635,6 +644,10 @@ function LinkedTab({ collateral, products, icps, faqs, salesScripts, testimonial
       (item.icpIds || []).forEach((iid) => {
         if (!byIcp[iid]) byIcp[iid] = [];
         byIcp[iid].push(item);
+      });
+      (item.linkedData?.personaIds || []).forEach((pid) => {
+        if (!byPersona[pid]) byPersona[pid] = [];
+        byPersona[pid].push(item);
       });
       (item.linkedData?.faqIds || []).forEach((fid) => {
         if (!byFaq[fid]) byFaq[fid] = [];
@@ -654,13 +667,14 @@ function LinkedTab({ collateral, products, icps, faqs, salesScripts, testimonial
       });
     });
 
-    return { byProduct, byIcp, byFaq, byScript, byTestimonial, byBlog };
+    return { byProduct, byIcp, byPersona, byFaq, byScript, byTestimonial, byBlog };
   }, [collateral]);
 
   const totalLinks = useMemo(() => {
     let count = 0;
     Object.values(sections.byProduct).forEach((arr) => count += arr.length);
     Object.values(sections.byIcp).forEach((arr) => count += arr.length);
+    Object.values(sections.byPersona).forEach((arr) => count += arr.length);
     Object.values(sections.byFaq).forEach((arr) => count += arr.length);
     Object.values(sections.byScript).forEach((arr) => count += arr.length);
     Object.values(sections.byTestimonial).forEach((arr) => count += arr.length);
@@ -689,6 +703,7 @@ function LinkedTab({ collateral, products, icps, faqs, salesScripts, testimonial
   const navItems = [
     { id: 'products', label: 'Products', icon: Package, count: Object.keys(sections.byProduct).length },
     { id: 'icps', label: 'ICPs', icon: Users, count: Object.keys(sections.byIcp).length },
+    { id: 'personas', label: 'Personas', icon: Users, count: Object.keys(sections.byPersona).length },
     { id: 'faqs', label: 'FAQs', icon: Link, count: Object.keys(sections.byFaq).length },
     { id: 'scripts', label: 'Sales Scripts', icon: TrendingUp, count: Object.keys(sections.byScript).length },
     { id: 'testimonials', label: 'Testimonials', icon: Star, count: Object.keys(sections.byTestimonial).length },
@@ -764,6 +779,32 @@ function LinkedTab({ collateral, products, icps, faqs, salesScripts, testimonial
                   <div className="flex items-center gap-2 mb-3">
                     <Users className="w-5 h-5 text-pink-400" />
                     <h3 className="text-sm font-medium text-white">{icp?.name || entityId}</h3>
+                    <span className="text-xs text-slate-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {items.map(renderCollateralCard)}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Personas Section */}
+      {activeSection === 'personas' && (
+        <div className="space-y-4">
+          {Object.keys(sections.byPersona).length === 0 ? (
+            <p className="text-slate-400 text-center py-8">No collateral linked to Personas.</p>
+          ) : (
+            Object.entries(sections.byPersona).map(([entityId, items]) => {
+              const persona = personas.find((p) => p.id === entityId);
+              return (
+                <div key={entityId} className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-sm font-medium text-white">{persona?.name || entityId}</h3>
+                    {persona?.jobTitle && <span className="text-xs text-slate-500">· {persona.jobTitle}</span>}
                     <span className="text-xs text-slate-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -949,11 +990,12 @@ function FavoritesTab({ collateral, onUpdate, onDelete }: {
 // CREATE COLLATERAL MODAL
 // ============================================
 
-function CreateCollateralModal({ onClose, onCreate, products, icps, faqs, salesScripts, testimonials, blogPosts }: {
+function CreateCollateralModal({ onClose, onCreate, products, icps, personas, faqs, salesScripts, testimonials, blogPosts }: {
   onClose: () => void;
   onCreate: (data: Partial<SalesCollateral>) => void;
   products: Product[];
   icps: ICP[];
+  personas: Persona[];
   faqs: FAQ[];
   salesScripts: SalesScript[];
   testimonials: Testimonial[];
@@ -974,6 +1016,7 @@ function CreateCollateralModal({ onClose, onCreate, products, icps, faqs, salesS
     productIds: [] as string[],
     icpIds: [] as string[],
     linkedData: {
+      personaIds: [] as string[],
       faqIds: [] as string[],
       salesScriptIds: [] as string[],
       testimonialIds: [] as string[],
@@ -999,6 +1042,7 @@ function CreateCollateralModal({ onClose, onCreate, products, icps, faqs, salesS
       productIds: form.productIds.length > 0 ? form.productIds : undefined,
       icpIds: form.icpIds,
       linkedData: {
+        personaIds: form.linkedData.personaIds.length > 0 ? form.linkedData.personaIds : undefined,
         faqIds: form.linkedData.faqIds.length > 0 ? form.linkedData.faqIds : undefined,
         salesScriptIds: form.linkedData.salesScriptIds.length > 0 ? form.linkedData.salesScriptIds : undefined,
         testimonialIds: form.linkedData.testimonialIds.length > 0 ? form.linkedData.testimonialIds : undefined,
@@ -1101,7 +1145,7 @@ function CreateCollateralModal({ onClose, onCreate, products, icps, faqs, salesS
 
           {/* ICPs */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">ICPs & Personas</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">ICPs</label>
             {icps.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {icps.map((icp) => (
@@ -1115,6 +1159,25 @@ function CreateCollateralModal({ onClose, onCreate, products, icps, faqs, salesS
               </div>
             ) : (
               <p className="text-xs text-slate-500">No ICPs available. Add ICPs in the ICPs & Personas module first.</p>
+            )}
+          </div>
+
+          {/* Personas */}
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Personas</label>
+            {personas.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {personas.map((persona) => (
+                  <button key={persona.id} type="button"
+                    onClick={() => setForm({ ...form, linkedData: { ...form.linkedData, personaIds: toggleId(form.linkedData.personaIds, persona.id) } })}
+                    className={cn('px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                      form.linkedData.personaIds.includes(persona.id) ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300')}>
+                    {persona.name}{persona.jobTitle ? ` (${persona.jobTitle})` : ''}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No personas available. Add personas in the ICPs & Personas module first.</p>
             )}
           </div>
 
@@ -1218,10 +1281,11 @@ function CreateCollateralModal({ onClose, onCreate, products, icps, faqs, salesS
 // UPLOAD TAB
 // ============================================
 
-function UploadTab({ onCreate, products, icps, faqs, salesScripts, testimonials, blogPosts }: {
+function UploadTab({ onCreate, products, icps, personas, faqs, salesScripts, testimonials, blogPosts }: {
   onCreate: (data: Partial<SalesCollateral>) => void;
   products: Product[];
   icps: ICP[];
+  personas: Persona[];
   faqs: FAQ[];
   salesScripts: SalesScript[];
   testimonials: Testimonial[];
@@ -1243,6 +1307,7 @@ function UploadTab({ onCreate, products, icps, faqs, salesScripts, testimonials,
     productIds: [] as string[],
     icpIds: [] as string[],
     linkedData: {
+      personaIds: [] as string[],
       faqIds: [] as string[],
       salesScriptIds: [] as string[],
       testimonialIds: [] as string[],
@@ -1277,6 +1342,7 @@ function UploadTab({ onCreate, products, icps, faqs, salesScripts, testimonials,
       productIds: form.productIds.length > 0 ? form.productIds : undefined,
       icpIds: form.icpIds,
       linkedData: {
+        personaIds: form.linkedData.personaIds.length > 0 ? form.linkedData.personaIds : undefined,
         faqIds: form.linkedData.faqIds.length > 0 ? form.linkedData.faqIds : undefined,
         salesScriptIds: form.linkedData.salesScriptIds.length > 0 ? form.linkedData.salesScriptIds : undefined,
         testimonialIds: form.linkedData.testimonialIds.length > 0 ? form.linkedData.testimonialIds : undefined,
@@ -1286,7 +1352,7 @@ function UploadTab({ onCreate, products, icps, faqs, salesScripts, testimonials,
       isFavorite: false,
       isPinned: false,
     });
-    setForm({ name: '', description: '', type: 'one-pager', category: '' as CollateralCategory | '', funnelStage: '' as SalesStage | '', status: 'draft', accessLevel: 'team', tags: '', industryTags: '', fileUrl: '', fileName: '', version: '', productIds: [], icpIds: [], linkedData: { faqIds: [], salesScriptIds: [], testimonialIds: [], blogPostIds: [] }, driveUrl: '', websiteUrl: '' });
+    setForm({ name: '', description: '', type: 'one-pager', category: '' as CollateralCategory | '', funnelStage: '' as SalesStage | '', status: 'draft', accessLevel: 'team', tags: '', industryTags: '', fileUrl: '', fileName: '', version: '', productIds: [], icpIds: [], linkedData: { personaIds: [], faqIds: [], salesScriptIds: [], testimonialIds: [], blogPostIds: [] }, driveUrl: '', websiteUrl: '' });
   };
 
   return (
@@ -1406,7 +1472,7 @@ function UploadTab({ onCreate, products, icps, faqs, salesScripts, testimonials,
 
           {/* ICPs */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">ICPs & Personas</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">ICPs</label>
             {icps.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {icps.map((icp) => (
@@ -1420,6 +1486,25 @@ function UploadTab({ onCreate, products, icps, faqs, salesScripts, testimonials,
               </div>
             ) : (
               <p className="text-xs text-slate-500">No ICPs available. Add ICPs in the ICPs & Personas module first.</p>
+            )}
+          </div>
+
+          {/* Personas */}
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Personas</label>
+            {personas.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {personas.map((persona) => (
+                  <button key={persona.id} type="button"
+                    onClick={() => setForm({ ...form, linkedData: { ...form.linkedData, personaIds: toggleId(form.linkedData.personaIds, persona.id) } })}
+                    className={cn('px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                      form.linkedData.personaIds.includes(persona.id) ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300')}>
+                    {persona.name}{persona.jobTitle ? ` (${persona.jobTitle})` : ''}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No personas available. Add personas in the ICPs & Personas module first.</p>
             )}
           </div>
 
