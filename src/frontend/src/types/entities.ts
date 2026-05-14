@@ -1724,12 +1724,153 @@ export interface ReferralProgramme extends BaseEntity {
 // TESTIMONIALS
 // ============================================
 
-export type TestimonialType = 'written' | 'video' | 'case-study' | 'success-story' | 'review' | 'quote';
-export type TestimonialStatus = 'draft' | 'approved' | 'published';
+export type TestimonialType =
+  | 'text'
+  | 'video'
+  | 'audio'
+  | 'image'
+  | 'screenshot'
+  | 'social-media'
+  | 'email'
+  | 'whatsapp'
+  | 'linkedin-recommendation'
+  | 'google-review'
+  | 'case-study';
+
+export type TestimonialStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'featured'
+  | 'archived';
+
+export type CollectionMethod =
+  | 'form'
+  | 'email'
+  | 'interview'
+  | 'imported';
+
+export type AuthorityLevel =
+  | 'executive'
+  | 'manager'
+  | 'specialist'
+  | 'individual';
+
+export type DetailDepth =
+  | 'brief'
+  | 'moderate'
+  | 'detailed'
+  | 'comprehensive';
+
+export interface TestimonialROIMetric {
+  metric: string;
+  value: string;
+  unit?: string;
+}
+
+export interface TestimonialExternalLink {
+  type: 'youtube' | 'vimeo' | 'loom' | 'google-drive' | 'other';
+  url: string;
+  label?: string;
+}
+
+export interface TestimonialCollectionQuestion {
+  id: string;
+  question: string;
+  answer?: string;
+  order: number;
+}
+
+export interface TestimonialTranslation {
+  language: string;
+  headline?: string;
+  shortQuote?: string;
+  fullTestimonial?: string;
+  story?: string;
+}
 
 export interface Testimonial extends BaseEntity {
-  name: string;
+  // Customer Information
+  customerName: string;
+  customerCompany?: string;
+  customerDesignation?: string;
+  customerIndustry?: string;
+  customerLocation?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  contactPermission: boolean;
+  customerLinkedIn?: string;
+  customerPhoto?: string;
+
+  // Testimonial Content
   type: TestimonialType;
+  status: TestimonialStatus;
+  headline?: string;
+  shortQuote?: string;
+  fullTestimonial?: string;
+  story?: string;
+  keyResults?: string[];
+  emotionalHighlight?: string;
+  roiMetrics?: TestimonialROIMetric[];
+
+  // Before/During/After
+  beforeState?: string;
+  duringState?: string;
+  afterState?: string;
+
+  // Entity Mapping
+  companyId: string;
+  businessId?: string;
+  brandId?: string;
+  productIds?: string[];
+  serviceIds?: string[];
+  founderIds?: string[];
+  employeeIds?: string[];
+  featureIds?: string[];
+  campaignTags?: string[];
+  audienceTags?: string[];
+  industryTags?: string[];
+
+  // Media & Assets
+  videoUrl?: string;
+  audioUrl?: string;
+  imageUrls?: string[];
+  documentUrls?: string[];
+  thumbnailUrl?: string;
+  subtitlesUrl?: string;
+  language?: string;
+  externalLinks?: TestimonialExternalLink[];
+
+  // Quality & Scoring
+  authenticityScore?: number;
+  emotionalImpactScore?: number;
+  conversionPotential?: number;
+  authorityLevel?: AuthorityLevel;
+  detailDepth?: DetailDepth;
+  specificityScore?: number;
+  trustScore?: number;
+
+  // Approval & Consent
+  consentVerified: boolean;
+  consentDate?: string;
+  consentDocumentUrl?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  revisionNotes?: string[];
+  isPublic: boolean;
+  marketingUsagePermission: boolean;
+
+  // Collection Framework
+  collectionMethod?: CollectionMethod;
+  collectionQuestions?: TestimonialCollectionQuestion[];
+  requestSentDate?: string;
+  followUpDates?: string[];
+
+  // Multi-language
+  originalLanguage?: string;
+  translations?: TestimonialTranslation[];
+
+  // Legacy (backward compatibility)
   productId?: string;
   industry?: string;
   challenge?: string;
@@ -1737,7 +1878,9 @@ export interface Testimonial extends BaseEntity {
   results?: string;
   keyQuote?: string;
   caseStudy?: string;
-  status: TestimonialStatus;
+
+  // Legacy fields from old interface
+  name?: string;
 }
 
 // ============================================

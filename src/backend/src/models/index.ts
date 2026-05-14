@@ -138,6 +138,7 @@ export const loadModels = () => {
       LandingPageContentOS: createMockModel('landingPageContentOS'),
       FAQ: createMockModel('faqs'),
       FAQCategory: createMockModel('faqCategories'),
+      Testimonial: createMockModel('testimonials'),
     };
   } else {
     // Import and return real models
@@ -161,6 +162,7 @@ export const loadModels = () => {
     const { Newsletter: RealNewsletter } = require('./Newsletter');
     const { LandingPageContentOS: RealLandingPageContentOS } = require('./LandingPageContentOS');
     const { FAQ: RealFAQ, FAQCategory: RealFAQCategory } = require('./FAQ');
+    const { Testimonial: RealTestimonial } = require('./Testimonial');
 
     models = {
       User: RealUser,
@@ -185,6 +187,7 @@ export const loadModels = () => {
       LandingPageContentOS: RealLandingPageContentOS,
       FAQ: RealFAQ,
       FAQCategory: RealFAQCategory,
+      Testimonial: RealTestimonial,
     };
   }
 
@@ -215,3 +218,4 @@ export type { INewsletterContentOS } from './NewsletterContentOS';
 export type { INewsletter } from './Newsletter';
 export type { ILandingPageContentOS } from './LandingPageContentOS';
 export type { IFAQ, IFAQCategory } from './FAQ';
+export type { ITestimonial, TestimonialType, TestimonialStatus, CollectionMethod, AuthorityLevel, DetailDepth } from './Testimonial';

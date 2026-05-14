@@ -720,6 +720,69 @@ export const aiApi = {
     apiRequest('/ai/analyze', { method: 'POST', body: data }),
 };
 
+// ============== TESTIMONIALS API ==============
+
+export const testimonialApi = {
+  // Get all testimonials for a company
+  getAll: (companyId: string, filters?: Record<string, any>) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const queryString = params.toString();
+    return apiRequest(`/testimonials/${companyId}${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get single testimonial
+  getById: (id: string) =>
+    apiRequest(`/testimonials/detail/${id}`),
+
+  // Create testimonial
+  create: (data: Record<string, any>) =>
+    apiRequest('/testimonials', { method: 'POST', body: data }),
+
+  // Update testimonial
+  update: (id: string, data: Record<string, any>) =>
+    apiRequest(`/testimonials/${id}`, { method: 'PUT', body: data }),
+
+  // Delete testimonial
+  delete: (id: string) =>
+    apiRequest(`/testimonials/${id}`, { method: 'DELETE' }),
+
+  // Bulk import testimonials
+  bulkImport: (companyId: string, testimonials: any[]) =>
+    apiRequest('/testimonials/bulk-import', {
+      method: 'POST',
+      body: { companyId, testimonials },
+    }),
+
+  // Bulk update status
+  bulkUpdate: (ids: string[], updates: Record<string, any>) =>
+    apiRequest('/testimonials/bulk-update', {
+      method: 'PUT',
+      body: { ids, updates },
+    }),
+
+  // Advanced search
+  search: (companyId: string, params: Record<string, any>) => {
+    const searchParams = new URLSearchParams({ companyId });
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    return apiRequest(`/testimonials/search?${searchParams.toString()}`);
+  },
+
+  // Get dashboard statistics
+  getStats: (companyId: string) =>
+    apiRequest(`/testimonials/stats/${companyId}`),
+};
+
 // ============== FILE UPLOAD API ==============
 
 export const uploadApi = {
