@@ -84,11 +84,17 @@ export const apiRequest = async <T>(
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const status = response.status;
 
@@ -125,6 +131,12 @@ export const apiRequest = async <T>(
     return { data, status };
   } catch (error) {
     console.error('API request failed:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        error: 'Request timed out. Backend may be unavailable.',
+        status: 0,
+      };
+    }
     return {
       error: error instanceof Error ? error.message : 'Network error',
       status: 0,

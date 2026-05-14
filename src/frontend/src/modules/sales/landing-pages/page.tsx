@@ -338,7 +338,12 @@ export default function LandingPagesModule() {
       setIsLoading(false);
     };
 
-    loadFromApi();
+    // Hard timeout fallback: hide loader after 6s no matter what
+    const fallbackTimer = setTimeout(() => setIsLoading(false), 6000);
+
+    loadFromApi().finally(() => clearTimeout(fallbackTimer));
+
+    return () => clearTimeout(fallbackTimer);
   }, [companyId]);
 
   const [activePageId, setActivePageId] = useState<string | null>(null);
