@@ -391,7 +391,7 @@ export default function LandingPagesModule() {
   const handleApplyTemplate = useCallback((template: LandingPageTemplate) => {
     if (!companyId || !activePage) return;
     handleUpdatePage(activePage.id, {
-      sections: template.sections.map((s, i) => ({ ...s, id: `section-${Date.now()}-${i}` })),
+      sections: (template.sections || []).map((s, i) => ({ ...s, id: `section-${Date.now()}-${i}` })),
       pageType: template.pageType,
     });
   }, [companyId, activePage, handleUpdatePage]);
@@ -422,7 +422,7 @@ export default function LandingPagesModule() {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
-      <header className="bg-slate-900/50 border-b border-slate-800 sticky top-0 z-40">
+      <header className="bg-slate-900/50 border-b border-slate-800 sticky top-16 z-20">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -494,7 +494,7 @@ export default function LandingPagesModule() {
       </header>
 
       {/* Main Content */}
-      <main className="p-6">
+      <div className="p-6">
         {activeTab === 'pages' && (
           <PagesTab
             pages={pages}
@@ -531,7 +531,7 @@ export default function LandingPagesModule() {
           <ContentTab
             page={activePage}
             onUpdateSection={(sectionId, updates) => {
-              const updatedSections = activePage.sections.map((s) =>
+              const updatedSections = (activePage.sections || []).map((s) =>
                 s.id === sectionId ? { ...s, ...updates } : s
               );
               handleUpdatePage(activePage.id, { sections: updatedSections });
@@ -575,7 +575,7 @@ export default function LandingPagesModule() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Modals */}
       {showCreateModal && (
@@ -679,7 +679,7 @@ function PagesTab({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((page) => {
-            const statusConfig = STATUS_CONFIG[page.status];
+            const statusConfig = STATUS_CONFIG[page.status || 'draft'];
             const typeLabel = LANDING_PAGE_TYPES.find((t) => t.value === page.pageType)?.label || page.pageType;
             const enabledSections = page.sections?.filter((s) => s.enabled).length || 0;
             return (
@@ -1032,11 +1032,11 @@ function StrategyTab({
                 <div className="space-y-3">
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Brand Voice</div>
-                    <div className="text-slate-200">{brand.voiceWritingStyle || brand.voice || 'Not defined'}</div>
+                    <div className="text-slate-200">{brand?.voiceWritingStyle || brand?.voice || 'Not defined'}</div>
                   </div>
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Personality</div>
-                    <div className="text-slate-200">{brand.personalityPrimary?.join(', ') || brand.personality || 'Not defined'}</div>
+                    <div className="text-slate-200">{brand?.personalityPrimary?.join(', ') || brand?.personality || 'Not defined'}</div>
                   </div>
                 </div>
               </div>
@@ -1065,11 +1065,11 @@ function StrategyTab({
                 <div className="space-y-3">
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">Industry</div>
-                    <div className="text-slate-200">{businessProfile.primaryIndustry || 'Not specified'}</div>
+                    <div className="text-slate-200">{businessProfile?.primaryIndustry || 'Not specified'}</div>
                   </div>
                   <div className="bg-slate-900/50 rounded-lg p-3">
                     <div className="text-xs text-slate-500">USP</div>
-                    <div className="text-slate-200 text-sm">{businessProfile.usp || 'Not specified'}</div>
+                    <div className="text-slate-200 text-sm">{businessProfile?.usp || 'Not specified'}</div>
                   </div>
                 </div>
               ) : (
@@ -1572,7 +1572,7 @@ Build a high-converting **${typeLabel}** landing page.
 
 ## Page Strategy
 - **Primary Goal**: ${goalLabel}
-- **Funnel Stage**: ${page.funnelStage.toUpperCase()}
+- **Funnel Stage**: ${(page.funnelStage || 'tofu').toUpperCase()}
 - **Conversion Framework**: ${frameworkLabel}
 - **Traffic Source**: ${page.trafficSource || 'Mixed'}
 - **CTA Goal**: ${page.ctaGoal || page.ctaText || '[Main CTA]'}
@@ -1681,9 +1681,9 @@ function ExportTab({ page }: { page: LandingPage }) {
 ## Overview
 - **Type**: ${typeLabel}
 - **Primary Goal**: ${goalLabel}
-- **Funnel Stage**: ${page.funnelStage.toUpperCase()}
-- **Status**: ${page.status}
-- **Version**: ${page.version}
+- **Funnel Stage**: ${(page.funnelStage || 'tofu').toUpperCase()}
+- **Status**: ${page.status || 'draft'}
+- **Version**: ${page.version || 1}
 
 ## Strategy
 - **Headline**: ${page.headline || 'N/A'}
@@ -1710,7 +1710,7 @@ ${enabledSections.map((s, i) => `\n### ${i + 1}. ${s.name}\n- **Type**: ${s.type
 <h1>${page.name}</h1>
 <p><strong>Type:</strong> ${typeLabel}</p>
 <p><strong>Goal:</strong> ${goalLabel}</p>
-<p><strong>Stage:</strong> ${page.funnelStage.toUpperCase()}</p>
+<p><strong>Stage:</strong> ${(page.funnelStage || 'tofu').toUpperCase()}</p>
 <hr/>
 <h2>Sections</h2>
 ${enabledSections.map((s, i) => `<h3>${i + 1}. ${s.name}</h3><p><strong>Headline:</strong> ${s.headline || 'N/A'}</p><p><strong>Description:</strong> ${s.description || 'N/A'}</p>`).join('')}
@@ -1725,7 +1725,7 @@ ${enabledSections.map((s, i) => `<h3>${i + 1}. ${s.name}</h3><p><strong>Headline
   const handleExport = () => {
     const content = generateExportContent();
     const ext = selectedFormat === 'markdown' ? 'md' : selectedFormat === 'html' ? 'html' : 'txt';
-    const fileName = `${page.name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')}-requirements.${ext}`;
+    const fileName = `${(page.name || 'landing-page').toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')}-requirements.${ext}`;
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
