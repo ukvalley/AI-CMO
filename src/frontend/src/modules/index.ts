@@ -17,7 +17,7 @@ export * from './foundation';
 // export * from './sales';
 
 // Marketing
-// export * from './marketing';
+export * from './marketing';
 
 // Programs
 // export * from './programs';

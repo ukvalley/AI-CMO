@@ -69,6 +69,15 @@ import type {
   // Landing Page Content OS
   LandingPageTemplate,
   LandingPageExport,
+  // Social Media Content OS
+  SocialMediaCalendar,
+  SocialContentStrategy,
+  SocialCalendarEntry,
+  SocialCampaign,
+  SocialContentTemplate,
+  SocialHashtagBank,
+  SocialCreative,
+  SocialExport,
 } from '@/types/entities';
 
 // ============================================
@@ -141,6 +150,16 @@ interface ModuleData {
   emailTemplates: EmailTemplate[];
   courses: Course[];
   events: Event[];
+
+  // Social Media Content OS
+  socialMediaCalendar: SocialMediaCalendar | null;
+  socialContentStrategies: SocialContentStrategy[];
+  socialCalendarEntries: SocialCalendarEntry[];
+  socialContentTemplates: SocialContentTemplate[];
+  socialHashtagBanks: SocialHashtagBank[];
+  socialCreatives: SocialCreative[];
+  socialCampaigns: SocialCampaign[];
+  socialExports: SocialExport[];
 
   // Programs
   loyaltyProgrammes: LoyaltyProgramme[];
@@ -224,6 +243,16 @@ const createEmptyModuleData = (): ModuleData => ({
   emailTemplates: [],
   courses: [],
   events: [],
+
+  // Social Media Content OS
+  socialMediaCalendar: null,
+  socialContentStrategies: [],
+  socialCalendarEntries: [],
+  socialContentTemplates: [],
+  socialHashtagBanks: [],
+  socialCreatives: [],
+  socialCampaigns: [],
+  socialExports: [],
   loyaltyProgrammes: [],
   membershipPlans: [],
   referralProgrammes: [],

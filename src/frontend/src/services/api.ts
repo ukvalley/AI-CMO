@@ -600,6 +600,64 @@ export const landingPageExportApi = {
   delete: (id: string) => apiRequest(`/landing-page-content-os/exports/${id}`, { method: 'DELETE' }),
 };
 
+// ============== SOCIAL MEDIA CONTENT OS API ==============
+
+export const socialStrategyApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/strategies/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/strategies/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/strategies', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/strategies/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/strategies/${id}`, { method: 'DELETE' }),
+};
+
+export const socialCalendarEntryApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/entries/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/entries/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/entries', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/entries/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/entries/${id}`, { method: 'DELETE' }),
+};
+
+export const socialCampaignApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/campaigns/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/campaigns/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/campaigns', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/campaigns/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/campaigns/${id}`, { method: 'DELETE' }),
+};
+
+export const socialTemplateApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/templates/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/templates/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/templates', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/templates/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/templates/${id}`, { method: 'DELETE' }),
+};
+
+export const socialHashtagApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/hashtags/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/hashtags/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/hashtags', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/hashtags/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/hashtags/${id}`, { method: 'DELETE' }),
+};
+
+export const socialCreativeApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/creatives/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/creatives/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/creatives', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/creatives/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/creatives/${id}`, { method: 'DELETE' }),
+};
+
+export const socialExportApi = {
+  getAll: (companyId: string) => apiRequest(`/social-content-os/exports/${companyId}`),
+  getById: (id: string) => apiRequest(`/social-content-os/exports/detail/${id}`),
+  create: (data: any) => apiRequest('/social-content-os/exports', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/social-content-os/exports/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/social-content-os/exports/${id}`, { method: 'DELETE' }),
+};
+
 // ============== MODULE DATA API (Generic) ==============
 
 export const moduleDataApi = {

@@ -2808,3 +2808,319 @@ export interface NewsletterContentSystem extends BaseEntity {
     qualityThreshold: number;
   };
 }
+
+// ============================================
+// SOCIAL MEDIA CONTENT OS
+// ============================================
+
+// Social Media Platforms
+export type SocialPlatform =
+  | 'instagram'
+  | 'facebook'
+  | 'linkedin'
+  | 'twitter'
+  | 'youtube'
+  | 'tiktok'
+  | 'pinterest'
+  | 'threads'
+  | 'whatsapp-channels'
+  | 'telegram'
+  | 'google-business';
+
+// Social Content Types
+export type SocialContentType =
+  | 'reel'
+  | 'carousel'
+  | 'static-post'
+  | 'story'
+  | 'shorts'
+  | 'long-video'
+  | 'tweet'
+  | 'thread'
+  | 'poll'
+  | 'infographic'
+  | 'meme'
+  | 'announcement'
+  | 'educational-content'
+  | 'testimonial'
+  | 'case-study'
+  | 'product-showcase'
+  | 'founder-content'
+  | 'trend-based-content'
+  | 'promotional-content'
+  | 'event-content';
+
+// Calendar Entry Status
+export type SocialEntryStatus =
+  | 'planned'
+  | 'content-pending'
+  | 'writing-in-progress'
+  | 'design-pending'
+  | 'reel-editing'
+  | 'under-review'
+  | 'approved'
+  | 'scheduled'
+  | 'posted'
+  | 'rejected'
+  | 'delayed'
+  | 'archived';
+
+// Content Pillar
+export type ContentPillar =
+  | 'awareness'
+  | 'engagement'
+  | 'education'
+  | 'conversion'
+  | 'community'
+  | 'authority'
+  | 'entertainment'
+  | 'product'
+  | 'culture'
+  | 'news';
+
+// Social Funnel Stage
+export type SocialFunnelStage = 'top-of-funnel' | 'middle-of-funnel' | 'bottom-of-funnel' | 'retention';
+
+// Approval Status
+export type SocialApprovalStatus = 'pending' | 'approved' | 'rejected' | 'changes-requested';
+
+// Hashtag Type
+export type HashtagType = 'trending' | 'branded' | 'evergreen' | 'niche' | 'campaign' | 'community';
+
+// Repurpose Type
+export type RepurposeType =
+  | 'reel-to-carousel'
+  | 'reel-to-story'
+  | 'blog-to-linkedin'
+  | 'blog-to-twitter-thread'
+  | 'carousel-to-reel'
+  | 'testimonial-to-quote'
+  | 'video-to-short'
+  | 'long-to-short'
+  | 'cross-platform';
+
+// Creative Media Type
+export type CreativeMediaType =
+  | 'image'
+  | 'video'
+  | 'reel'
+  | 'carousel'
+  | 'story'
+  | 'thumbnail'
+  | 'graphic'
+  | 'infographic'
+  | 'gif'
+  | 'audio';
+
+// Calendar View
+export type SocialCalendarView = 'monthly' | 'weekly' | 'daily' | 'campaign' | 'platform';
+
+// Entry Priority
+export type EntryPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+// Social Export Format
+export type SocialExportFormat = 'markdown' | 'csv' | 'calendar' | 'content-brief' | 'design-brief' | 'caption-sheet';
+
+// Template Category
+export type SocialTemplateCategory =
+  | 'caption'
+  | 'hook'
+  | 'cta'
+  | 'hashtag-set'
+  | 'reel-script'
+  | 'carousel-framework'
+  | 'campaign'
+  | 'story-framework';
+
+// Campaign Status
+export type SocialCampaignStatus = 'planning' | 'active' | 'completed' | 'paused';
+
+// Supporting Sub-Interfaces
+export interface PlatformVariation {
+  platform: SocialPlatform;
+  caption?: string;
+  hook?: string;
+  cta?: string;
+  hashtags?: string[];
+  publishTime?: string;
+  notes?: string;
+}
+
+export interface ApprovalEntry {
+  id: string;
+  stage: string;
+  status: SocialApprovalStatus;
+  reviewerId?: string;
+  reviewerName?: string;
+  comment?: string;
+  timestamp: string;
+}
+
+export interface ReviewComment {
+  id: string;
+  userId: string;
+  userName: string;
+  content: string;
+  timestamp: string;
+  resolved: boolean;
+}
+
+// Social Media Calendar (singleton per company)
+export interface SocialMediaCalendar extends BaseEntity {
+  name: string;
+  description?: string;
+  activeStrategyId?: string;
+  settings: {
+    defaultPlatforms: SocialPlatform[];
+    defaultTimezone: string;
+    defaultPublishingTimes: Record<string, string[]>;
+    aiModel: string;
+    autoGenerateCaptions: boolean;
+    autoGenerateHashtags: boolean;
+    contentMixTargets: Record<string, number>;
+  };
+}
+
+// Social Content Strategy
+export interface SocialContentStrategy extends BaseEntity {
+  calendarId: string;
+  name: string;
+  description?: string;
+  contentPillars: ContentPillar[];
+  objectives: string[];
+  targetAudience: string;
+  toneAndVoice: string;
+  postingFrequencyGoal: Record<string, number>;
+  linkedData: {
+    brandId?: string;
+    businessProfileId?: string;
+    icpIds?: string[];
+    personaIds?: string[];
+    productIds?: string[];
+    competitorIds?: string[];
+  };
+}
+
+// Social Calendar Entry (main workhorse entity)
+export interface SocialCalendarEntry extends BaseEntity {
+  calendarId: string;
+  strategyId?: string;
+
+  // Basic
+  title: string;
+  platform: SocialPlatform;
+  contentType: SocialContentType;
+  publishDate: string;
+  publishTime?: string;
+  campaignId?: string;
+  priority: EntryPriority;
+  status: SocialEntryStatus;
+  assignedTeamMemberIds?: string[];
+
+  // Content Writing
+  caption?: string;
+  hook?: string;
+  cta?: string;
+  hashtags?: string[];
+  platformVariations?: PlatformVariation[];
+
+  // Graphics / Reel
+  graphicUrl?: string;
+  reelUrl?: string;
+  thumbnailUrl?: string;
+  designFileUrl?: string;
+  driveLink?: string;
+  figmaLink?: string;
+  canvaLink?: string;
+
+  // Approval
+  approvalStatus: SocialApprovalStatus;
+  approvalHistory?: ApprovalEntry[];
+  reviewer?: string;
+  reviewComments?: ReviewComment[];
+
+  // Content Strategy
+  pillar?: ContentPillar;
+  funnelStage?: SocialFunnelStage;
+  objective?: string;
+
+  // Repurposing
+  sourceContentId?: string;
+  repurposeType?: RepurposeType;
+
+  // Performance Prep (future analytics)
+  expectedReach?: number;
+  expectedEngagement?: number;
+  actualReach?: number;
+  actualEngagement?: number;
+  performanceNotes?: string;
+}
+
+// Social Campaign
+export interface SocialCampaign extends BaseEntity {
+  calendarId: string;
+  name: string;
+  description?: string;
+  startDate: string;
+  endDate?: string;
+  objectives?: string[];
+  platforms: SocialPlatform[];
+  status: SocialCampaignStatus;
+  color?: string;
+}
+
+// Social Content Template
+export interface SocialContentTemplate extends BaseEntity {
+  calendarId: string;
+  name: string;
+  description?: string;
+  category: SocialTemplateCategory;
+  platform?: SocialPlatform;
+  contentType?: SocialContentType;
+  pillar?: ContentPillar;
+  funnelStage?: SocialFunnelStage;
+  content: string;
+  structure?: string;
+  tags?: string[];
+  isDefault: boolean;
+}
+
+// Social Hashtag Bank
+export interface SocialHashtagBank extends BaseEntity {
+  calendarId: string;
+  name: string;
+  platform?: SocialPlatform;
+  type: HashtagType;
+  campaign?: string;
+  hashtags: string[];
+  avgReach?: number;
+  avgEngagement?: number;
+  isActive: boolean;
+}
+
+// Social Creative (Media Library Item)
+export interface SocialCreative extends BaseEntity {
+  calendarId: string;
+  name: string;
+  description?: string;
+  mediaType: CreativeMediaType;
+  url: string;
+  thumbnailUrl?: string;
+  tags?: string[];
+  category?: string;
+  platform?: SocialPlatform;
+  dimensions?: { width?: number; height?: number };
+  fileSize?: number;
+  fileType?: string;
+  sourceUrl?: string;
+  isFavorite: boolean;
+}
+
+// Social Export
+export interface SocialExport extends BaseEntity {
+  calendarId: string;
+  entryIds: string[];
+  format: SocialExportFormat;
+  content: string;
+  fileName: string;
+}

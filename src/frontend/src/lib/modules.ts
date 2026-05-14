@@ -488,6 +488,19 @@ export const MODULES: ModuleDefinition[] = [
     hasAI: true,
     hasBulkGeneration: false,
   },
+  {
+    id: 'social-media-os',
+    name: 'Social Media OS',
+    description: 'AI-powered social media strategy, calendar, content creation, and multi-platform publishing system',
+    group: 'marketing',
+    icon: 'CalendarDays',
+    path: '/social-media-os',
+    status: 'active',
+    permissions: ['admin', 'editor'],
+    hasAI: true,
+    hasBulkGeneration: true,
+    badge: 'AI',
+  },
 
   // ==========================================
   // PROGRAMS GROUP (4 modules)
