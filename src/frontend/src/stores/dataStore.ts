@@ -421,21 +421,36 @@ export const useDataStore = create<DataStore>()(
           const { data, activeCompanyId } = get();
           const defaultStats = {
             companies: 0, founders: 0, employees: 0, products: 0,
-            blogs: 0, newsletters: 0, faqs: 0, tasks: 0, generated: 0
+            competitors: 0, icps: 0, personas: 0,
+            brand: 0, brandAssets: 0,
+            blogs: 0, newsletters: 0, faqs: 0,
+            landingPages: 0, salesScripts: 0, salesCollateral: 0,
+            seoPages: 0,
+            tasks: 0, generated: 0
           };
           if (!activeCompanyId) return defaultStats;
 
           const companyData = data[activeCompanyId] || createEmptyModuleData();
+          const count = (arr: any) => Array.isArray(arr) ? arr.length : (arr ? 1 : 0);
           return {
             companies: Object.keys(data).length,
-            founders: companyData.founders?.length || 0,
-            employees: companyData.employees?.length || 0,
-            products: companyData.products?.length || 0,
-            blogs: companyData.blogs?.length || 0,
-            newsletters: companyData.newsletters?.length || 0,
-            faqs: companyData.faqs?.length || 0,
-            tasks: 0, // From task store
-            generated: 0, // From generated content
+            founders: count(companyData.founders),
+            employees: count(companyData.employees),
+            products: count(companyData.products),
+            competitors: count(companyData.competitors),
+            icps: count(companyData.icps),
+            personas: count(companyData.personas),
+            brand: count(companyData.brand),
+            brandAssets: count(companyData.brandAssets),
+            blogs: count(companyData.blogs),
+            newsletters: count(companyData.newsletters),
+            faqs: count(companyData.faqs),
+            landingPages: count(companyData.landingPages),
+            salesScripts: count(companyData.salesScripts),
+            salesCollateral: count(companyData.salesCollateral),
+            seoPages: count(companyData.seoPages),
+            tasks: 0,
+            generated: 0,
           };
         },
       }),

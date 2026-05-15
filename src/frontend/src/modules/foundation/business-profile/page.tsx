@@ -615,8 +615,7 @@ function BusinessProfileView({
             </p>
           </div>
         </div>
-        <Button onClick={onEdit}>
-          <Edit2 className="w-4 h-4 mr-2" />
+        <Button onClick={onEdit} leftIcon={<Edit2 />}>
           Edit Profile
         </Button>
       </div>

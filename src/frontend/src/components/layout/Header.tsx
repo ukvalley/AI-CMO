@@ -68,10 +68,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
   const pathname = usePathname();
   const breadcrumbs = generateBreadcrumbs(pathname || '/dashboard');
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const { hasUnsavedChanges, isSaving, lastSaved } = useDataStore();
   const { user, logout } = useAuthStore();
   const { getActiveCompany } = useCompanyStore();
   const activeCompany = getActiveCompany();
+
+  React.useEffect(() => { setMounted(true); }, []);
 
   // User dropdown items
   const userDropdownItems = [
@@ -169,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
           </div>
 
           {/* Active Company Badge */}
-          {activeCompany && (
+          {mounted && activeCompany && (
             <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#C8FF2E]/10 text-[#C8FF2E] border border-[#C8FF2E]/20">
               {activeCompany.name}
             </span>
@@ -210,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
                   size="sm"
                 />
                 <span className="hidden sm:block text-sm font-medium text-white">
-                  {user?.name?.split(' ')[0] || 'Guest'}
+                  {mounted ? (user?.name?.split(' ')[0] || 'Guest') : ''}
                 </span>
               </button>
             }
