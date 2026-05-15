@@ -204,7 +204,7 @@ export default function Login() {
               onClick={handleDemoLogin}
               disabled={isLoading}
             >
-              Try Demo (No Login Required)
+              Continue as Guest
             </Button>
           </div>
 
