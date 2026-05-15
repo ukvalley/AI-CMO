@@ -6,14 +6,89 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { MODULES, GROUPS, getModulesByGroup } from '@/lib/modules';
-import { useDataStore, useTaskStore, useAuthStore } from '@/stores';
+import { useDataStore, useTaskStore, useAuthStore, useCompanyStore } from '@/stores';
+import {
+  founderApi, employeeApi, competitorApi, brandAssetApi,
+  stationeryApi, hrAssetApi, testimonialApi, salesScriptApi,
+  salesCollateralApi, videoContentApi, faqApi,
+  socialStrategyApi, landingPageApi, blogPostApi,
+  newsletterPostApi,
+} from '@/services/api';
 import { cn } from '@/utils/cn';
 import * as Icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+
+// ============================================
+// MODULE ID → DATA STORE KEY MAPPING
+// ============================================
+
+const MODULE_DATA_KEY_MAP: Record<string, string> = {
+  // Foundation
+  'business-profile': 'businessProfiles',
+  founders: 'founders',
+  employees: 'employees',
+  'icp-personas': 'icps',
+  products: 'products',
+  competitors: 'competitors',
+  // Brand
+  brand: 'brand',
+  'brand-assets': 'brandAssets',
+  stationery: 'stationery',
+  'hr-assets': 'jobPostings',
+  // Content
+  'website-planner': 'websitePlanners',
+  'blog-content-os': 'blogPosts',
+  'newsletter-content-os': 'newsletterPosts',
+  'faq-bank': 'faqs',
+  'content-library': 'contentItems',
+  'stories-campaigns': 'stories',
+  testimonials: 'testimonials',
+  // Sales
+  'landing-pages': 'landingPages',
+  'sales-scripts': 'salesScripts',
+  'sales-collateral': 'salesCollateral',
+  'video-content': 'videoContent',
+  banners: 'banners',
+  books: 'books',
+  // Marketing
+  seo: 'seoPages',
+  ads: 'ads',
+  pr: 'prItems',
+  'email-templates': 'emailTemplates',
+  courses: 'courses',
+  events: 'events',
+  'social-media-os': 'socialCalendarEntries',
+  // Programs
+  'loyalty-programme': 'loyaltyProgrammes',
+  'membership-plans': 'membershipPlans',
+  'referral-programme': 'referralProgrammes',
+  sops: 'sops',
+  // Ops
+  'legal-documents': 'legalDocuments',
+};
+
+// Modules that use direct API + local state (not dataStore)
+const API_COUNT_MODULES: Record<string, (companyId: string) => Promise<number>> = {
+  founders: async (cid) => { const r = await founderApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  employees: async (cid) => { const r = await employeeApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  competitors: async (cid) => { const r = await competitorApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'brand-assets': async (cid) => { const r = await brandAssetApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  stationery: async (cid) => { const r = await stationeryApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'hr-assets': async (cid) => { const r = await hrAssetApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  testimonials: async (cid) => { const r = await testimonialApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'sales-scripts': async (cid) => { const r = await salesScriptApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'sales-collateral': async (cid) => { const r = await salesCollateralApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'video-content': async (cid) => { const r = await videoContentApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'faq-bank': async (cid) => { const r = await faqApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'social-media-os': async (cid) => { const r = await socialStrategyApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'landing-pages': async (cid) => { const r = await landingPageApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'blog-content-os': async (cid) => { const r = await blogPostApi.getAll(cid); return (r.data as any[])?.length || 0; },
+  'newsletter-content-os': async (cid) => { const r = await newsletterPostApi.getAll(cid); return (r.data as any[])?.length || 0; },
+};
 
 // ============================================
 // STAT CARD COMPONENT
@@ -110,30 +185,73 @@ export default function Dashboard() {
   const { getStats, data, activeCompanyId } = useDataStore();
   const { runningTaskCount } = useTaskStore();
   const { user } = useAuthStore();
+  const { activeCompanyId: companyId } = useCompanyStore();
   const stats = getStats();
 
-  // Get module counts from data store
-  const companyData = activeCompanyId ? data[activeCompanyId] : null;
+  // Hydration guard — don't render dynamic values until client rehydrates
+  const [mounted, setMounted] = useState(false);
+
+  // API-fetched counts for modules not in dataStore
+  const [apiCounts, setApiCounts] = useState<Record<string, number>>({});
+
+  // Get module counts from data store + API counts
+  const companyData = (activeCompanyId || companyId) ? data[activeCompanyId || companyId || ''] : null;
+
   const getModuleCount = (moduleId: string): number => {
+    if (!mounted) return 0; // Avoid hydration mismatch
+    // API counts take priority
+    if (apiCounts[moduleId] !== undefined) return apiCounts[moduleId];
     if (!companyData) return 0;
-    switch (moduleId) {
-      case 'founders':
-        return companyData.founders?.length || 0;
-      case 'employees':
-        return companyData.employees?.length || 0;
-      case 'products':
-        return companyData.products?.length || 0;
-      case 'blogs':
-        return companyData.blogs?.length || 0;
-      case 'newsletters':
-        return companyData.newsletters?.length || 0;
-      case 'faqs':
-        return companyData.faqs?.length || 0;
-      case 'competitors':
-        return companyData.competitors?.length || 0;
-      default:
-        return 0;
-    }
+    const dataKey = MODULE_DATA_KEY_MAP[moduleId];
+    if (!dataKey) return 0;
+    const value = (companyData as any)[dataKey];
+    if (value === null || value === undefined) return 0;
+    if (Array.isArray(value)) return value.length;
+    if (typeof value === 'object') return 1; // single object like Brand
+    return 0;
+  };
+
+  // Fetch API counts on mount
+  useEffect(() => {
+    setMounted(true);
+    const cid = activeCompanyId || companyId;
+    if (!cid) return;
+
+    const fetchCounts = async () => {
+      const entries = Object.entries(API_COUNT_MODULES);
+      const results = await Promise.allSettled(
+        entries.map(async ([modId, fetcher]) => {
+          try {
+            const count = await fetcher(cid);
+            return { modId, count };
+          } catch {
+            return { modId, count: 0 };
+          }
+        })
+      );
+
+      const counts: Record<string, number> = {};
+      results.forEach((r) => {
+        if (r.status === 'fulfilled') {
+          counts[r.value.modId] = r.value.count;
+        }
+      });
+      setApiCounts(counts);
+    };
+
+    fetchCounts();
+  }, [activeCompanyId, companyId]);
+
+  // Compute stat card counts from API + dataStore (guard hydration)
+  const statCounts = {
+    founders: mounted ? (apiCounts.founders ?? stats.founders) : 0,
+    employees: mounted ? (apiCounts.employees ?? stats.employees) : 0,
+    products: mounted ? stats.products : 0,
+    competitors: mounted ? (apiCounts.competitors ?? 0) : 0,
+    blogs: mounted ? (apiCounts['blog-content-os'] ?? stats.blogs) : 0,
+    faqs: mounted ? (apiCounts['faq-bank'] ?? stats.faqs) : 0,
+    landingPages: mounted ? (apiCounts['landing-pages'] ?? 0) : 0,
+    runningTasks: mounted ? runningTaskCount : 0,
   };
 
   return (
@@ -144,7 +262,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl font-bold text-white">Dashboard</h1>
             <p className="text-[#878e9a] mt-1">
-              Welcome back{user?.name ? `, ${user.name}` : ''}! Manage your marketing across all modules.
+              Welcome back{mounted && user?.name ? `, ${user.name}` : ''}! Manage your marketing across all modules.
             </p>
           </div>
         </div>
@@ -152,52 +270,52 @@ export default function Dashboard() {
         {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
-            icon={Icons.Building2}
-            label="Companies"
-            value={stats.companies}
-            color="primary"
-          />
-          <StatCard
             icon={Icons.Users}
             label="Founders"
-            value={stats.founders}
+            value={statCounts.founders}
             color="success"
           />
           <StatCard
             icon={Icons.Users2}
             label="Employees"
-            value={stats.employees}
+            value={statCounts.employees}
             color="info"
           />
           <StatCard
             icon={Icons.Package}
             label="Products"
-            value={stats.products}
+            value={statCounts.products}
             color="warning"
+          />
+          <StatCard
+            icon={Icons.Swords}
+            label="Competitors"
+            value={statCounts.competitors}
+            color="primary"
           />
           <StatCard
             icon={Icons.FileText}
             label="Blogs"
-            value={stats.blogs}
-            color="primary"
-          />
-          <StatCard
-            icon={Icons.Mail}
-            label="Newsletters"
-            value={stats.newsletters}
+            value={statCounts.blogs}
             color="success"
           />
           <StatCard
             icon={Icons.HelpCircle}
             label="FAQs"
-            value={stats.faqs}
+            value={statCounts.faqs}
             color="info"
+          />
+          <StatCard
+            icon={Icons.TrendingUp}
+            label="Landing Pages"
+            value={statCounts.landingPages}
+            color="primary"
           />
           <StatCard
             icon={Icons.Clock}
             label="Running Tasks"
-            value={runningTaskCount}
-            color={runningTaskCount > 0 ? 'warning' : 'primary'}
+            value={statCounts.runningTasks}
+            color={statCounts.runningTasks > 0 ? 'warning' : 'primary'}
           />
         </div>
 
