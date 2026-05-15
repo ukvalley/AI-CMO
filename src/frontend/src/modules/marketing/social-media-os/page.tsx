@@ -381,7 +381,7 @@ export default function SocialMediaOSModule() {
       </main>
 
       {/* Modals */}
-      {showCreateStrategyModal && <CreateStrategyModal onClose={() => setShowCreateStrategyModal(false)} onCreate={handleCreateStrategy} brand={brand} businessProfile={businessProfile} />}
+      {showCreateStrategyModal && <CreateStrategyModal onClose={() => setShowCreateStrategyModal(false)} onCreate={handleCreateStrategy} brand={brand} businessProfile={businessProfile} icps={icps} personas={personas} />}
       {showCreateEntryModal && <CreateEntryModal onClose={() => setShowCreateEntryModal(false)} onCreate={handleCreateEntry} strategyId={activeStrategyId} campaigns={filteredCampaigns} />}
       {showUploadCreativeModal && <UploadCreativeModal onClose={() => setShowUploadCreativeModal(false)} onCreate={(data) => { handleCreateEntry(data as any); }} />}
       {showApprovalModal && approvalEntryId && <ApprovalModal entry={filteredEntries.find((e) => e.id === approvalEntryId)!} onClose={() => { setShowApprovalModal(false); setApprovalEntryId(null); }} onUpdate={(updates) => { handleUpdateEntry(approvalEntryId, updates); setShowApprovalModal(false); setApprovalEntryId(null); }} />}
@@ -556,11 +556,12 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
 
   const startEdit = (field: string, value: string) => { setEditField(field); setEditValue(value); };
   const saveEdit = (field: string) => {
-    if (field === 'name' || field === 'description' || field === 'targetAudience' || field === 'toneAndVoice') {
+    if (field === 'name' || field === 'description') {
       onUpdate({ [field]: editValue });
     }
     setEditField(null);
   };
+  const toggleId = (arr: string[], id: string) => arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
   const togglePillar = (pillar: ContentPillar) => {
     const current = strategy.contentPillars || [];
     onUpdate({ contentPillars: current.includes(pillar) ? current.filter((p) => p !== pillar) : [...current, pillar] });
@@ -596,17 +597,6 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
           </div>
           <button onClick={() => onUpdate({})} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400" title="Refresh"><RefreshCw className="w-4 h-4" /></button>
         </div>
-
-        {/* Brand context summary */}
-        {brand && (
-          <div className="flex items-center gap-3 mt-3 px-4 py-3 bg-purple-500/5 border border-purple-500/20 rounded-lg">
-            <Palette className="w-5 h-5 text-purple-400" />
-            <div className="flex-1">
-              <span className="text-sm text-purple-300 font-medium">Brand: {brand.voice || 'No brand voice set'}</span>
-              <span className="text-sm text-slate-400 ml-3">Personality: {brand.personality || 'Not set'}</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Content Pillars */}
@@ -643,30 +633,73 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
         </div>
       </div>
 
-      {/* Target Audience & Voice */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary-400" /> Target Audience</h3>
-          {editField === 'targetAudience' ? (
-            <textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => saveEdit('targetAudience')}
-              className="w-full bg-slate-800 border border-primary-500 rounded-lg px-3 py-2 text-slate-200 focus:outline-none resize-none" rows={4} autoFocus />
-          ) : (
-            <p className="text-slate-300 cursor-pointer hover:text-primary-400 transition-colors" onClick={() => startEdit('targetAudience', strategy.targetAudience || '')}>
-              {strategy.targetAudience || 'Click to define your target audience...'}
-            </p>
-          )}
+      {/* ICPs & Persona */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary-400" /> ICPs & Persona</h3>
+        <p className="text-sm text-slate-400 mb-4">Link ICPs and personas to your social media strategy for AI context.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">ICPs</label>
+            {icps.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {icps.map((icp) => (
+                  <button key={icp.id} type="button"
+                    onClick={() => onUpdate({ linkedData: { ...linkedData, icpIds: toggleId(linkedData.icpIds || [], icp.id) } })}
+                    className={cn('px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                      (linkedData.icpIds || []).includes(icp.id) ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300')}>
+                    {icp.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No ICPs available. Add ICPs in the ICPs & Personas module first.</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Personas</label>
+            {personas.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {personas.map((persona) => (
+                  <button key={persona.id} type="button"
+                    onClick={() => onUpdate({ linkedData: { ...linkedData, personaIds: toggleId(linkedData.personaIds || [], persona.id) } })}
+                    className={cn('px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                      (linkedData.personaIds || []).includes(persona.id) ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300')}>
+                    {persona.name}{persona.jobTitle ? ` (${persona.jobTitle})` : ''}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No personas available. Add personas in the ICPs & Personas module first.</p>
+            )}
+          </div>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-primary-400" /> Tone & Voice</h3>
-          {editField === 'toneAndVoice' ? (
-            <textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => saveEdit('toneAndVoice')}
-              className="w-full bg-slate-800 border border-primary-500 rounded-lg px-3 py-2 text-slate-200 focus:outline-none resize-none" rows={4} autoFocus />
-          ) : (
-            <p className="text-slate-300 cursor-pointer hover:text-primary-400 transition-colors" onClick={() => startEdit('toneAndVoice', strategy.toneAndVoice || '')}>
-              {strategy.toneAndVoice || 'Click to define your brand tone and voice...'}
-            </p>
-          )}
-        </div>
+      </div>
+
+      {/* Brand */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2"><Palette className="w-5 h-5 text-primary-400" /> Brand</h3>
+        <p className="text-sm text-slate-400 mb-4">Link your brand identity to guide social media voice and style.</p>
+        {brand ? (
+          <div className="space-y-3">
+            <button type="button"
+              onClick={() => onUpdate({ linkedData: { ...linkedData, brandId: linkedData.brandId === brand.id ? undefined : brand.id } })}
+              className={cn('w-full text-left px-4 py-3 rounded-lg border transition-colors',
+                linkedData.brandId === brand.id ? 'border-primary-500 bg-primary-900/20' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600')}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className={cn('text-sm font-medium', linkedData.brandId === brand.id ? 'text-primary-400' : 'text-slate-300')}>{brand.voice || 'Brand Identity'}</span>
+                  {brand.personality && <span className="text-sm text-slate-400 ml-3">Personality: {brand.personality}</span>}
+                </div>
+                <span className={cn('text-xs px-2 py-0.5 rounded-full', linkedData.brandId === brand.id ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-400')}>
+                  {linkedData.brandId === brand.id ? 'Linked' : 'Link'}
+                </span>
+              </div>
+              {brand.tagline && <p className="text-xs text-slate-500 mt-1">{brand.tagline}</p>}
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500">No brand available. Add brand identity in the Brand module first.</p>
+        )}
       </div>
 
       {/* Posting Frequency */}
@@ -698,7 +731,7 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
             <div className="text-xs text-slate-500 mb-1">Brand</div>
-            <div className="text-sm text-slate-200">{brand?.voice || 'Not linked'}</div>
+            <div className="text-sm text-slate-200">{linkedData.brandId && brand ? brand.voice || 'Linked' : 'Not linked'}</div>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
             <div className="text-xs text-slate-500 mb-1">Business Profile</div>
@@ -707,6 +740,10 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
             <div className="text-xs text-slate-500 mb-1">ICPs</div>
             <div className="text-sm text-slate-200">{(linkedData.icpIds || []).length > 0 ? `${(linkedData.icpIds || []).length} linked` : 'None linked'}</div>
+          </div>
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+            <div className="text-xs text-slate-500 mb-1">Personas</div>
+            <div className="text-sm text-slate-200">{(linkedData.personaIds || []).length > 0 ? `${(linkedData.personaIds || []).length} linked` : 'None linked'}</div>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
             <div className="text-xs text-slate-500 mb-1">Products</div>
@@ -726,33 +763,36 @@ function StrategyTab({ strategy, brand, businessProfile, icps, personas, product
 // CREATE STRATEGY MODAL
 // ============================================
 
-function CreateStrategyModal({ onClose, onCreate, brand, businessProfile }: {
+function CreateStrategyModal({ onClose, onCreate, brand, businessProfile, icps, personas }: {
   onClose: () => void; onCreate: (data: Partial<SocialContentStrategy>) => void;
   brand: Brand | null; businessProfile: BusinessProfile | undefined;
+  icps: ICP[]; personas: Persona[];
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [toneAndVoice, setToneAndVoice] = useState(brand?.voice || '');
+  const [selectedIcpIds, setSelectedIcpIds] = useState<string[]>([]);
+  const [selectedPersonaIds, setSelectedPersonaIds] = useState<string[]>([]);
+  const [linkedBrandId, setLinkedBrandId] = useState<string | undefined>(brand?.id);
   const [selectedPillars, setSelectedPillars] = useState<ContentPillar[]>(['awareness', 'engagement', 'education']);
 
   const togglePillar = (p: ContentPillar) => {
     setSelectedPillars((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
   };
+  const toggleId = (arr: string[], id: string) => arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
 
   const handleSubmit = () => {
     if (!name.trim()) return;
     onCreate({
       name: name.trim(),
       description: description.trim(),
-      targetAudience: targetAudience.trim(),
-      toneAndVoice: toneAndVoice.trim() || brand?.voice || '',
       contentPillars: selectedPillars,
       objectives: [],
       postingFrequencyGoal: { instagram: 5, linkedin: 3, twitter: 7 },
       linkedData: {
-        brandId: brand?.id,
+        brandId: linkedBrandId,
         businessProfileId: businessProfile?.id,
+        icpIds: selectedIcpIds.length > 0 ? selectedIcpIds : undefined,
+        personaIds: selectedPersonaIds.length > 0 ? selectedPersonaIds : undefined,
       },
     });
     onClose();
@@ -776,15 +816,63 @@ function CreateStrategyModal({ onClose, onCreate, brand, businessProfile }: {
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the strategy goals and approach..." rows={3}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500 resize-none" />
           </div>
+          {/* ICPs & Persona */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Target Audience</label>
-            <input value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} placeholder="e.g., SaaS founders, 25-45, tech-savvy"
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
+            <label className="block text-sm font-medium text-slate-400 mb-2">ICPs</label>
+            {icps.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {icps.map((icp) => (
+                  <button key={icp.id} type="button"
+                    onClick={() => setSelectedIcpIds(toggleId(selectedIcpIds, icp.id))}
+                    className={cn('px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                      selectedIcpIds.includes(icp.id) ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300')}>
+                    {icp.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No ICPs available. Add ICPs in the ICPs & Personas module first.</p>
+            )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Tone & Voice</label>
-            <input value={toneAndVoice} onChange={(e) => setToneAndVoice(e.target.value)} placeholder={brand?.voice || "e.g., Professional yet approachable"}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500" />
+            <label className="block text-sm font-medium text-slate-400 mb-2">Personas</label>
+            {personas.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {personas.map((persona) => (
+                  <button key={persona.id} type="button"
+                    onClick={() => setSelectedPersonaIds(toggleId(selectedPersonaIds, persona.id))}
+                    className={cn('px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                      selectedPersonaIds.includes(persona.id) ? 'bg-primary-600 border-primary-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300')}>
+                    {persona.name}{persona.jobTitle ? ` (${persona.jobTitle})` : ''}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No personas available. Add personas in the ICPs & Personas module first.</p>
+            )}
+          </div>
+          {/* Brand */}
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Brand</label>
+            {brand ? (
+              <button type="button"
+                onClick={() => setLinkedBrandId(linkedBrandId === brand.id ? undefined : brand.id)}
+                className={cn('w-full text-left px-4 py-3 rounded-lg border transition-colors',
+                  linkedBrandId === brand.id ? 'border-primary-500 bg-primary-900/20' : 'border-slate-700 bg-slate-800/50 hover:border-slate-600')}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className={cn('text-sm font-medium', linkedBrandId === brand.id ? 'text-primary-400' : 'text-slate-300')}>{brand.voice || 'Brand Identity'}</span>
+                    {brand.personality && <span className="text-sm text-slate-400 ml-3">Personality: {brand.personality}</span>}
+                  </div>
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full', linkedBrandId === brand.id ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-400')}>
+                    {linkedBrandId === brand.id ? 'Linked' : 'Link'}
+                  </span>
+                </div>
+                {brand.tagline && <p className="text-xs text-slate-500 mt-1">{brand.tagline}</p>}
+              </button>
+            ) : (
+              <p className="text-xs text-slate-500">No brand available. Add brand identity in the Brand module first.</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Content Pillars</label>
