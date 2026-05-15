@@ -456,6 +456,7 @@ export const useDataStore = create<DataStore>()(
       }),
       {
         name: 'ai-cmo-data',
+        skipHydration: true,
         partialize: (state) => ({
           data: state.data,
           activeCompanyId: state.activeCompanyId,

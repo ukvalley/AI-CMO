@@ -359,6 +359,7 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'ai-cmo-auth',
+      skipHydration: true,
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
