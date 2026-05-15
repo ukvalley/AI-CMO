@@ -8,7 +8,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/utils/cn';
 import {
   Search,
@@ -66,6 +66,7 @@ const generateBreadcrumbs = (pathname: string) => {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const breadcrumbs = generateBreadcrumbs(pathname || '/dashboard');
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
@@ -85,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
       id: 'logout',
       label: 'Sign out',
       icon: LogOut,
-      onClick: logout
+      onClick: () => { logout(); router.push('/login'); }
     },
   ];
 
