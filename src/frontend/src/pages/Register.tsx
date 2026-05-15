@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores';
 
 export default function Register() {
   const router = useRouter();
-  const { register } = useAuthStore();
+  const register = useAuthStore(s => s.register);
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

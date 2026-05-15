@@ -194,6 +194,7 @@ export default function BrandLandingPage() {
       </div>
 
       {/* Quick Tips */}
+      {/* Quick Tips */}
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6">
         <h3 className="text-sm font-medium text-blue-200 mb-2">
           Brand Building Tips
@@ -201,19 +202,19 @@ export default function BrandLandingPage() {
         <ul className="space-y-2 text-sm text-blue-300/80">
           <li className="flex items-start gap-2">
             <span className="text-blue-400">1.</span>
-            Start with <strong className="text-blue-200">Brand Strategy</strong> to define your foundation before creating visual assets
+            <span>Start with <strong className="text-blue-200">Brand Strategy</strong> to define your foundation before creating visual assets</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-400">2.</span>
-            Use <strong className="text-blue-200">Visual Identity</strong> to ensure consistency across all touchpoints
+            <span>Use <strong className="text-blue-200">Visual Identity</strong> to ensure consistency across all touchpoints</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-400">3.</span>
-            Keep all assets organized in <strong className="text-blue-200">Brand Assets</strong> for easy team access
+            <span>Keep all assets organized in <strong className="text-blue-200">Brand Assets</strong> for easy team access</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-400">4.</span>
-            Apply your brand to <strong className="text-blue-200">Stationery</strong> for professional communication
+            <span>Apply your brand to <strong className="text-blue-200">Stationery</strong> for professional communication</span>
           </li>
         </ul>
       </div>

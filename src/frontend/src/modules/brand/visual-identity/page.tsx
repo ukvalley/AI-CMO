@@ -75,10 +75,10 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    }
     : null;
 }
 
@@ -588,8 +588,8 @@ function AccessibilityChecker({ identity }: { identity: VisualIdentity }) {
 // ============================================
 
 export default function VisualIdentityPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const activeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || activeCompanyId;
 
   const [loading, setLoading] = useState(true);
@@ -853,23 +853,26 @@ export default function VisualIdentityPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-200">Visual Identity</h1>
-          <p className="mt-1 text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-200">Visual Identity</h1>
+          <p className="mt-1 text-sm text-slate-400">
             {identity.mode === 'preset'
               ? 'Preset Mode - Based on wizard suggestions'
               : 'Custom Mode - Full control over all settings'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* Right side — single row on desktop, stacked on mobile */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           {/* Mode Toggle */}
-          <div className="flex bg-slate-900/50 rounded-lg p-1 border border-slate-800">
+          <div className="flex bg-slate-900/50 rounded-lg p-1 border border-slate-800 w-full sm:w-auto">
             <button
               onClick={handlePresetMode}
               title="Run wizard again to get new suggestions"
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md transition-all',
+                'flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-all flex-1 sm:flex-none text-sm',
                 identity.mode === 'preset'
                   ? 'bg-slate-800 text-slate-200'
                   : 'text-slate-500 hover:text-slate-300'
@@ -881,7 +884,7 @@ export default function VisualIdentityPage() {
             <button
               onClick={handleCustomize}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md transition-all',
+                'flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-all flex-1 sm:flex-none text-sm',
                 identity.mode === 'custom'
                   ? 'bg-slate-800 text-slate-200'
                   : 'text-slate-500 hover:text-slate-300'
@@ -892,17 +895,18 @@ export default function VisualIdentityPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Save Button */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {showSuccess && (
-              <span className="flex items-center gap-1.5 text-sm text-green-400 animate-in fade-in slide-in-from-right-2 duration-300">
+              <span className="flex items-center gap-1.5 text-sm text-green-400">
                 <Check className="w-4 h-4" />
-                Saved successfully
+                Saved
               </span>
             )}
             <button
               onClick={saveIdentity}
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-slate-900 rounded-lg hover:bg-primary-400 transition-colors font-medium disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-500 text-slate-900 rounded-lg hover:bg-primary-400 transition-colors font-medium disabled:opacity-50 flex-1 sm:flex-none text-sm"
             >
               {saving ? (
                 <>
@@ -922,17 +926,15 @@ export default function VisualIdentityPage() {
 
       {/* Mode Banner */}
       {identity.mode === 'preset' && (
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center gap-3">
-          <Sparkles className="w-5 h-5 text-blue-400" />
-          <div className="flex-1">
-            <p className="text-blue-200 text-sm">
-              You're in Preset Mode. Custom color editing is disabled.
-              <button onClick={handleCustomize} className="ml-2 underline hover:text-blue-100">
-                Switch to Custom Mode
-              </button>
-              for full control.
-            </p>
-          </div>
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
+          <Sparkles className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+          <p className="text-blue-200 text-xs sm:text-sm leading-relaxed">
+            You're in Preset Mode. Custom color editing is disabled.{' '}
+            <button onClick={handleCustomize} className="underline hover:text-blue-100">
+              Switch to Custom Mode
+            </button>{' '}
+            for full control.
+          </p>
         </div>
       )}
 

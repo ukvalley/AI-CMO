@@ -70,10 +70,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
   const breadcrumbs = generateBreadcrumbs(pathname || '/dashboard');
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
-  const { hasUnsavedChanges, isSaving, lastSaved } = useDataStore();
-  const { user, logout } = useAuthStore();
-  const { getActiveCompany } = useCompanyStore();
-  const activeCompany = getActiveCompany();
+  const hasUnsavedChanges = useDataStore(s => s.hasUnsavedChanges);
+  const isSaving = useDataStore(s => s.isSaving);
+  const lastSaved = useDataStore(s => s.lastSaved);
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
+  const activeCompany = useCompanyStore(s => s.getActiveCompany());
 
   React.useEffect(() => { setMounted(true); }, []);
 

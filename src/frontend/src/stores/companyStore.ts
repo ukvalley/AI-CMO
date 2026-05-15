@@ -141,6 +141,7 @@ export const useCompanyStore = create<CompanyStore>()(
     }),
     {
       name: 'ai-cmo-companies',
+      skipHydration: true,
       partialize: (state) => ({
         companies: state.companies,
         activeCompanyId: state.activeCompanyId,

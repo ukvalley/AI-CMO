@@ -553,8 +553,8 @@ function TouchpointCard({ name, icon: Icon }: { name: string; icon: any }) {
 // ============================================
 
 export default function BrandManualPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const activeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || activeCompanyId;
   const printRef = useRef<HTMLDivElement>(null);
 

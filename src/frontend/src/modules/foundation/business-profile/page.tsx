@@ -756,8 +756,8 @@ function BusinessProfileView({
 // ============================================
 
 export default function BusinessProfilePage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [profile, setProfile] = useState<BusinessProfile | null>(null);

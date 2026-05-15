@@ -120,11 +120,16 @@ const PLAYLIST_TYPE_CONFIG: Record<VideoPlaylist['type'], { label: string; icon:
 // ============================================
 
 export default function VideoContentModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
 
-  const companyId = companyStore.activeCompanyId;
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -132,14 +137,14 @@ export default function VideoContentModule() {
   }, [companyId, activeCompanyId, setActiveCompany]);
 
   // Data from store - using exact same pattern as working Blog Content OS module
-  const videos = useMemo(() => (getItems('videoContent') as VideoContent[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const categories = useMemo(() => (getItems('videoCategories') as VideoCategoryInfo[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const playlists = useMemo(() => (getItems('videoPlaylists') as VideoPlaylist[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const sops = useMemo(() => (getItems('sops') as SOP[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const salesScripts = useMemo(() => (getItems('salesScripts') as SalesScript[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const faqs = useMemo(() => (getItems('faqs') as FAQ[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const blogPosts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const videos = useMemo(() => (getItems('videoContent') as VideoContent[]) || [], [getItems, data, activeCompanyId]);
+  const categories = useMemo(() => (getItems('videoCategories') as VideoCategoryInfo[]) || [], [getItems, data, activeCompanyId]);
+  const playlists = useMemo(() => (getItems('videoPlaylists') as VideoPlaylist[]) || [], [getItems, data, activeCompanyId]);
+  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, data, activeCompanyId]);
+  const sops = useMemo(() => (getItems('sops') as SOP[]) || [], [getItems, data, activeCompanyId]);
+  const salesScripts = useMemo(() => (getItems('salesScripts') as SalesScript[]) || [], [getItems, data, activeCompanyId]);
+  const faqs = useMemo(() => (getItems('faqs') as FAQ[]) || [], [getItems, data, activeCompanyId]);
+  const blogPosts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, data, activeCompanyId]);
 
   // Load from API (gracefully handle missing backend endpoints)
   const [isLoading, setIsLoading] = useState(true);
@@ -164,30 +169,30 @@ export default function VideoContentModule() {
 
       if (vidRes.data && Array.isArray(vidRes.data) && (vidRes.data as any[]).length > 0) {
         const local = (getItems('videoContent') as VideoContent[]) || [];
-        dataStore.setItems('videoContent', mergeById(local, vidRes.data as VideoContent[]));
+        setItems('videoContent', mergeById(local, vidRes.data as VideoContent[]));
       }
       if (catRes.data && Array.isArray(catRes.data) && (catRes.data as any[]).length > 0) {
         const local = (getItems('videoCategories') as VideoCategoryInfo[]) || [];
-        dataStore.setItems('videoCategories', mergeById(local, catRes.data as VideoCategoryInfo[]));
+        setItems('videoCategories', mergeById(local, catRes.data as VideoCategoryInfo[]));
       }
       if (plRes.data && Array.isArray(plRes.data) && (plRes.data as any[]).length > 0) {
         const local = (getItems('videoPlaylists') as VideoPlaylist[]) || [];
-        dataStore.setItems('videoPlaylists', mergeById(local, plRes.data as VideoPlaylist[]));
+        setItems('videoPlaylists', mergeById(local, plRes.data as VideoPlaylist[]));
       }
       // Cross-module data: Products
       if (prodRes.data && Array.isArray(prodRes.data) && (prodRes.data as any[]).length > 0) {
         const local = (getItems('products') as Product[]) || [];
-        dataStore.setItems('products', mergeById(local, prodRes.data as Product[]));
+        setItems('products', mergeById(local, prodRes.data as Product[]));
       }
       // Cross-module data: FAQs
       if (faqRes.data && Array.isArray(faqRes.data) && (faqRes.data as any[]).length > 0) {
         const local = (getItems('faqs') as FAQ[]) || [];
-        dataStore.setItems('faqs', mergeById(local, faqRes.data as FAQ[]));
+        setItems('faqs', mergeById(local, faqRes.data as FAQ[]));
       }
       // Cross-module data: Blog Posts
       if (blogRes.data && Array.isArray(blogRes.data) && (blogRes.data as any[]).length > 0) {
         const local = (getItems('blogPosts') as BlogPost[]) || [];
-        dataStore.setItems('blogPosts', mergeById(local, blogRes.data as BlogPost[]));
+        setItems('blogPosts', mergeById(local, blogRes.data as BlogPost[]));
       }
       setIsLoading(false);
     };

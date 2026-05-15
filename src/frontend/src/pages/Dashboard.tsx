@@ -240,10 +240,12 @@ function ModuleCard({
 // ============================================
 
 export default function Dashboard() {
-  const { getStats, data, activeCompanyId } = useDataStore();
-  const { runningTaskCount } = useTaskStore();
-  const { user } = useAuthStore();
-  const { activeCompanyId: companyId } = useCompanyStore();
+  const getStats = useDataStore(s => s.getStats);
+  const data = useDataStore(s => s.data);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const runningTaskCount = useTaskStore(s => s.runningTaskCount);
+  const user = useAuthStore(s => s.user);
+  const companyId = useCompanyStore(s => s.activeCompanyId);
   const stats = getStats();
 
   // Hydration guard — don't render dynamic values until client rehydrates

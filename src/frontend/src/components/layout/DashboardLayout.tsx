@@ -8,11 +8,17 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { cn } from '@/utils/cn';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { AIChatPanel } from '../ai/AIChatPanel';
-import { useChatStore } from '@/stores';
+import { useChatStore } from '@/stores/chatStore';
+
+// Dynamic import AIChatPanel — heavy component not needed on initial load
+const AIChatPanel = dynamic(() => import('../ai/AIChatPanel').then(mod => ({ default: mod.AIChatPanel })), {
+  ssr: false,
+  loading: () => null,
+});
 
 // ============================================
 // TYPES
@@ -29,11 +35,11 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const { isOpen: chatOpen } = useChatStore();
+  const chatOpen = useChatStore(s => s.isOpen);
 
-  const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
-  const openMobileMenu = () => setMobileMenuOpen(true);
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const toggleSidebar = React.useCallback(() => setSidebarCollapsed(prev => !prev), []);
+  const openMobileMenu = React.useCallback(() => setMobileMenuOpen(true), []);
+  const closeMobileMenu = React.useCallback(() => setMobileMenuOpen(false), []);
 
   return (
     <div className="min-h-screen bg-[#0d1117]">

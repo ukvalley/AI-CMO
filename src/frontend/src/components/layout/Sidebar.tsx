@@ -144,10 +144,11 @@ export const Sidebar = React.memo(function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuthStore();
-  const { runningTaskCount } = useTaskStore();
-  const { getActiveCompany, companies, setActiveCompany } = useCompanyStore();
-  const activeCompany = getActiveCompany();
+  const user = useAuthStore(s => s.user);
+  const runningTaskCount = useTaskStore(s => s.runningTaskCount);
+  const companies = useCompanyStore(s => s.companies);
+  const setActiveCompany = useCompanyStore(s => s.setActiveCompany);
+  const activeCompany = useCompanyStore(s => s.getActiveCompany());
   const [expandedGroups, setExpandedGroups] = React.useState<string[]>(GROUPS.map(g => g.id));
 
   const toggleGroup = (groupId: string) => {

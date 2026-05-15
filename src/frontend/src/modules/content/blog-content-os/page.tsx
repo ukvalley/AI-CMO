@@ -221,14 +221,18 @@ function getEstimatedReadTime(wordCount: number): number {
 // ============================================
 
 export default function BlogContentOSModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
   const taskStore = useTaskStore();
 
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
-
   // Sync company from companyStore to dataStore
-  const companyId = companyStore.activeCompanyId;
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -236,12 +240,12 @@ export default function BlogContentOSModule() {
   }, [companyId, activeCompanyId, setActiveCompany]);
 
   // Get data from store
-  const strategies = useMemo(() => (getItems('blogStrategies') as BlogStrategy[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const contentTypes = useMemo(() => (getItems('blogContentTypes') as BlogContentTypeConfig[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const calendars = useMemo(() => (getItems('blogCalendars') as BlogCalendar[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const titles = useMemo(() => (getItems('blogTitles') as BlogTitle[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const posts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const chunks = useMemo(() => (getItems('blogContentChunks') as BlogContentChunk[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const strategies = useMemo(() => (getItems('blogStrategies') as BlogStrategy[]) || [], [getItems, data, activeCompanyId]);
+  const contentTypes = useMemo(() => (getItems('blogContentTypes') as BlogContentTypeConfig[]) || [], [getItems, data, activeCompanyId]);
+  const calendars = useMemo(() => (getItems('blogCalendars') as BlogCalendar[]) || [], [getItems, data, activeCompanyId]);
+  const titles = useMemo(() => (getItems('blogTitles') as BlogTitle[]) || [], [getItems, data, activeCompanyId]);
+  const posts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, data, activeCompanyId]);
+  const chunks = useMemo(() => (getItems('blogContentChunks') as BlogContentChunk[]) || [], [getItems, data, activeCompanyId]);
 
   // Linked data
   const brand = useMemo(() => getItems('brand') as Brand | null, [getItems]);
@@ -297,27 +301,27 @@ export default function BlogContentOSModule() {
 
       if (sRes.data && Array.isArray(sRes.data) && sRes.data.length > 0) {
         const local = (getItems('blogStrategies') as BlogStrategy[]) || [];
-        dataStore.setItems('blogStrategies', mergeById(local, sRes.data as BlogStrategy[]));
+        setItems('blogStrategies', mergeById(local, sRes.data as BlogStrategy[]));
       }
       if (cRes.data && Array.isArray(cRes.data) && cRes.data.length > 0) {
         const local = (getItems('blogCalendars') as BlogCalendar[]) || [];
-        dataStore.setItems('blogCalendars', mergeById(local, cRes.data as BlogCalendar[]));
+        setItems('blogCalendars', mergeById(local, cRes.data as BlogCalendar[]));
       }
       if (tRes.data && Array.isArray(tRes.data) && tRes.data.length > 0) {
         const local = (getItems('blogTitles') as BlogTitle[]) || [];
-        dataStore.setItems('blogTitles', mergeById(local, tRes.data as BlogTitle[]));
+        setItems('blogTitles', mergeById(local, tRes.data as BlogTitle[]));
       }
       if (pRes.data && Array.isArray(pRes.data) && pRes.data.length > 0) {
         const local = (getItems('blogPosts') as BlogPost[]) || [];
-        dataStore.setItems('blogPosts', mergeById(local, pRes.data as BlogPost[]));
+        setItems('blogPosts', mergeById(local, pRes.data as BlogPost[]));
       }
       if (chRes.data && Array.isArray(chRes.data) && chRes.data.length > 0) {
         const local = (getItems('blogContentChunks') as BlogContentChunk[]) || [];
-        dataStore.setItems('blogContentChunks', mergeById(local, chRes.data as BlogContentChunk[]));
+        setItems('blogContentChunks', mergeById(local, chRes.data as BlogContentChunk[]));
       }
       if (eRes.data && Array.isArray(eRes.data) && eRes.data.length > 0) {
         const local = (getItems('blogExports') as BlogExport[]) || [];
-        dataStore.setItems('blogExports', mergeById(local, eRes.data as BlogExport[]));
+        setItems('blogExports', mergeById(local, eRes.data as BlogExport[]));
       }
 
       setIsLoading(false);
@@ -450,30 +454,23 @@ export default function BlogContentOSModule() {
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <header className="bg-slate-900/50 border-b border-slate-800 sticky top-0 z-40">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <FileEdit className="w-6 h-6 text-white" />
+        <div className="px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20 flex-shrink-0">
+                <FileEdit className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Blog Content OS</h1>
-                <p className="text-sm text-slate-400">AI-Powered Content Strategy & Generation</p>
+                <h1 className="text-lg sm:text-2xl font-bold text-white">Blog Content OS</h1>
+                <p className="hidden sm:block text-sm text-slate-400">AI-Powered Content Strategy & Generation</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {activeStrategy && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <Target className="w-4 h-4 text-primary-400" />
-                  <span className="text-sm text-slate-200">{activeStrategy.name}</span>
-                </div>
-              )}
-
+            <div className="flex items-center gap-2">
               <select
                 value={activeStrategyId || ''}
                 onChange={(e) => setActiveStrategyId(e.target.value || null)}
-                className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+                className="flex-1 sm:flex-none min-w-0 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
               >
                 <option value="">Select Strategy...</option>
                 {strategies.map((s) => (
@@ -483,20 +480,21 @@ export default function BlogContentOSModule() {
 
               <button
                 onClick={() => setShowCreateStrategyModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm whitespace-nowrap flex-shrink-0"
               >
                 <Plus className="w-4 h-4" />
-                New Strategy
+                <span className="hidden xs:inline sm:inline">New Strategy</span>
+                <span className="xs:hidden sm:hidden">New</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 flex gap-1 border-t border-slate-800">
+        <div className="flex gap-0 border-t border-slate-800 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {[
             { id: 'strategy', label: 'Strategy', icon: Target },
-            { id: 'types', label: 'Content Types', icon: Layout },
+            { id: 'types', label: 'Types', icon: Layout },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
             { id: 'titles', label: 'Titles', icon: Type },
             { id: 'content', label: 'Content', icon: FileEdit },
@@ -508,21 +506,21 @@ export default function BlogContentOSModule() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+                'flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0',
                 activeTab === tab.id
                   ? 'border-primary-500 text-primary-400'
                   : 'border-transparent text-slate-400 hover:text-slate-300'
               )}
             >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <tab.icon className="w-4 h-4 flex-shrink-0" />
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="p-6">
+      <main className="p-3 sm:p-6">
         {!activeStrategyId ? (
           <EmptyState onCreate={() => setShowCreateStrategyModal(true)} />
         ) : (
@@ -1711,8 +1709,8 @@ function TitlesTab({
                 </div>
               ))
             )}
-            </div>
           </div>
+        </div>
 
         {/* Generated Titles */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">

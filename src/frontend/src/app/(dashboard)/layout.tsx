@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useDataStore, useAuthStore } from '@/stores';
+import { useDataStore, useAuthStore, useCompanyStore, useChatStore, useTaskStore, useThemeStore } from '@/stores';
 
 export default function DashboardGroupLayout({
   children,
@@ -11,13 +11,17 @@ export default function DashboardGroupLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const [hydrated, setHydrated] = React.useState(false);
 
-  // Manually rehydrate stores after mount (skipHydration prevents render blocking)
+  // Manually rehydrate all stores after mount (skipHydration prevents render blocking)
   useEffect(() => {
     useDataStore.persist.rehydrate();
     useAuthStore.persist.rehydrate();
+    useCompanyStore.persist.rehydrate();
+    useChatStore.persist.rehydrate();
+    useTaskStore.persist.rehydrate();
+    useThemeStore.persist.rehydrate();
     setHydrated(true);
   }, []);
 

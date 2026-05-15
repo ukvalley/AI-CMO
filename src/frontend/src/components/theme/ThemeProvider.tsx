@@ -11,7 +11,9 @@ import { useEffect } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { isCustomActive, identity, getCSSVariables } = useThemeStore();
+  const isCustomActive = useThemeStore(s => s.isCustomActive);
+  const identity = useThemeStore(s => s.identity);
+  const getCSSVariables = useThemeStore(s => s.getCSSVariables);
 
   useEffect(() => {
     if (isCustomActive) {
@@ -49,21 +51,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.body.style.color = '#ffffff';
     }
   }, [isCustomActive, identity, getCSSVariables]);
-
-  // Load theme on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('mengo-theme-storage');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.state?.isCustomActive && parsed.state?.identity) {
-          // Theme will be applied by the store
-        }
-      } catch (e) {
-        console.error('Failed to load theme:', e);
-      }
-    }
-  }, []);
 
   return <>{children}</>;
 }

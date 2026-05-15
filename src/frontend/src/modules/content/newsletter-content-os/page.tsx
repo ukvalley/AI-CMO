@@ -143,14 +143,18 @@ function getEstimatedReadTime(wordCount: number): number {
 // ============================================
 
 export default function NewsletterContentOSModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
   const taskStore = useTaskStore();
 
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
-
   // Sync company from companyStore to dataStore
-  const companyId = companyStore.activeCompanyId;
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -158,11 +162,11 @@ export default function NewsletterContentOSModule() {
   }, [companyId, activeCompanyId, setActiveCompany]);
 
   // Get data from store
-  const strategies = useMemo(() => (getItems('newsletterStrategies') as NewsletterStrategy[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const contentTypes = useMemo(() => (getItems('newsletterContentTypes') as NewsletterContentTypeConfig[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const calendars = useMemo(() => (getItems('newsletterCalendars') as NewsletterCalendar[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const titles = useMemo(() => (getItems('newsletterTitles') as NewsletterTitle[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const posts = useMemo(() => (getItems('newsletterPosts') as NewsletterPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const strategies = useMemo(() => (getItems('newsletterStrategies') as NewsletterStrategy[]) || [], [getItems, data, activeCompanyId]);
+  const contentTypes = useMemo(() => (getItems('newsletterContentTypes') as NewsletterContentTypeConfig[]) || [], [getItems, data, activeCompanyId]);
+  const calendars = useMemo(() => (getItems('newsletterCalendars') as NewsletterCalendar[]) || [], [getItems, data, activeCompanyId]);
+  const titles = useMemo(() => (getItems('newsletterTitles') as NewsletterTitle[]) || [], [getItems, data, activeCompanyId]);
+  const posts = useMemo(() => (getItems('newsletterPosts') as NewsletterPost[]) || [], [getItems, data, activeCompanyId]);
 
   // Linked data
   const brand = useMemo(() => getItems('brand') as Brand | null, [getItems]);
@@ -214,23 +218,23 @@ export default function NewsletterContentOSModule() {
 
       if (sRes.data && Array.isArray(sRes.data) && sRes.data.length > 0) {
         const local = (getItems('newsletterStrategies') as NewsletterStrategy[]) || [];
-        dataStore.setItems('newsletterStrategies', mergeById(local, sRes.data as NewsletterStrategy[]));
+        setItems('newsletterStrategies', mergeById(local, sRes.data as NewsletterStrategy[]));
       }
       if (cRes.data && Array.isArray(cRes.data) && cRes.data.length > 0) {
         const local = (getItems('newsletterCalendars') as NewsletterCalendar[]) || [];
-        dataStore.setItems('newsletterCalendars', mergeById(local, cRes.data as NewsletterCalendar[]));
+        setItems('newsletterCalendars', mergeById(local, cRes.data as NewsletterCalendar[]));
       }
       if (tRes.data && Array.isArray(tRes.data) && tRes.data.length > 0) {
         const local = (getItems('newsletterTitles') as NewsletterTitle[]) || [];
-        dataStore.setItems('newsletterTitles', mergeById(local, tRes.data as NewsletterTitle[]));
+        setItems('newsletterTitles', mergeById(local, tRes.data as NewsletterTitle[]));
       }
       if (pRes.data && Array.isArray(pRes.data) && pRes.data.length > 0) {
         const local = (getItems('newsletterPosts') as NewsletterPost[]) || [];
-        dataStore.setItems('newsletterPosts', mergeById(local, pRes.data as NewsletterPost[]));
+        setItems('newsletterPosts', mergeById(local, pRes.data as NewsletterPost[]));
       }
       if (eRes.data && Array.isArray(eRes.data) && eRes.data.length > 0) {
         const local = (getItems('newsletterExports') as NewsletterExport[]) || [];
-        dataStore.setItems('newsletterExports', mergeById(local, eRes.data as NewsletterExport[]));
+        setItems('newsletterExports', mergeById(local, eRes.data as NewsletterExport[]));
       }
 
       setIsLoading(false);

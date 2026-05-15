@@ -685,8 +685,8 @@ type TabType = 'icps' | 'personas' | 'mapping' | 'framework';
 
 export default function IcpPersonasPage() {
   const [activeTab, setActiveTab] = useState<TabType>('icps');
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [icps, setIcps] = useState<ICP[]>([]);

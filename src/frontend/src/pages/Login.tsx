@@ -24,7 +24,9 @@ import { useAuthStore } from '@/stores';
 
 export default function Login() {
   const router = useRouter();
-  const { login, isLoading, error: authError } = useAuthStore();
+  const login = useAuthStore(s => s.login);
+  const isLoading = useAuthStore(s => s.isLoading);
+  const authError = useAuthStore(s => s.error);
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [rememberMe, setRememberMe] = React.useState(false);
