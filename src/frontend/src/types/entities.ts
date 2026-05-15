@@ -1722,6 +1722,7 @@ export interface SalesCollateral extends BaseEntity {
 
   // Linked content
   linkedData?: {
+    personaIds?: string[];
     salesScriptIds?: string[];
     faqIds?: string[];
     testimonialIds?: string[];
