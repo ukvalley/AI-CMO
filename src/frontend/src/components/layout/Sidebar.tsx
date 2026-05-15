@@ -17,13 +17,110 @@ import {
   ChevronRight,
   ChevronDown,
   X,
+  Sparkles,
+  Circle,
+  // Module icons (only the ones actually used)
+  Users,
+  Users2,
+  Target,
+  Package,
+  Swords,
+  Settings,
+  Palette,
+  Brain,
+  BookOpen,
+  Paintbrush,
+  Image as ImageIcon,
+  FileText,
+  FolderHeart,
+  Globe,
+  FileEdit,
+  Mail,
+  HelpCircle,
+  Library,
+  MessageSquareQuote,
+  FileCode,
+  Phone,
+  FileStack,
+  Video,
+  PanelTop,
+  BookMarked,
+  Search,
+  Megaphone,
+  Newspaper,
+  MailPlus,
+  GraduationCap,
+  Calendar,
+  CalendarDays,
+  Gift,
+  CreditCard,
+  Share2,
+  ClipboardList,
+  Scale,
+  Clock,
+  // Group icons
+  Layers,
+  TrendingUp,
+  Zap,
+  Settings2,
+  Cpu,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { MODULES, GROUPS, getModulesByGroup } from '@/lib/modules';
 import { useCompanyStore, useAuthStore, useTaskStore } from '@/stores';
-import * as Icons from 'lucide-react';
+
+// Icon lookup map — only imports the icons we actually use
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Users2,
+  Target,
+  Package,
+  Swords,
+  Settings,
+  Palette,
+  Brain,
+  BookOpen,
+  Paintbrush,
+  Image: ImageIcon,
+  FileText,
+  FolderHeart,
+  Globe,
+  FileEdit,
+  Mail,
+  HelpCircle,
+  Library,
+  MessageSquareQuote,
+  FileCode,
+  Phone,
+  FileStack,
+  Video,
+  PanelTop,
+  BookMarked,
+  Search,
+  Megaphone,
+  Newspaper,
+  MailPlus,
+  GraduationCap,
+  Calendar,
+  CalendarDays,
+  Gift,
+  CreditCard,
+  Share2,
+  ClipboardList,
+  Scale,
+  Clock,
+  Sparkles,
+  Layers,
+  TrendingUp,
+  Zap,
+  Settings2,
+  Cpu,
+  Circle,
+};
 
 // ============================================
 // TYPES
@@ -37,15 +134,15 @@ interface SidebarProps {
 }
 
 // ============================================
-// SIDEBAR
+// SIDEBAR (memoized to avoid re-renders on page navigation)
 // ============================================
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const Sidebar = React.memo(function Sidebar({
   collapsed,
   onToggle,
   mobileOpen,
   onMobileClose,
-}) => {
+}: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { runningTaskCount } = useTaskStore();
@@ -150,6 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Dashboard */}
           <Link
             href="/dashboard"
+            prefetch={false}
             className={cn(
               'flex items-center gap-3 px-3 py-2 rounded-lg',
               'text-sm font-medium transition-colors duration-200',
@@ -167,6 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Companies */}
           <Link
             href="/companies"
+            prefetch={false}
             className={cn(
               'flex items-center gap-3 px-3 py-2 rounded-lg',
               'text-sm font-medium transition-colors duration-200',
@@ -205,7 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {isExpanded && (
                   <div className="space-y-1 mt-1">
                     {groupModules.map((module) => {
-                      const Icon = (Icons[module.icon as keyof typeof Icons] as LucideIcon) || Icons.Circle;
+                      const Icon = ICON_MAP[module.icon] || Circle;
                       const isActive = pathname === module.path || pathname?.startsWith(module.path + '/');
                       const hasBadge = module.badge === 'tasks' && runningTaskCount > 0;
 
@@ -213,6 +312,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <Link
                           key={module.id}
                           href={module.path}
+                          prefetch={false}
                           className={cn(
                             'flex items-center gap-3 px-3 py-2 rounded-lg',
                             'text-sm transition-colors duration-200',
@@ -243,6 +343,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 border-t border-white/10">
           <Link
             href="/settings"
+            prefetch={false}
             className={cn(
               'flex items-center gap-3 p-2 rounded-lg',
               'hover:bg-[#1a1d21] transition-colors',
@@ -269,4 +370,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </aside>
     </>
   );
-};
+});

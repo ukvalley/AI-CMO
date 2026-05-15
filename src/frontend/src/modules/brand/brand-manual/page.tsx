@@ -228,6 +228,7 @@ const ARCHETYPES: Record<string, {
 // ============================================
 
 function getContrastColor(hexColor: string): string {
+  if (!hexColor || typeof hexColor !== 'string' || hexColor.length < 7) return '#f8fafc';
   const r = parseInt(hexColor.slice(1, 3), 16);
   const g = parseInt(hexColor.slice(3, 5), 16);
   const b = parseInt(hexColor.slice(5, 7), 16);
@@ -236,6 +237,7 @@ function getContrastColor(hexColor: string): string {
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  if (!hex || typeof hex !== 'string' || hex.length < 7) return { r: 128, g: 128, b: 128 };
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);

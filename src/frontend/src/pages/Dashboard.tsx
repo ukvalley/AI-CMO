@@ -8,7 +8,6 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { MODULES, GROUPS, getModulesByGroup } from '@/lib/modules';
 import { useDataStore, useTaskStore, useAuthStore, useCompanyStore } from '@/stores';
 import {
@@ -19,8 +18,67 @@ import {
   newsletterPostApi,
 } from '@/services/api';
 import { cn } from '@/utils/cn';
-import * as Icons from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import {
+  Users,
+  Users2,
+  Package,
+  Swords,
+  FileText,
+  HelpCircle,
+  TrendingUp,
+  Clock,
+  Sparkles,
+  Circle,
+  LayoutDashboard,
+  Building2,
+  Target,
+  Settings,
+  Palette,
+  Brain,
+  BookOpen,
+  Paintbrush,
+  FolderHeart,
+  Globe,
+  FileEdit,
+  Mail,
+  Library,
+  MessageSquareQuote,
+  FileCode,
+  Phone,
+  FileStack,
+  Video,
+  PanelTop,
+  BookMarked,
+  Search,
+  Megaphone,
+  Newspaper,
+  MailPlus,
+  GraduationCap,
+  Calendar,
+  CalendarDays,
+  Gift,
+  CreditCard,
+  Share2,
+  ClipboardList,
+  Scale,
+  Layers,
+  Zap,
+  Settings2,
+  Cpu,
+  Image as ImageIcon,
+  type LucideIcon,
+} from 'lucide-react';
+
+// Icon lookup for module cards — maps module icon names to components
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard, Building2, Users, Users2, Target, Package, Swords,
+  Settings, Palette, Brain, BookOpen, Paintbrush, Image: ImageIcon,
+  FileText, FolderHeart, Globe, FileEdit, Mail, HelpCircle, Library,
+  MessageSquareQuote, FileCode, Phone, FileStack, Video, PanelTop,
+  BookMarked, Search, Megaphone, Newspaper, MailPlus, GraduationCap,
+  Calendar, CalendarDays, Gift, CreditCard, Share2, ClipboardList,
+  Scale, Clock, Sparkles, Layers, TrendingUp, Zap, Settings2, Cpu, Circle,
+};
 
 // ============================================
 // MODULE ID → DATA STORE KEY MAPPING
@@ -138,7 +196,7 @@ function ModuleCard({
   module: (typeof MODULES)[0];
   itemCount: number;
 }) {
-  const Icon = (Icons[module.icon as keyof typeof Icons] as LucideIcon) || Icons.Circle;
+  const Icon = (ICON_MAP[module.icon] as LucideIcon) || Circle;
   const group = GROUPS.find((g) => g.id === module.group);
 
   return (
@@ -167,7 +225,7 @@ function ModuleCard({
           <p className="text-xs text-[#878e9a] mt-1 line-clamp-2">{module.description}</p>
           {module.hasAI && (
             <div className="flex items-center gap-1 mt-2">
-              <Icons.Sparkles className="w-3 h-3 text-[#C8FF2E]" />
+              <Sparkles className="w-3 h-3 text-[#C8FF2E]" />
               <span className="text-[10px] text-[#C8FF2E]">AI-powered</span>
             </div>
           )}
@@ -255,8 +313,7 @@ export default function Dashboard() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -270,49 +327,49 @@ export default function Dashboard() {
         {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
-            icon={Icons.Users}
+            icon={Users}
             label="Founders"
             value={statCounts.founders}
             color="success"
           />
           <StatCard
-            icon={Icons.Users2}
+            icon={Users2}
             label="Employees"
             value={statCounts.employees}
             color="info"
           />
           <StatCard
-            icon={Icons.Package}
+            icon={Package}
             label="Products"
             value={statCounts.products}
             color="warning"
           />
           <StatCard
-            icon={Icons.Swords}
+            icon={Swords}
             label="Competitors"
             value={statCounts.competitors}
             color="primary"
           />
           <StatCard
-            icon={Icons.FileText}
+            icon={FileText}
             label="Blogs"
             value={statCounts.blogs}
             color="success"
           />
           <StatCard
-            icon={Icons.HelpCircle}
+            icon={HelpCircle}
             label="FAQs"
             value={statCounts.faqs}
             color="info"
           />
           <StatCard
-            icon={Icons.TrendingUp}
+            icon={TrendingUp}
             label="Landing Pages"
             value={statCounts.landingPages}
             color="primary"
           />
           <StatCard
-            icon={Icons.Clock}
+            icon={Clock}
             label="Running Tasks"
             value={statCounts.runningTasks}
             color={statCounts.runningTasks > 0 ? 'warning' : 'primary'}
@@ -353,6 +410,5 @@ export default function Dashboard() {
           })}
         </div>
       </div>
-    </DashboardLayout>
-  );
-}
+    );
+  }
