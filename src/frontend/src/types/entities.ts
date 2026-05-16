@@ -2532,9 +2532,15 @@ export interface WebsitePlanner extends BaseEntity {
     // Brand
     brandId?: string;
     brandAssetIds?: string[];
+    brandStrategyId?: string;
 
     // Visual Identity
     visualIdentityId?: string;
+
+    // Content & Sales
+    faqIds?: string[];
+    salesCollateralIds?: string[];
+    testimonialIds?: string[];
   };
 
   // Structure
