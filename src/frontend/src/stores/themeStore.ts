@@ -145,13 +145,15 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'mengo-theme-storage',
+      skipHydration: true,
     }
   )
 );
 
 // Hook to get CSS variable style for components
 export function useThemeStyles() {
-  const { identity, isCustomActive, getCSSVariables } = useThemeStore();
+  const isCustomActive = useThemeStore(s => s.isCustomActive);
+  const getCSSVariables = useThemeStore(s => s.getCSSVariables);
 
   if (!isCustomActive) {
     return {};
@@ -162,6 +164,7 @@ export function useThemeStyles() {
 
 // Hook to get current theme colors
 export function useThemeColors() {
-  const { identity, isCustomActive } = useThemeStore();
+  const identity = useThemeStore(s => s.identity);
+  const isCustomActive = useThemeStore(s => s.isCustomActive);
   return isCustomActive ? identity : defaultIdentity;
 }

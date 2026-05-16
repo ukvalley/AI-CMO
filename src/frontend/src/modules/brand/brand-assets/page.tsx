@@ -634,8 +634,8 @@ function AssetFormModal({
 // ============================================
 
 export default function BrandAssetsPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [assets, setAssets] = useState<BrandAsset[]>([]);

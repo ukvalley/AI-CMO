@@ -511,10 +511,10 @@ function StationeryFormModal({
       ...formData,
       dimensions: formData.dimensions.width && formData.dimensions.height
         ? {
-            width: parseInt(formData.dimensions.width),
-            height: parseInt(formData.dimensions.height),
-            unit: formData.dimensions.unit,
-          }
+          width: parseInt(formData.dimensions.width),
+          height: parseInt(formData.dimensions.height),
+          unit: formData.dimensions.unit,
+        }
         : undefined,
     };
 
@@ -565,7 +565,7 @@ function StationeryFormModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
           {/* Upload Section */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -803,34 +803,36 @@ function StationeryFormModal({
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Custom Dimensions
             </label>
-            <div className="flex gap-3">
-              <input
-                type="number"
-                value={formData.dimensions.width}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  dimensions: { ...prev.dimensions, width: e.target.value }
-                }))}
-                placeholder="Width"
-                className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
-              />
-              <input
-                type="number"
-                value={formData.dimensions.height}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  dimensions: { ...prev.dimensions, height: e.target.value }
-                }))}
-                placeholder="Height"
-                className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
-              />
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+              <div className="flex gap-2 flex-1">
+                <input
+                  type="number"
+                  value={formData.dimensions.width}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    dimensions: { ...prev.dimensions, width: e.target.value }
+                  }))}
+                  placeholder="Width"
+                  className="flex-1 min-w-0 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
+                />
+                <input
+                  type="number"
+                  value={formData.dimensions.height}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    dimensions: { ...prev.dimensions, height: e.target.value }
+                  }))}
+                  placeholder="Height"
+                  className="flex-1 min-w-0 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
+                />
+              </div>
               <select
                 value={formData.dimensions.unit}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
                   dimensions: { ...prev.dimensions, unit: e.target.value as any }
                 }))}
-                className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
+                className="w-full sm:w-auto px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-primary-500 outline-none"
               >
                 <option value="mm">mm</option>
                 <option value="in">in</option>
@@ -917,8 +919,8 @@ function StationeryFormModal({
 // ============================================
 
 export default function StationeryPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [items, setItems] = useState<Stationery[]>([]);
@@ -1116,8 +1118,8 @@ export default function StationeryPage() {
           {STATIONERY_TYPES
             .filter(type => !type.disabled && (!categoryFilter || getCategoryForType(type.value) === categoryFilter))
             .map(type => (
-            <option key={type.value} value={type.value}>{type.label}</option>
-          ))}
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
         </select>
         <select
           value={statusFilter}
@@ -1154,28 +1156,28 @@ export default function StationeryPage() {
           {categoryOrder
             .filter(category => groupedItems[category]?.length > 0)
             .map((category) => (
-            <div key={category}>
-              <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                {STATIONERY_CATEGORIES[category as keyof typeof STATIONERY_CATEGORIES] || category}
-                <span className="px-2 py-0.5 bg-slate-800 text-slate-400 text-xs rounded-full">
-                  {groupedItems[category].length}
-                </span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {groupedItems[category].map(item => (
-                  <StationeryCard
-                    key={item.id}
-                    item={item}
-                    onEdit={(i) => {
-                      setEditingItem(i);
-                      setIsModalOpen(true);
-                    }}
-                    onDelete={handleDelete}
-                  />
-                ))}
+              <div key={category}>
+                <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  {STATIONERY_CATEGORIES[category as keyof typeof STATIONERY_CATEGORIES] || category}
+                  <span className="px-2 py-0.5 bg-slate-800 text-slate-400 text-xs rounded-full">
+                    {groupedItems[category].length}
+                  </span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {groupedItems[category].map(item => (
+                    <StationeryCard
+                      key={item.id}
+                      item={item}
+                      onEdit={(i) => {
+                        setEditingItem(i);
+                        setIsModalOpen(true);
+                      }}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
 

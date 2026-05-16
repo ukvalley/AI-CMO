@@ -87,33 +87,33 @@ const DEFAULT_SECTIONS: Array<{
   order: number;
   priority: SectionPriority;
 }> = [
-  { name: 'Hero Section', enabled: true, order: 0, priority: 'critical' },
-  { name: 'About Us', enabled: true, order: 1, priority: 'high' },
-  { name: 'Services', enabled: true, order: 2, priority: 'high' },
-  { name: 'Products', enabled: false, order: 3, priority: 'medium' },
-  { name: 'Features', enabled: true, order: 4, priority: 'medium' },
-  { name: 'Case Studies', enabled: false, order: 5, priority: 'medium' },
-  { name: 'Testimonials', enabled: true, order: 6, priority: 'medium' },
-  { name: 'FAQs', enabled: true, order: 7, priority: 'medium' },
-  { name: 'Pricing', enabled: false, order: 8, priority: 'low' },
-  { name: 'Process', enabled: false, order: 9, priority: 'low' },
-  { name: 'Team', enabled: false, order: 10, priority: 'low' },
-  { name: 'Industries Served', enabled: false, order: 11, priority: 'low' },
-  { name: 'Portfolio', enabled: false, order: 12, priority: 'low' },
-  { name: 'Blog', enabled: false, order: 13, priority: 'low' },
-  { name: 'Careers', enabled: false, order: 14, priority: 'low' },
-  { name: 'Contact', enabled: true, order: 15, priority: 'critical' },
-  { name: 'Lead Form', enabled: true, order: 16, priority: 'high' },
-  { name: 'CTA Blocks', enabled: true, order: 17, priority: 'high' },
-  { name: 'Statistics', enabled: false, order: 18, priority: 'low' },
-  { name: 'Integrations', enabled: false, order: 19, priority: 'low' },
-  { name: 'Partners', enabled: false, order: 20, priority: 'low' },
-  { name: 'Certifications', enabled: false, order: 21, priority: 'low' },
-  { name: 'Download Brochure', enabled: false, order: 22, priority: 'low' },
-  { name: 'Investor Section', enabled: false, order: 23, priority: 'low' },
-  { name: 'Media Coverage', enabled: false, order: 24, priority: 'low' },
-  { name: 'Event Section', enabled: false, order: 25, priority: 'low' },
-];
+    { name: 'Hero Section', enabled: true, order: 0, priority: 'critical' },
+    { name: 'About Us', enabled: true, order: 1, priority: 'high' },
+    { name: 'Services', enabled: true, order: 2, priority: 'high' },
+    { name: 'Products', enabled: false, order: 3, priority: 'medium' },
+    { name: 'Features', enabled: true, order: 4, priority: 'medium' },
+    { name: 'Case Studies', enabled: false, order: 5, priority: 'medium' },
+    { name: 'Testimonials', enabled: true, order: 6, priority: 'medium' },
+    { name: 'FAQs', enabled: true, order: 7, priority: 'medium' },
+    { name: 'Pricing', enabled: false, order: 8, priority: 'low' },
+    { name: 'Process', enabled: false, order: 9, priority: 'low' },
+    { name: 'Team', enabled: false, order: 10, priority: 'low' },
+    { name: 'Industries Served', enabled: false, order: 11, priority: 'low' },
+    { name: 'Portfolio', enabled: false, order: 12, priority: 'low' },
+    { name: 'Blog', enabled: false, order: 13, priority: 'low' },
+    { name: 'Careers', enabled: false, order: 14, priority: 'low' },
+    { name: 'Contact', enabled: true, order: 15, priority: 'critical' },
+    { name: 'Lead Form', enabled: true, order: 16, priority: 'high' },
+    { name: 'CTA Blocks', enabled: true, order: 17, priority: 'high' },
+    { name: 'Statistics', enabled: false, order: 18, priority: 'low' },
+    { name: 'Integrations', enabled: false, order: 19, priority: 'low' },
+    { name: 'Partners', enabled: false, order: 20, priority: 'low' },
+    { name: 'Certifications', enabled: false, order: 21, priority: 'low' },
+    { name: 'Download Brochure', enabled: false, order: 22, priority: 'low' },
+    { name: 'Investor Section', enabled: false, order: 23, priority: 'low' },
+    { name: 'Media Coverage', enabled: false, order: 24, priority: 'low' },
+    { name: 'Event Section', enabled: false, order: 25, priority: 'low' },
+  ];
 
 const DEFAULT_PAGES: Array<{
   name: string;
@@ -121,13 +121,13 @@ const DEFAULT_PAGES: Array<{
   pageType: 'main' | 'landing' | 'dynamic' | 'legal' | 'seo';
   isPublished: boolean;
 }> = [
-  { name: 'Home', url: '/', pageType: 'main', isPublished: false },
-  { name: 'About', url: '/about', pageType: 'main', isPublished: false },
-  { name: 'Services', url: '/services', pageType: 'main', isPublished: false },
-  { name: 'Contact', url: '/contact', pageType: 'main', isPublished: false },
-  { name: 'Privacy Policy', url: '/privacy-policy', pageType: 'legal', isPublished: false },
-  { name: 'Terms of Service', url: '/terms', pageType: 'legal', isPublished: false },
-];
+    { name: 'Home', url: '/', pageType: 'main', isPublished: false },
+    { name: 'About', url: '/about', pageType: 'main', isPublished: false },
+    { name: 'Services', url: '/services', pageType: 'main', isPublished: false },
+    { name: 'Contact', url: '/contact', pageType: 'main', isPublished: false },
+    { name: 'Privacy Policy', url: '/privacy-policy', pageType: 'legal', isPublished: false },
+    { name: 'Terms of Service', url: '/terms', pageType: 'legal', isPublished: false },
+  ];
 
 const DEFAULT_FEATURES: Array<{
   name: string;
@@ -135,23 +135,23 @@ const DEFAULT_FEATURES: Array<{
   priority: SectionPriority;
   complexity: FeatureComplexity;
 }> = [
-  { name: 'Authentication', enabled: false, priority: 'medium', complexity: 'medium' },
-  { name: 'Payment Gateway', enabled: false, priority: 'medium', complexity: 'complex' },
-  { name: 'CRM Integration', enabled: false, priority: 'high', complexity: 'medium' },
-  { name: 'WhatsApp Integration', enabled: false, priority: 'medium', complexity: 'simple' },
-  { name: 'Chatbot', enabled: false, priority: 'medium', complexity: 'medium' },
-  { name: 'AI Features', enabled: false, priority: 'low', complexity: 'complex' },
-  { name: 'Blog System', enabled: true, priority: 'medium', complexity: 'medium' },
-  { name: 'CMS', enabled: false, priority: 'high', complexity: 'complex' },
-  { name: 'Multi-language', enabled: false, priority: 'low', complexity: 'complex' },
-  { name: 'Admin Panel', enabled: false, priority: 'high', complexity: 'complex' },
-  { name: 'Analytics', enabled: true, priority: 'high', complexity: 'simple' },
-  { name: 'Lead Tracking', enabled: true, priority: 'high', complexity: 'medium' },
-  { name: 'Booking System', enabled: false, priority: 'low', complexity: 'complex' },
-  { name: 'Notifications', enabled: false, priority: 'medium', complexity: 'medium' },
-  { name: 'API Integration', enabled: false, priority: 'medium', complexity: 'complex' },
-  { name: 'Role Management', enabled: false, priority: 'medium', complexity: 'complex' },
-];
+    { name: 'Authentication', enabled: false, priority: 'medium', complexity: 'medium' },
+    { name: 'Payment Gateway', enabled: false, priority: 'medium', complexity: 'complex' },
+    { name: 'CRM Integration', enabled: false, priority: 'high', complexity: 'medium' },
+    { name: 'WhatsApp Integration', enabled: false, priority: 'medium', complexity: 'simple' },
+    { name: 'Chatbot', enabled: false, priority: 'medium', complexity: 'medium' },
+    { name: 'AI Features', enabled: false, priority: 'low', complexity: 'complex' },
+    { name: 'Blog System', enabled: true, priority: 'medium', complexity: 'medium' },
+    { name: 'CMS', enabled: false, priority: 'high', complexity: 'complex' },
+    { name: 'Multi-language', enabled: false, priority: 'low', complexity: 'complex' },
+    { name: 'Admin Panel', enabled: false, priority: 'high', complexity: 'complex' },
+    { name: 'Analytics', enabled: true, priority: 'high', complexity: 'simple' },
+    { name: 'Lead Tracking', enabled: true, priority: 'high', complexity: 'medium' },
+    { name: 'Booking System', enabled: false, priority: 'low', complexity: 'complex' },
+    { name: 'Notifications', enabled: false, priority: 'medium', complexity: 'medium' },
+    { name: 'API Integration', enabled: false, priority: 'medium', complexity: 'complex' },
+    { name: 'Role Management', enabled: false, priority: 'medium', complexity: 'complex' },
+  ];
 
 const AI_PLATFORMS = [
   { id: 'chatgpt', name: 'ChatGPT', color: '#10A37F' },
@@ -181,26 +181,31 @@ const WEBSITE_TYPES: { value: WebsiteType; label: string }[] = [
 // ============================================
 
 export default function WebsitePlannerModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
 
   // Sync company from companyStore to dataStore
-  const companyId = companyStore.activeCompanyId;
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
     }
   }, [companyId, activeCompanyId, setActiveCompany]);
 
-  // Get websites from store - use dataStore.data directly for reactivity
+  // Get websites from store - use data directly for reactivity
   const websites = useMemo(
     () => {
       const items = (getItems('websitePlanners') as WebsitePlanner[]) || [];
       console.log('Fetching websites:', items.length);
       return items;
     },
-    [getItems, dataStore.data, activeCompanyId] // Add dataStore.data as dependency
+    [getItems, data, activeCompanyId] // Add data as dependency
   );
 
   const [activeTab, setActiveTab] = useState<'overview' | 'structure' | 'pages' | 'content' | 'seo' | 'features' | 'ai' | 'data'>('overview');
@@ -383,18 +388,18 @@ ${selectedWebsite.secondaryCTA || 'N/A'}
 
 ### Enabled Sections
 ${selectedWebsite.sections
-  .filter((s) => s.enabled)
-  .map((s) => `- **${s.name}** (Priority: ${s.priority})${s.purpose ? `\n  - Purpose: ${s.purpose}` : ''}`)
-  .join('\n')}
+        .filter((s) => s.enabled)
+        .map((s) => `- **${s.name}** (Priority: ${s.priority})${s.purpose ? `\n  - Purpose: ${s.purpose}` : ''}`)
+        .join('\n')}
 
 ### Pages
 ${selectedWebsite.pages.map((p) => `- **${p.name}** (${p.pageType}) - \`${p.url}\``).join('\n')}
 
 ## Features
 ${selectedWebsite.features
-  .filter((f) => f.enabled)
-  .map((f) => `- **${f.name}** (Complexity: ${f.complexity}, Priority: ${f.priority})`)
-  .join('\n')}
+        .filter((f) => f.enabled)
+        .map((f) => `- **${f.name}** (Complexity: ${f.complexity}, Priority: ${f.priority})`)
+        .join('\n')}
 
 ## SEO
 
@@ -434,10 +439,10 @@ ${selectedWebsite.targetKeywords.map((k) => `- ${k}`).join('\n') || 'None define
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen">
       {/* Header */}
-      <div className="bg-slate-900 border-b border-slate-800">
-        <div className="px-6 py-4">
+      <div className="border-b border-slate-800">
+        <div className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary-500/10 rounded-lg">
@@ -496,7 +501,7 @@ ${selectedWebsite.targetKeywords.map((k) => `- ${k}`).join('\n') || 'None define
       </div>
 
       {/* Main Content */}
-      <div className="p-6">
+      <div className="py-6">
         {!selectedWebsite ? (
           <WebsiteList
             websites={websites}
@@ -514,7 +519,7 @@ ${selectedWebsite.targetKeywords.map((k) => `- ${k}`).join('\n') || 'None define
 
             {/* Tabs */}
             <div className="border-b border-slate-800">
-              <div className="flex gap-1">
+              <div className="flex gap-1 overflow-x-auto scrollbar-none">
                 {[
                   { id: 'overview', label: 'Overview', icon: Layout },
                   { id: 'structure', label: 'Structure', icon: Layers },
@@ -1399,7 +1404,7 @@ function ContentTab({
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-slate-800">
+      <div className="flex gap-4 border-b border-slate-800 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveContent('faqs')}
           className={cn(
@@ -1484,27 +1489,29 @@ function ContentTab({
         <div className="space-y-4">
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-slate-200 mb-4">Add Case Study</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                placeholder="Client name"
-                value={newCaseStudy.clientName}
-                onChange={(e) => setNewCaseStudy({ ...newCaseStudy, clientName: e.target.value })}
-                className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-              />
-              <input
-                type="text"
-                placeholder="Industry"
-                value={newCaseStudy.industry}
-                onChange={(e) => setNewCaseStudy({ ...newCaseStudy, industry: e.target.value })}
-                className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
-              />
-              <button
-                onClick={handleAddCaseStudy}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-              >
-                Add Case Study
-              </button>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Client name"
+                  value={newCaseStudy.clientName}
+                  onChange={(e) => setNewCaseStudy({ ...newCaseStudy, clientName: e.target.value })}
+                  className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Industry"
+                  value={newCaseStudy.industry}
+                  onChange={(e) => setNewCaseStudy({ ...newCaseStudy, industry: e.target.value })}
+                  className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500"
+                />
+                <button
+                  onClick={handleAddCaseStudy}
+                  className="w-full md:w-auto md:self-start px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                  Add Case Study
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1916,7 +1923,7 @@ function DataSourcesTab({
   website: WebsitePlanner;
   onUpdate: (updates: Partial<WebsitePlanner>) => void;
 }) {
-  const { getItems } = useDataStore();
+  const getItems = useDataStore(s => s.getItems);
 
   // Fetch data from other modules
   const businessProfiles = getItems('businessProfiles') as any[];

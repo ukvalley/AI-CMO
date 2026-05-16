@@ -141,11 +141,15 @@ function formatDate(date: Date): string {
 // ============================================
 
 export default function SocialMediaOSModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
-
-  const companyId = companyStore.activeCompanyId;
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -153,21 +157,21 @@ export default function SocialMediaOSModule() {
   }, [companyId, activeCompanyId, setActiveCompany]);
 
   // Data from store
-  const calendar = useMemo(() => getItems('socialMediaCalendar') as SocialMediaCalendar | null, [getItems, dataStore.data, activeCompanyId]);
-  const strategies = useMemo(() => (getItems('socialContentStrategies') as SocialContentStrategy[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const entries = useMemo(() => (getItems('socialCalendarEntries') as SocialCalendarEntry[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const campaigns = useMemo(() => (getItems('socialCampaigns') as SocialCampaign[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const templates = useMemo(() => (getItems('socialContentTemplates') as SocialContentTemplate[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const hashtagBanks = useMemo(() => (getItems('socialHashtagBanks') as SocialHashtagBank[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const creatives = useMemo(() => (getItems('socialCreatives') as SocialCreative[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const calendar = useMemo(() => getItems('socialMediaCalendar') as SocialMediaCalendar | null, [getItems, data, activeCompanyId]);
+  const strategies = useMemo(() => (getItems('socialContentStrategies') as SocialContentStrategy[]) || [], [getItems, data, activeCompanyId]);
+  const entries = useMemo(() => (getItems('socialCalendarEntries') as SocialCalendarEntry[]) || [], [getItems, data, activeCompanyId]);
+  const campaigns = useMemo(() => (getItems('socialCampaigns') as SocialCampaign[]) || [], [getItems, data, activeCompanyId]);
+  const templates = useMemo(() => (getItems('socialContentTemplates') as SocialContentTemplate[]) || [], [getItems, data, activeCompanyId]);
+  const hashtagBanks = useMemo(() => (getItems('socialHashtagBanks') as SocialHashtagBank[]) || [], [getItems, data, activeCompanyId]);
+  const creatives = useMemo(() => (getItems('socialCreatives') as SocialCreative[]) || [], [getItems, data, activeCompanyId]);
 
   // Linked data
-  const brand = useMemo(() => getItems('brand') as Brand | null, [getItems, dataStore.data, activeCompanyId]);
-  const businessProfile = useMemo(() => (getItems('businessProfiles') as BusinessProfile[])[0], [getItems, dataStore.data, activeCompanyId]);
-  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const competitors = useMemo(() => (getItems('competitors') as Competitor[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const brand = useMemo(() => getItems('brand') as Brand | null, [getItems, data, activeCompanyId]);
+  const businessProfile = useMemo(() => (getItems('businessProfiles') as BusinessProfile[])[0], [getItems, data, activeCompanyId]);
+  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems, data, activeCompanyId]);
+  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems, data, activeCompanyId]);
+  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, data, activeCompanyId]);
+  const competitors = useMemo(() => (getItems('competitors') as Competitor[]) || [], [getItems, data, activeCompanyId]);
 
   // Load from API
   const [isLoading, setIsLoading] = useState(true);
@@ -198,27 +202,27 @@ export default function SocialMediaOSModule() {
       };
       if (stratRes.data && Array.isArray(stratRes.data) && (stratRes.data as any[]).length > 0) {
         const local = (getItems('socialContentStrategies') as SocialContentStrategy[]) || [];
-        dataStore.setItems('socialContentStrategies', mergeById(local, stratRes.data as SocialContentStrategy[]));
+        setItems('socialContentStrategies', mergeById(local, stratRes.data as SocialContentStrategy[]));
       }
       if (entRes.data && Array.isArray(entRes.data) && (entRes.data as any[]).length > 0) {
         const local = (getItems('socialCalendarEntries') as SocialCalendarEntry[]) || [];
-        dataStore.setItems('socialCalendarEntries', mergeById(local, entRes.data as SocialCalendarEntry[]));
+        setItems('socialCalendarEntries', mergeById(local, entRes.data as SocialCalendarEntry[]));
       }
       if (campRes.data && Array.isArray(campRes.data) && (campRes.data as any[]).length > 0) {
         const local = (getItems('socialCampaigns') as SocialCampaign[]) || [];
-        dataStore.setItems('socialCampaigns', mergeById(local, campRes.data as SocialCampaign[]));
+        setItems('socialCampaigns', mergeById(local, campRes.data as SocialCampaign[]));
       }
       if (tmpRes.data && Array.isArray(tmpRes.data) && (tmpRes.data as any[]).length > 0) {
         const local = (getItems('socialContentTemplates') as SocialContentTemplate[]) || [];
-        dataStore.setItems('socialContentTemplates', mergeById(local, tmpRes.data as SocialContentTemplate[]));
+        setItems('socialContentTemplates', mergeById(local, tmpRes.data as SocialContentTemplate[]));
       }
       if (hashRes.data && Array.isArray(hashRes.data) && (hashRes.data as any[]).length > 0) {
         const local = (getItems('socialHashtagBanks') as SocialHashtagBank[]) || [];
-        dataStore.setItems('socialHashtagBanks', mergeById(local, hashRes.data as SocialHashtagBank[]));
+        setItems('socialHashtagBanks', mergeById(local, hashRes.data as SocialHashtagBank[]));
       }
       if (creRes.data && Array.isArray(creRes.data) && (creRes.data as any[]).length > 0) {
         const local = (getItems('socialCreatives') as SocialCreative[]) || [];
-        dataStore.setItems('socialCreatives', mergeById(local, creRes.data as SocialCreative[]));
+        setItems('socialCreatives', mergeById(local, creRes.data as SocialCreative[]));
       }
       setIsLoading(false);
     };
@@ -246,7 +250,7 @@ export default function SocialMediaOSModule() {
     const localId = addItem('socialContentStrategies', { ...data, companyId } as any);
     setActiveStrategyId(localId);
     if (!calendar) {
-      dataStore.setItems('socialMediaCalendar', { name: 'Social Media Calendar', companyId, settings: { defaultPlatforms: ['instagram'], defaultTimezone: 'UTC', defaultPublishingTimes: {}, aiModel: 'glm-5.1', autoGenerateCaptions: false, autoGenerateHashtags: false, contentMixTargets: {} } } as any);
+      setItems('socialMediaCalendar', { name: 'Social Media Calendar', companyId, settings: { defaultPlatforms: ['instagram'], defaultTimezone: 'UTC', defaultPublishingTimes: {}, aiModel: 'glm-5.1', autoGenerateCaptions: false, autoGenerateHashtags: false, contentMixTargets: {} } } as any);
     }
     const response = await socialStrategyApi.create({ ...data, companyId, id: localId });
     if (response.data && (response.data as any).id && (response.data as any).id !== localId) {

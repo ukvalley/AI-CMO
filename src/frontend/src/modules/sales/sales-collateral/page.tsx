@@ -98,11 +98,15 @@ const ACCESS_CONFIG: Record<CollateralAccessLevel, { label: string; color: strin
 // ============================================
 
 export default function SalesCollateralModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
-
-  const companyId = companyStore.activeCompanyId;
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -110,15 +114,15 @@ export default function SalesCollateralModule() {
   }, [companyId, activeCompanyId, setActiveCompany]);
 
   // Data from store
-  const collateral = useMemo(() => (getItems('salesCollateral') as SalesCollateral[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const categories = useMemo(() => (getItems('collateralCategories') as CollateralCategoryInfo[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const faqs = useMemo(() => (getItems('faqs') as FAQ[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const blogPosts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const salesScripts = useMemo(() => (getItems('salesScripts') as SalesScript[]) || [], [getItems, dataStore.data, activeCompanyId]);
-  const testimonials = useMemo(() => (getItems('testimonials') as Testimonial[]) || [], [getItems, dataStore.data, activeCompanyId]);
+  const collateral = useMemo(() => (getItems('salesCollateral') as SalesCollateral[]) || [], [getItems, data, activeCompanyId]);
+  const categories = useMemo(() => (getItems('collateralCategories') as CollateralCategoryInfo[]) || [], [getItems, data, activeCompanyId]);
+  const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems, data, activeCompanyId]);
+  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems, data, activeCompanyId]);
+  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems, data, activeCompanyId]);
+  const faqs = useMemo(() => (getItems('faqs') as FAQ[]) || [], [getItems, data, activeCompanyId]);
+  const blogPosts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, data, activeCompanyId]);
+  const salesScripts = useMemo(() => (getItems('salesScripts') as SalesScript[]) || [], [getItems, data, activeCompanyId]);
+  const testimonials = useMemo(() => (getItems('testimonials') as Testimonial[]) || [], [getItems, data, activeCompanyId]);
 
   // Load from API (gracefully handle missing backend endpoints)
   const [isLoading, setIsLoading] = useState(true);
@@ -146,41 +150,41 @@ export default function SalesCollateralModule() {
 
       if (collRes.data && Array.isArray(collRes.data) && (collRes.data as any[]).length > 0) {
         const local = (getItems('salesCollateral') as SalesCollateral[]) || [];
-        dataStore.setItems('salesCollateral', mergeById(local, collRes.data as SalesCollateral[]));
+        setItems('salesCollateral', mergeById(local, collRes.data as SalesCollateral[]));
       }
       if (catRes.data && Array.isArray(catRes.data) && (catRes.data as any[]).length > 0) {
         const local = (getItems('collateralCategories') as CollateralCategoryInfo[]) || [];
-        dataStore.setItems('collateralCategories', mergeById(local, catRes.data as CollateralCategoryInfo[]));
+        setItems('collateralCategories', mergeById(local, catRes.data as CollateralCategoryInfo[]));
       }
       // Cross-module data: Products
       if (prodRes.data && Array.isArray(prodRes.data) && (prodRes.data as any[]).length > 0) {
         const local = (getItems('products') as Product[]) || [];
-        dataStore.setItems('products', mergeById(local, prodRes.data as Product[]));
+        setItems('products', mergeById(local, prodRes.data as Product[]));
       }
       // Cross-module data: ICPs
       if (icpRes.data && Array.isArray(icpRes.data) && (icpRes.data as any[]).length > 0) {
         const local = (getItems('icps') as ICP[]) || [];
-        dataStore.setItems('icps', mergeById(local, icpRes.data as ICP[]));
+        setItems('icps', mergeById(local, icpRes.data as ICP[]));
       }
       // Cross-module data: Personas
       if (personaRes.data && Array.isArray(personaRes.data) && (personaRes.data as any[]).length > 0) {
         const local = (getItems('personas') as Persona[]) || [];
-        dataStore.setItems('personas', mergeById(local, personaRes.data as Persona[]));
+        setItems('personas', mergeById(local, personaRes.data as Persona[]));
       }
       // Cross-module data: FAQs
       if (faqRes.data && Array.isArray(faqRes.data) && (faqRes.data as any[]).length > 0) {
         const local = (getItems('faqs') as FAQ[]) || [];
-        dataStore.setItems('faqs', mergeById(local, faqRes.data as FAQ[]));
+        setItems('faqs', mergeById(local, faqRes.data as FAQ[]));
       }
       // Cross-module data: Blog Posts
       if (blogRes.data && Array.isArray(blogRes.data) && (blogRes.data as any[]).length > 0) {
         const local = (getItems('blogPosts') as BlogPost[]) || [];
-        dataStore.setItems('blogPosts', mergeById(local, blogRes.data as BlogPost[]));
+        setItems('blogPosts', mergeById(local, blogRes.data as BlogPost[]));
       }
       // Cross-module data: Testimonials
       if (testRes.data && Array.isArray(testRes.data) && (testRes.data as any[]).length > 0) {
         const local = (getItems('testimonials') as Testimonial[]) || [];
-        dataStore.setItems('testimonials', mergeById(local, testRes.data as Testimonial[]));
+        setItems('testimonials', mergeById(local, testRes.data as Testimonial[]));
       }
       setIsLoading(false);
     };

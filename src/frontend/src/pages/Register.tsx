@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores';
 
 export default function Register() {
   const router = useRouter();
-  const { register } = useAuthStore();
+  const register = useAuthStore(s => s.register);
 
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -224,11 +224,11 @@ export default function Register() {
             {/* Terms */}
             <p className="text-sm text-[#686f7e]">
               By creating an account, you agree to our{' '}
-              <Link href="#" className="text-[#C8FF2E] hover:text-[#d4ff5c]">
+              <Link href="/terms-of-service" className="text-[#C8FF2E] hover:text-[#d4ff5c]">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="#" className="text-[#C8FF2E] hover:text-[#d4ff5c]">
+              <Link href="/privacy-policy" className="text-[#C8FF2E] hover:text-[#d4ff5c]">
                 Privacy Policy
               </Link>
               .

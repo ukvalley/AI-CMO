@@ -39,7 +39,8 @@ export function useApiData<T extends BaseEntity>({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { user, token } = useAuthStore();
+  const user = useAuthStore(s => s.user);
+  const token = useAuthStore(s => s.token);
   const companyId = user?.activeCompanyId;
 
   const fetchItems = useCallback(async () => {

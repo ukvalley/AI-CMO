@@ -179,8 +179,8 @@ const selectClass = 'w-full bg-[#1a1d21] border border-white/10 rounded-lg px-3 
 // ============================================
 
 export default function FAQBankModule() {
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [activeTab, setActiveTab] = useState<TabId>('faqs');

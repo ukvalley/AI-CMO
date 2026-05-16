@@ -263,12 +263,16 @@ const DEFAULT_TEMPLATES: Array<Partial<LandingPageTemplate>> = [
 // ============================================
 
 export default function LandingPagesModule() {
-  const companyStore = useCompanyStore();
-  const dataStore = useDataStore();
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const addItem = useDataStore(s => s.addItem);
+  const updateItem = useDataStore(s => s.updateItem);
+  const deleteItem = useDataStore(s => s.deleteItem);
+  const setActiveCompany = useDataStore(s => s.setActiveCompany);
+  const activeCompanyId = useDataStore(s => s.activeCompanyId);
+  const setItems = useDataStore(s => s.setItems);
+  const data = useDataStore(s => s.data);
 
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId } = dataStore;
-
-  const companyId = companyStore.activeCompanyId;
   useEffect(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -322,15 +326,15 @@ export default function LandingPagesModule() {
 
       if (pRes.data && Array.isArray(pRes.data) && pRes.data.length > 0) {
         const local = (getItems('landingPages') as LandingPage[]) || [];
-        dataStore.setItems('landingPages', mergeById(local, pRes.data as LandingPage[]));
+        setItems('landingPages', mergeById(local, pRes.data as LandingPage[]));
       }
       if (tRes.data && Array.isArray(tRes.data) && tRes.data.length > 0) {
         const local = (getItems('landingPageTemplates') as LandingPageTemplate[]) || [];
-        dataStore.setItems('landingPageTemplates', mergeById(local, tRes.data as LandingPageTemplate[]));
+        setItems('landingPageTemplates', mergeById(local, tRes.data as LandingPageTemplate[]));
       }
       if (eRes.data && Array.isArray(eRes.data) && eRes.data.length > 0) {
         const local = (getItems('landingPageExports') as LandingPageExport[]) || [];
-        dataStore.setItems('landingPageExports', mergeById(local, eRes.data as LandingPageExport[]));
+        setItems('landingPageExports', mergeById(local, eRes.data as LandingPageExport[]));
       }
 
       setIsSyncing(false);

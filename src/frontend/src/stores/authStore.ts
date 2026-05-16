@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthStore>()(
 
             // Set demo company in companyStore
             const companyStore = useCompanyStore.getState();
-            companyStore.companies = [{
+            companyStore.setCompanies([{
               id: 'demo-company',
               name: 'Demo Company',
               notificationEmail: 'demo@example.com',
@@ -89,8 +89,8 @@ export const useAuthStore = create<AuthStore>()(
               isActive: true,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
-            }];
-            companyStore.activeCompanyId = 'demo-company';
+            }]);
+            companyStore.setActiveCompany('demo-company');
 
             // Sync to dataStore
             const dataStore = useDataStore.getState();
@@ -136,7 +136,7 @@ export const useAuthStore = create<AuthStore>()(
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               }));
-              companyStore.companies = fullCompanies;
+              companyStore.setCompanies(fullCompanies);
               const activeId = user.activeCompanyId || companies[0].id;
               companyStore.setActiveCompany(activeId);
 
@@ -190,7 +190,7 @@ export const useAuthStore = create<AuthStore>()(
             // Sync to companyStore
             if (company) {
               const companyStore = useCompanyStore.getState();
-              companyStore.companies = [{
+              companyStore.setCompanies([{
                 id: company.id,
                 name: company.name,
                 notificationEmail: '',
@@ -198,8 +198,8 @@ export const useAuthStore = create<AuthStore>()(
                 isActive: true,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-              }];
-              companyStore.activeCompanyId = company.id;
+              }]);
+              companyStore.setActiveCompany(company.id);
 
               // Sync to dataStore
               const dataStore = useDataStore.getState();
@@ -339,7 +339,7 @@ export const useAuthStore = create<AuthStore>()(
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               }));
-              companyStore.companies = fullCompanies;
+              companyStore.setCompanies(fullCompanies);
               if (user.activeCompanyId) {
                 companyStore.setActiveCompany(user.activeCompanyId);
               }

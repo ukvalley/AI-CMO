@@ -8,7 +8,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/utils/cn';
 import {
   Search,
@@ -66,13 +66,16 @@ const generateBreadcrumbs = (pathname: string) => {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const breadcrumbs = generateBreadcrumbs(pathname || '/dashboard');
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
-  const { hasUnsavedChanges, isSaving, lastSaved } = useDataStore();
-  const { user, logout } = useAuthStore();
-  const { getActiveCompany } = useCompanyStore();
-  const activeCompany = getActiveCompany();
+  const hasUnsavedChanges = useDataStore(s => s.hasUnsavedChanges);
+  const isSaving = useDataStore(s => s.isSaving);
+  const lastSaved = useDataStore(s => s.lastSaved);
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
+  const activeCompany = useCompanyStore(s => s.getActiveCompany());
 
   React.useEffect(() => { setMounted(true); }, []);
 
@@ -85,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, collapsed }) => {
       id: 'logout',
       label: 'Sign out',
       icon: LogOut,
-      onClick: logout
+      onClick: () => { logout(); router.push('/login'); }
     },
   ];
 
