@@ -2785,6 +2785,8 @@ export interface BlogTitle extends BaseEntity {
   calendarId?: string;
   contentTypeId?: string;
   title: string;
+  slug?: string;
+  excerpt?: string;
   contentType: ContentTypeCategory;
   style: TitleStyle;
   seoScore: number; // 0-100
