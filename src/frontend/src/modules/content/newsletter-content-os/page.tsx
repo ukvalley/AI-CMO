@@ -44,6 +44,7 @@ import {
   newsletterPostApi,
   newsletterContentChunkApi,
   newsletterExportApi,
+  aiApi,
 } from '@/services/api';
 import type {
   NewsletterStrategy,
@@ -218,7 +219,34 @@ export default function NewsletterContentOSModule() {
 
       if (sRes.data && Array.isArray(sRes.data) && sRes.data.length > 0) {
         const local = (getItems('newsletterStrategies') as NewsletterStrategy[]) || [];
-        setItems('newsletterStrategies', mergeById(local, sRes.data as NewsletterStrategy[]));
+        const serverStrategies = sRes.data as NewsletterStrategy[];
+
+        // Build a map from local strategy IDs to server strategy IDs
+        // so we can update content types that reference local IDs
+        const idMap = new Map<string, string>();
+        local.forEach((localStrategy) => {
+          const serverMatch = serverStrategies.find((s) =>
+            s.name === localStrategy.name && s.companyId === localStrategy.companyId && s.id !== localStrategy.id
+          );
+          if (serverMatch) {
+            idMap.set(localStrategy.id, serverMatch.id);
+          }
+        });
+
+        // Fix content types referencing old local strategy IDs
+        if (idMap.size > 0) {
+          const contentTypes = (getItems('newsletterContentTypes') as any[]) || [];
+          const fixed = contentTypes.map((ct) => {
+            const newStrategyId = idMap.get(ct.strategyId);
+            if (newStrategyId) {
+              return { ...ct, strategyId: newStrategyId };
+            }
+            return ct;
+          });
+          setItems('newsletterContentTypes', fixed);
+        }
+
+        setItems('newsletterStrategies', mergeById(local, serverStrategies));
       }
       if (cRes.data && Array.isArray(cRes.data) && cRes.data.length > 0) {
         const local = (getItems('newsletterCalendars') as NewsletterCalendar[]) || [];
@@ -252,6 +280,7 @@ export default function NewsletterContentOSModule() {
   const [activeStrategyId, setActiveStrategyId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
   const [showCreateStrategyModal, setShowCreateStrategyModal] = useState(false);
+  const [autoMapEnabled, setAutoMapEnabled] = useState(true);
 
   const activeStrategy = useMemo(() => strategies.find((s) => s.id === activeStrategyId), [strategies, activeStrategyId]);
 
@@ -280,10 +309,18 @@ export default function NewsletterContentOSModule() {
       linkedData: {},
     });
     if (response.data && (response.data as any).id && (response.data as any).id !== localId) {
-      updateItem('newsletterStrategies', localId, { id: (response.data as any).id });
-      setActiveStrategyId((response.data as any).id);
+      const serverId = (response.data as any).id;
+      updateItem('newsletterStrategies', localId, { id: serverId });
+      // Update content types to reference the new server-side strategy ID
+      const ctItems = (getItems('newsletterContentTypes') as any[]) || [];
+      ctItems
+        .filter((ct: any) => ct.strategyId === localId)
+        .forEach((ct: any) => {
+          updateItem('newsletterContentTypes', ct.id, { strategyId: serverId });
+        });
+      setActiveStrategyId(serverId);
     }
-  }, [companyId, addItem, updateItem]);
+  }, [companyId, addItem, updateItem, getItems]);
 
   const handleUpdateStrategy = useCallback(async (id: string, updates: Partial<NewsletterStrategy>) => {
     updateItem('newsletterStrategies', id, updates);
@@ -308,17 +345,136 @@ export default function NewsletterContentOSModule() {
       count
     );
 
-    const brandContext = brand ? `Brand: ${brand.voice || 'professional'}, Tone: ${brand.personality || 'friendly'}` : '';
-    const businessContext = businessProfile ? `Industry: ${businessProfile.primaryIndustry || 'general'}` : '';
+    const brandContext = brand ? `Brand voice: ${brand.voice || 'professional'}, Brand personality: ${brand.personality || 'friendly'}` : '';
+    const businessContext = businessProfile ? `Industry: ${businessProfile.primaryIndustry || 'general'}, Company: ${businessProfile.name || 'our company'}` : '';
     const enabledTypes = contentTypes.filter((t) => t.enabled && t.strategyId === activeStrategyId);
+    const typeNames = enabledTypes.length > 0 ? enabledTypes.map((t) => `${t.name} (${t.type}, ${t.funnelPosition} funnel)`).join(', ') : 'Educational (tofu), Product Update (mofu), Promotional (bofu)';
 
-    setTimeout(async () => {
+    const objectiveLabel = activeStrategy.objective || 'education';
+    const funnelLabel = activeStrategy.funnelStage || 'tofu';
+    const toneLabel = activeStrategy.communicationTone || 'professional';
+    const depthLabel = activeStrategy.contentDepth || 'standard';
+
+    const prompt = `You are an expert newsletter strategist. Generate exactly ${count} newsletter titles for a business newsletter.
+
+Strategy context:
+- Objective: ${objectiveLabel}
+- Target audience: ${activeStrategy.audience || 'general professionals'}
+- Funnel stage: ${funnelLabel}
+- Communication tone: ${toneLabel}
+- Content depth: ${depthLabel}
+${brandContext ? '- ' + brandContext : ''}
+${businessContext ? '- ' + businessContext : ''}
+
+Content types to cover: ${typeNames}
+
+Subject line style: ${style}
+${style === 'educational' ? 'Use informative, value-driven subject lines that promise knowledge.' : ''}
+${style === 'conversational' ? 'Use casual, friendly subject lines that feel like a message from a friend.' : ''}
+${style === 'founder-style' ? 'Use personal, authentic subject lines in a founder voice.' : ''}
+${style === 'authority' ? 'Use expert, data-backed subject lines that convey authority.' : ''}
+${style === 'emotional' ? 'Use feeling-driven, relatable subject lines that tap into emotions.' : ''}
+${style === 'insight' ? 'Use curiosity-driven, teaser subject lines that hint at a revelation.' : ''}
+${style === 'minimal' ? 'Use very short subject lines, under 5 words, punchy and direct.' : ''}
+
+You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element must be an object with exactly these fields:
+- "title": string — the newsletter title
+- "subjectLine": string — the email subject line
+- "previewText": string — short preview text shown after the subject line in email clients (under 100 characters)
+- "contentType": string — one of: ${enabledTypes.length > 0 ? enabledTypes.map((t) => t.type).join(', ') : 'educational, product-update, curated, community, founder-letter, case-study, industry-news, promotional'}
+- "funnelStage": string — one of: tofu, mofu, bofu
+- "engagementScore": number — estimated engagement score from 70-99
+- "suggestedCTA": string — a call-to-action phrase
+- "suggestedKeywords": array of 5 relevant keyword strings
+
+Example of one item:
+{"title": "The Complete Guide to SEO Strategy", "subjectLine": "Your guide to seo strategy is here", "previewText": "Discover actionable insights about SEO strategy in this week's newsletter.", "contentType": "educational", "funnelStage": "tofu", "engagementScore": 85, "suggestedCTA": "Read full guide", "suggestedKeywords": ["guide", "tutorial", "learn", "explained", "basics"]}
+
+Generate ${count} diverse, creative titles now:`;
+
+    try {
+      console.log('[NewsletterContentOS] Calling AI generate API...');
+      const response = await aiApi.generate({ prompt, maxTokens: 4000 });
+
+      console.log('[NewsletterContentOS] AI API response:', { status: response.status, error: response.error, hasData: !!response.data, provider: (response.data as any)?.provider });
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'AI generation returned no data');
+      }
+
+      const aiResult = response.data as any;
+      let content: string = aiResult.content || '';
+      console.log('[NewsletterContentOS] AI raw content length:', content.length, 'provider:', aiResult.provider, 'model:', aiResult.model);
+      if (typeof content !== 'string') {
+        content = JSON.stringify(content);
+      }
+
+      // Strip markdown code fences if present
+      content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+      let parsed: any[];
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        // Try to extract JSON array from the text
+        const match = content.match(/\[[\s\S]*\]/);
+        if (match) {
+          parsed = JSON.parse(match[0]);
+        } else {
+          throw new Error('Could not parse AI response as JSON');
+        }
+      }
+
+      if (!Array.isArray(parsed)) {
+        throw new Error('AI response is not an array');
+      }
+
+      const titlesToCreate: any[] = [];
+      parsed.slice(0, count).forEach((item: any, i: number) => {
+        const contentType = enabledTypes.length > 0
+          ? enabledTypes[i % enabledTypes.length]
+          : { type: item.contentType || 'educational', funnelPosition: item.funnelStage || 'tofu', ctaStrategy: item.suggestedCTA || 'Learn more' };
+
+        const titleData = {
+          id: `nlt-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+          strategyId: activeStrategyId,
+          title: item.title || 'Untitled Newsletter',
+          subjectLine: item.subjectLine || '',
+          previewText: item.previewText || '',
+          contentType: contentType?.type || item.contentType || 'educational',
+          style,
+          engagementScore: typeof item.engagementScore === 'number' ? item.engagementScore : Math.floor(Math.random() * 30) + 70,
+          funnelStage: item.funnelStage || contentType?.funnelPosition || 'tofu',
+          suggestedKeywords: Array.isArray(item.suggestedKeywords) ? item.suggestedKeywords : generateKeywords(item.contentType || 'educational'),
+          suggestedCTA: item.suggestedCTA || contentType?.ctaStrategy || 'Learn more',
+          status: 'generated',
+          order: i,
+          companyId,
+          aiModel: aiResult.model || 'unknown',
+          aiPrompt: prompt.slice(0, 500),
+        };
+
+        addItem('newsletterTitles', titleData as any);
+        titlesToCreate.push(titleData);
+      });
+
+      await Promise.all(titlesToCreate.map((t) => newsletterTitleApi.create(t).catch(() => {})));
+      taskStore.completeBatch(taskId, 0, Array(Math.min(parsed.length, count)).fill('title'));
+      console.log('[NewsletterContentOS] SUCCESS — AI generated', titlesToCreate.length, 'titles via', aiResult.provider, '/', aiResult.model);
+    } catch (error) {
+      console.error('[NewsletterContentOS] AI title generation FAILED — falling back to templates. Error:', error);
+
+      // Fallback to sample titles if AI fails
+      const fallbackType = { type: 'educational', funnelPosition: 'tofu', ctaStrategy: 'Learn more' };
       const titlesToCreate: any[] = [];
       for (let i = 0; i < count; i++) {
-        const contentType = enabledTypes[i % enabledTypes.length] || enabledTypes[0];
+        const contentType = enabledTypes.length > 0
+          ? enabledTypes[i % enabledTypes.length]
+          : fallbackType;
         const result = generateSampleTitle(contentType?.type || 'educational', style, brandContext, businessContext);
 
         const titleData = {
+          id: `nlt-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
           strategyId: activeStrategyId,
           title: result.title,
           subjectLine: result.subjectLine,
@@ -332,15 +488,16 @@ export default function NewsletterContentOSModule() {
           status: 'generated',
           order: i,
           companyId,
+          aiModel: 'template',
         };
 
         addItem('newsletterTitles', titleData as any);
         titlesToCreate.push(titleData);
       }
 
-      await Promise.all(titlesToCreate.map((t) => newsletterTitleApi.create(t)));
+      await Promise.all(titlesToCreate.map((t) => newsletterTitleApi.create(t).catch(() => {})));
       taskStore.completeBatch(taskId, 0, Array(count).fill('title'));
-    }, 2000);
+    }
   }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, addItem, taskStore, companyId]);
 
   if (!companyId) {
@@ -416,10 +573,11 @@ export default function NewsletterContentOSModule() {
         <div className="px-6 flex gap-1 border-t border-slate-800">
           {[
             { id: 'strategy', label: 'Strategy', icon: Target },
-            { id: 'types', label: 'Content Types', icon: Layout },
-            { id: 'calendar', label: 'Calendar', icon: Calendar },
+            // { id: 'types', label: 'Content Types', icon: Layout },
+          
             { id: 'titles', label: 'Titles', icon: Type },
             { id: 'content', label: 'Content', icon: FileText },
+              { id: 'calendar', label: 'Calendar', icon: Calendar },
             { id: 'assets', label: 'Assets', icon: Image },
             { id: 'review', label: 'Review', icon: CheckCircle },
             { id: 'export', label: 'Export', icon: Download },
@@ -472,6 +630,7 @@ export default function NewsletterContentOSModule() {
               <CalendarTab
                 strategy={activeStrategy}
                 calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
+                posts={posts.filter((p) => p.strategyId === activeStrategy.id)}
                 onCreateCalendar={async (data) => {
                   const localId = addItem('newsletterCalendars', { ...data, strategyId: activeStrategy.id } as any);
                   const res = await newsletterCalendarApi.create({ ...data, strategyId: activeStrategy.id, id: localId, companyId });
@@ -500,6 +659,19 @@ export default function NewsletterContentOSModule() {
                   deleteItem('newsletterTitles', id);
                   await newsletterTitleApi.delete(id);
                 }}
+                onClearGenerated={async () => {
+                  const generated = titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'generated');
+                  setItems('newsletterTitles', titles.filter((t) => t.status !== 'generated' || t.strategyId !== activeStrategy.id));
+                  await Promise.all(generated.map((t) => newsletterTitleApi.delete(t.id).catch(() => {})));
+                }}
+                onClearSelected={async () => {
+                  const selected = titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected');
+                  const updated = titles.map((t) =>
+                    t.strategyId === activeStrategy.id && t.status === 'selected' ? { ...t, status: 'rejected' as const } : t
+                  );
+                  setItems('newsletterTitles', updated);
+                  await Promise.all(selected.map((t) => newsletterTitleApi.update(t.id, { status: 'rejected' }).catch(() => {})));
+                }}
               />
             )}
 
@@ -509,6 +681,9 @@ export default function NewsletterContentOSModule() {
                 posts={posts.filter((p) => p.strategyId === activeStrategy.id)}
                 titles={titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected')}
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
+                calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
+                autoMapEnabled={autoMapEnabled}
+                onAutoMapToggle={() => setAutoMapEnabled(!autoMapEnabled)}
                 onCreatePost={async (data) => {
                   const localId = addItem('newsletterPosts', data as any);
                   const res = await newsletterPostApi.create({ ...data, id: localId, companyId });
@@ -523,6 +698,10 @@ export default function NewsletterContentOSModule() {
                 onDeletePost={async (id) => {
                   deleteItem('newsletterPosts', id);
                   await newsletterPostApi.delete(id);
+                }}
+                onUpdateCalendar={async (id, updates) => {
+                  updateItem('newsletterCalendars', id, updates);
+                  await newsletterCalendarApi.update(id, updates);
                 }}
               />
             )}
@@ -1198,11 +1377,13 @@ function ContentTypesTab({
 function CalendarTab({
   strategy,
   calendars,
+  posts,
   onCreateCalendar,
   onUpdateCalendar,
 }: {
   strategy: NewsletterStrategy;
   calendars: NewsletterCalendar[];
+  posts: NewsletterPost[];
   onCreateCalendar: (data: Partial<NewsletterCalendar>) => void;
   onUpdateCalendar: (id: string, updates: Partial<NewsletterCalendar>) => void;
 }) {
@@ -1215,7 +1396,7 @@ function CalendarTab({
     const labels: Record<string, string> = {
       daily: 'Every Day',
       weekly: 'Once per week',
-      'bi-weekly': 'Twice per week',
+      'bi-weekly': 'Every 2 weeks',
       monthly: 'Once per month',
       quarterly: 'Once per quarter',
     };
@@ -1283,28 +1464,37 @@ function CalendarTab({
             <div>
               <h4 className="text-sm font-medium text-slate-400 mb-3">Content Pipeline ({activeCalendar.timeline.length} newsletters)</h4>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {activeCalendar.timeline.slice(0, 20).map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
-                    <div className="text-sm font-medium text-slate-500 w-8">#{index + 1}</div>
-                    <div className="flex-1">
-                      <div className="text-sm text-slate-200">{item.scheduledDate ? new Date(item.scheduledDate).toLocaleDateString() : 'Not scheduled'}</div>
-                      <div className="text-xs text-slate-500">Status: {item.status}</div>
+                {activeCalendar.timeline.slice(0, 20).map((item, index) => {
+                  const mappedPost = item.postId ? posts.find((p) => p.id === item.postId) : undefined;
+                  return (
+                    <div key={item.id} className="flex items-center gap-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                      <div className="text-sm font-medium text-slate-500 w-8">#{index + 1}</div>
+                      <div className="flex-1">
+                        <div className="text-sm text-slate-200">{item.scheduledDate ? new Date(item.scheduledDate).toLocaleDateString() : 'Not scheduled'}</div>
+                        {mappedPost ? (
+                          <div className="text-xs text-primary-400 mt-0.5">{mappedPost.title}</div>
+                        ) : item.titleId ? (
+                          <div className="text-xs text-slate-500 mt-0.5">Title assigned</div>
+                        ) : (
+                          <div className="text-xs text-slate-500 mt-0.5">No content assigned</div>
+                        )}
+                      </div>
+                      <div
+                        className={cn(
+                          'px-2 py-1 rounded text-xs',
+                          item.status === 'empty' && 'bg-slate-700 text-slate-400',
+                          item.status === 'planned' && 'bg-blue-500/20 text-blue-400',
+                          item.status === 'title-generated' && 'bg-purple-500/20 text-purple-400',
+                          item.status === 'assigned' && 'bg-amber-500/20 text-amber-400',
+                          item.status === 'in-progress' && 'bg-orange-500/20 text-orange-400',
+                          item.status === 'ready' && 'bg-green-500/20 text-green-400'
+                        )}
+                      >
+                        {item.status}
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        'px-2 py-1 rounded text-xs',
-                        item.status === 'empty' && 'bg-slate-700 text-slate-400',
-                        item.status === 'planned' && 'bg-blue-500/20 text-blue-400',
-                        item.status === 'title-generated' && 'bg-purple-500/20 text-purple-400',
-                        item.status === 'assigned' && 'bg-amber-500/20 text-amber-400',
-                        item.status === 'in-progress' && 'bg-orange-500/20 text-orange-400',
-                        item.status === 'ready' && 'bg-green-500/20 text-green-400'
-                      )}
-                    >
-                      {item.status}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1314,8 +1504,10 @@ function CalendarTab({
       {showCreateModal && (
         <CreateCalendarModal
           strategy={strategy}
+          calendar={activeCalendar}
           onClose={() => setShowCreateModal(false)}
           onCreate={onCreateCalendar}
+          onUpdate={onUpdateCalendar}
         />
       )}
     </div>
@@ -1324,17 +1516,23 @@ function CalendarTab({
 
 function CreateCalendarModal({
   strategy,
+  calendar,
   onClose,
   onCreate,
+  onUpdate,
 }: {
   strategy: NewsletterStrategy;
+  calendar?: NewsletterCalendar;
   onClose: () => void;
   onCreate: (data: Partial<NewsletterCalendar>) => void;
+  onUpdate?: (id: string, updates: Partial<NewsletterCalendar>) => void;
 }) {
-  const [name, setName] = useState(strategy.name + ' Calendar');
-  const [frequency, setFrequency] = useState<NewsletterFrequency>('weekly');
-  const [newslettersPerCycle, setNewslettersPerCycle] = useState(4);
-  const [publishingDays, setPublishingDays] = useState<string[]>(['tuesday']);
+  const isEditing = !!calendar;
+
+  const [name, setName] = useState(calendar?.name || strategy.name + ' Calendar');
+  const [frequency, setFrequency] = useState<NewsletterFrequency>(calendar?.frequency || 'weekly');
+  const [newslettersPerCycle, setNewslettersPerCycle] = useState(calendar?.newslettersPerCycle || 4);
+  const [publishingDays, setPublishingDays] = useState<string[]>(calendar?.publishingDays || ['tuesday']);
 
   const weekDays = [
     { value: 'sunday', label: 'Sunday' },
@@ -1353,25 +1551,76 @@ function CreateCalendarModal({
   const handleSubmit = () => {
     const timeline: NewsletterCalendarItem[] = [];
     const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < newslettersPerCycle; i++) {
-      timeline.push({
-        id: `calendar-item-${i}`,
-        scheduledDate: new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'empty',
-      });
+    const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const sortedDayNums = [...publishingDays]
+      .map((d) => dayOrder.indexOf(d))
+      .sort((a, b) => a - b);
+
+    if (sortedDayNums.length === 0) return;
+
+    // Find the first publishing day on or after startDate
+    const startDayNum = startDate.getDay();
+    const firstIdx = sortedDayNums.findIndex((d) => d >= startDayNum);
+
+    let currentDayOffset: number;
+    let publishIdx: number;
+
+    if (firstIdx !== -1) {
+      currentDayOffset = sortedDayNums[firstIdx] - startDayNum;
+      publishIdx = firstIdx;
+    } else {
+      currentDayOffset = 7 - startDayNum + sortedDayNums[0];
+      publishIdx = 0;
     }
 
-    onCreate({
-      name,
-      frequency,
-      newslettersPerCycle,
-      publishingDays,
-      timeline,
-      startDate: startDate.toISOString(),
-      priorityTopics: [],
-      seasonalCampaigns: [],
-    });
+    for (let i = 0; i < newslettersPerCycle; i++) {
+      const scheduledDate = new Date(startDate.getTime() + currentDayOffset * 24 * 60 * 60 * 1000);
+
+      timeline.push({
+        id: `calendar-item-${i}`,
+        scheduledDate: scheduledDate.toISOString(),
+        status: 'empty',
+      });
+
+      // Advance to next publishing day
+      publishIdx++;
+      if (publishIdx >= sortedDayNums.length) {
+        publishIdx = 0;
+      }
+
+      // Calculate days from current scheduled day to the next publishing day
+      const currentDayOfWeek = (startDayNum + currentDayOffset) % 7;
+      const nextDayNum = sortedDayNums[publishIdx];
+      const gap = nextDayNum > currentDayOfWeek
+        ? nextDayNum - currentDayOfWeek
+        : 7 - currentDayOfWeek + nextDayNum;
+
+      currentDayOffset += gap;
+    }
+
+    if (isEditing && calendar && onUpdate) {
+      onUpdate(calendar.id, {
+        name,
+        frequency,
+        newslettersPerCycle,
+        publishingDays,
+        timeline,
+        startDate: startDate.toISOString(),
+      });
+    } else {
+      onCreate({
+        name,
+        frequency,
+        newslettersPerCycle,
+        publishingDays,
+        timeline,
+        startDate: startDate.toISOString(),
+        priorityTopics: [],
+        seasonalCampaigns: [],
+      });
+    }
     onClose();
   };
 
@@ -1379,8 +1628,8 @@ function CreateCalendarModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-800">
-          <h2 className="text-lg font-semibold text-slate-200">Create Newsletter Calendar</h2>
-          <p className="text-sm text-slate-400">Set up your publishing schedule</p>
+          <h2 className="text-lg font-semibold text-slate-200">{isEditing ? 'Edit Newsletter Calendar' : 'Create Newsletter Calendar'}</h2>
+          <p className="text-sm text-slate-400">{isEditing ? 'Update your publishing schedule' : 'Set up your publishing schedule'}</p>
         </div>
 
         <div className="p-6 space-y-4">
@@ -1452,7 +1701,7 @@ function CreateCalendarModal({
             disabled={!name || publishingDays.length === 0}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors"
           >
-            Create Calendar
+            {isEditing ? 'Save Changes' : 'Create Calendar'}
           </button>
         </div>
       </div>
@@ -1471,6 +1720,8 @@ function TitlesTab({
   onGenerate,
   onUpdate,
   onDelete,
+  onClearGenerated,
+  onClearSelected,
 }: {
   strategy: NewsletterStrategy;
   contentTypes: NewsletterContentTypeConfig[];
@@ -1478,27 +1729,59 @@ function TitlesTab({
   onGenerate: (count: number, style: SubjectLineStyle) => void;
   onUpdate: (id: string, updates: Partial<NewsletterTitle>) => void;
   onDelete: (id: string) => void;
+  onClearGenerated: () => void;
+  onClearSelected: () => void;
 }) {
-  const [selectedStyle, setSelectedStyle] = useState<SubjectLineStyle>('educational');
-  const [generateCount, setGenerateCount] = useState(10);
+  const [selectedStyles, setSelectedStyles] = useState<SubjectLineStyle[]>([]);
+  const [styleCounts, setStyleCounts] = useState<Record<SubjectLineStyle, number>>({
+    educational: 3,
+    conversational: 3,
+    'founder-style': 3,
+    authority: 3,
+    emotional: 3,
+    insight: 3,
+    minimal: 3,
+  });
   const [isGenerating, setIsGenerating] = useState(false);
 
   const selectedTitles = titles.filter((t) => t.status === 'selected').sort((a, b) => a.order - b.order);
   const generatedTitles = titles.filter((t) => t.status === 'generated');
 
+  const toggleStyle = (style: SubjectLineStyle) => {
+    setSelectedStyles((prev) =>
+      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
+    );
+  };
+
+  const updateStyleCount = (style: SubjectLineStyle, count: number) => {
+    setStyleCounts((prev) => ({ ...prev, [style]: Math.max(1, Math.min(50, count)) }));
+  };
+
   const handleGenerate = async () => {
+    console.log("Button Hit");
+    if (selectedStyles.length === 0) return;
     setIsGenerating(true);
-    await onGenerate(generateCount, selectedStyle);
+    for (const style of selectedStyles) {
+      await onGenerate(styleCounts[style], style);
+    }
     setIsGenerating(false);
   };
 
   const handleSelect = (title: NewsletterTitle) => {
-    onUpdate(title.id, { status: 'selected', order: selectedTitles.length });
+    const currentSelected = titles.filter((t) => t.status === 'selected');
+    onUpdate(title.id, { status: 'selected', order: currentSelected.length });
   };
 
   const handleReject = (title: NewsletterTitle) => {
     onUpdate(title.id, { status: 'rejected' });
   };
+
+  const groupedTitles = generatedTitles.reduce<Record<string, NewsletterTitle[]>>((acc, title) => {
+    const key = title.style || 'educational';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(title);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -1508,51 +1791,65 @@ function TitlesTab({
           AI Title & Subject Line Generator
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Subject Line Style</label>
-            <select
-              value={selectedStyle}
-              onChange={(e) => setSelectedStyle(e.target.value as SubjectLineStyle)}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
-            >
-              {SUBJECT_LINE_STYLES.map((style) => (
-                <option key={style.value} value={style.value}>{style.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Number of Titles</label>
-            <input
-              type="number"
-              min="1"
-              max="50"
-              value={generateCount}
-              onChange={(e) => setGenerateCount(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
-            />
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || contentTypes.filter((t) => t.enabled).length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors w-full justify-center"
-            >
-              {isGenerating ? (
-                <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</>
-              ) : (
-                <><Zap className="w-4 h-4" /> Generate Titles</>
-              )}
-            </button>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-400 mb-3">Subject Line Styles</label>
+          <div className="space-y-3">
+            {SUBJECT_LINE_STYLES.map((style) => {
+              const isChecked = selectedStyles.includes(style.value);
+              return (
+                <div key={style.value} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleStyle(style.value)}
+                      className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-slate-200">{style.label}</div>
+                      <div className="text-xs text-slate-500">{style.description}</div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <span className="text-slate-400">{groupedTitles[style.value]?.length || 0}</span>
+                      generated
+                    </div>
+                  </div>
+                  {isChecked && (
+                    <div className="mt-3 ml-7 flex items-center gap-3">
+                      <label className="text-sm text-slate-400 whitespace-nowrap">Titles to generate:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={styleCounts[style.value]}
+                        onChange={(e) => updateStyleCount(style.value, parseInt(e.target.value) || 1)}
+                        className="w-20 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="text-sm text-slate-500">
-          Using: <span className="text-primary-400">Ollama Cloud GLM 5.1</span> |
-          Context: {strategy.audience || 'General audience'} |
-          Content types: {contentTypes.filter((t) => t.enabled).length} enabled
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || selectedStyles.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+          >
+            {isGenerating ? (
+              <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</>
+            ) : (
+              <><Zap className="w-4 h-4" /> Generate Titles ({selectedStyles.length} {selectedStyles.length === 1 ? 'style' : 'styles'})</>
+            )}
+          </button>
+          <div className="text-sm text-slate-500">
+            Using: <span className="text-primary-400">Ollama Cloud GLM 5.1</span> |
+            Context: {strategy.audience || 'General audience'} |
+            Content types: {contentTypes.filter((t) => t.enabled).length} enabled
+          </div>
         </div>
       </div>
 
@@ -1560,6 +1857,15 @@ function TitlesTab({
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Editorial Pipeline ({selectedTitles.length})</h3>
+            {selectedTitles.length > 0 && (
+              <button
+                onClick={onClearSelected}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/40 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="divide-y divide-slate-700">
@@ -1592,52 +1898,72 @@ function TitlesTab({
         </div>
 
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700">
+          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Generated Titles ({generatedTitles.length})</h3>
+            {generatedTitles.length > 0 && (
+              <button
+                onClick={onClearGenerated}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/40 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="divide-y divide-slate-700 max-h-[500px] overflow-y-auto">
             {generatedTitles.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">No titles generated yet. Click "Generate Titles" to start.</div>
+              <div className="p-8 text-center text-slate-500">No titles generated yet. Select styles above and click "Generate Titles" to start.</div>
             ) : (
-              generatedTitles.map((title) => (
-                <div key={title.id} className="p-4 hover:bg-slate-800/50 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-200">{title.title}</div>
-                      <div className="text-sm text-primary-400 mt-1">{title.subjectLine}</div>
-                      <div className="text-xs text-slate-500 mt-1">{title.previewText}</div>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className={cn(
-                          'text-xs px-2 py-0.5 rounded-full',
-                          title.engagementScore >= 80 && 'bg-green-500/20 text-green-400',
-                          title.engagementScore >= 60 && title.engagementScore < 80 && 'bg-yellow-500/20 text-yellow-400',
-                          title.engagementScore < 60 && 'bg-red-500/20 text-red-400'
-                        )}>
-                          Engagement {title.engagementScore}
-                        </span>
-                        <span className="text-xs text-slate-500 capitalize">{title.contentType}</span>
-                      </div>
+              Object.entries(groupedTitles).map(([style, styleTitles]) => {
+                const styleInfo = SUBJECT_LINE_STYLES.find((s) => s.value === style);
+                return (
+                  <div key={style}>
+                    <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-700 sticky top-0 z-10">
+                      <span className="text-sm font-medium text-primary-400">{styleInfo?.label || style}</span>
+                      <span className="text-xs text-slate-500 ml-2">({styleTitles.length})</span>
                     </div>
+                    {styleTitles.map((title) => (
+                      <div key={title.id} className="p-4 hover:bg-slate-800/50 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="font-medium text-slate-200">{title.title}</div>
+                            <div className="text-sm text-primary-400 mt-1">{title.subjectLine}</div>
+                            <div className="text-xs text-slate-500 mt-1">{title.previewText}</div>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className={cn(
+                                'text-xs px-2 py-0.5 rounded-full',
+                                title.engagementScore >= 80 && 'bg-green-500/20 text-green-400',
+                                title.engagementScore >= 60 && title.engagementScore < 80 && 'bg-yellow-500/20 text-yellow-400',
+                                title.engagementScore < 60 && 'bg-red-500/20 text-red-400'
+                              )}>
+                                Engagement {title.engagementScore}
+                              </span>
+                              <span className="text-xs text-slate-500 capitalize">{title.contentType}</span>
+                            </div>
+                          </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleSelect(title)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
-                      >
-                        <Check className="w-3 h-3" />
-                        Select
-                      </button>
-                      <button
-                        onClick={() => handleReject(title)}
-                        className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSelect(title)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
+                            >
+                              <Check className="w-3 h-3" />
+                              Select
+                            </button>
+                            <button
+                              onClick={() => handleReject(title)}
+                              className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -1962,6 +2288,10 @@ function ContentTab({
   onCreatePost,
   onUpdatePost,
   onDeletePost,
+  calendars,
+  onUpdateCalendar,
+  autoMapEnabled,
+  onAutoMapToggle,
 }: {
   strategy: NewsletterStrategy;
   posts: NewsletterPost[];
@@ -1970,10 +2300,23 @@ function ContentTab({
   onCreatePost: (data: Partial<NewsletterPost>) => void;
   onUpdatePost: (id: string, updates: Partial<NewsletterPost>) => void;
   onDeletePost: (id: string) => void;
+  calendars: NewsletterCalendar[];
+  onUpdateCalendar: (id: string, updates: Partial<NewsletterCalendar>) => void;
+  autoMapEnabled: boolean;
+  onAutoMapToggle: () => void;
 }) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingPostId, setGeneratingPostId] = useState<string | null>(null);
+  const [schedulingPostId, setSchedulingPostId] = useState<string | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ title: string; subjectLine: string; previewText: string; content: string }>({ title: '', subjectLine: '', previewText: '', content: '' });
   const selectedPost = posts.find((p) => p.id === selectedPostId);
+  const activeCalendar = calendars[0];
+
+  const findPostCalendarSlot = (postId: string) => {
+    if (!activeCalendar) return undefined;
+    return activeCalendar.timeline.find((item) => item.postId === postId);
+  };
 
   const handleCreateFromTitle = (title: NewsletterTitle) => {
     const contentType = contentTypes.find((t) => t.type === title.contentType);
@@ -1991,11 +2334,206 @@ function ContentTab({
       version: 1,
       suggestedAssets: [],
     });
+
+    // Auto-map to next empty calendar slot
+    if (autoMapEnabled && activeCalendar) {
+      const emptySlot = activeCalendar.timeline.find((item) => item.status === 'empty');
+      if (emptySlot) {
+        const updatedTimeline = activeCalendar.timeline.map((item) =>
+          item.id === emptySlot.id
+            ? { ...item, titleId: title.id, status: 'planned' as const }
+            : item
+        );
+        onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+      }
+    }
+  };
+
+  const handleSchedulePost = (postId: string, slotId: string) => {
+    if (!activeCalendar) return;
+
+    const updatedTimeline = activeCalendar.timeline.map((item) => {
+      // Remove post from old slot if it was assigned
+      if (item.postId === postId) {
+        return { ...item, postId: undefined, titleId: undefined, status: 'empty' as const };
+      }
+      // Assign to new slot
+      if (item.id === slotId) {
+        const post = posts.find((p) => p.id === postId);
+        return {
+          ...item,
+          postId,
+          titleId: post?.titleId,
+          status: 'assigned' as const,
+        };
+      }
+      return item;
+    });
+
+    onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+    onUpdatePost(postId, { calendarId: activeCalendar.id });
+    setSchedulingPostId(null);
+  };
+
+  const handleUnschedulePost = (postId: string) => {
+    if (!activeCalendar) return;
+
+    const updatedTimeline = activeCalendar.timeline.map((item) => {
+      if (item.postId === postId) {
+        return { ...item, postId: undefined, titleId: undefined, status: 'empty' as const };
+      }
+      return item;
+    });
+
+    onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+    onUpdatePost(postId, { calendarId: undefined });
+  };
+
+  const handleDeletePost = (postId: string) => {
+    // Clear calendar slot before deleting the post
+    if (activeCalendar) {
+      const slotHasPost = activeCalendar.timeline.some((item) => item.postId === postId);
+      if (slotHasPost) {
+        const updatedTimeline = activeCalendar.timeline.map((item) => {
+          if (item.postId === postId) {
+            return { ...item, postId: undefined, titleId: undefined, status: 'empty' as const };
+          }
+          return item;
+        });
+        onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+      }
+    }
+    if (selectedPostId === postId) setSelectedPostId(null);
+    onDeletePost(postId);
   };
 
   const handleGenerateContent = async (post: NewsletterPost) => {
-    setIsGenerating(true);
-    setTimeout(() => {
+    setGeneratingPostId(post.id);
+
+    const titleData = titles.find((t) => t.id === post.titleId);
+    const contentTypeInfo = contentTypes.find((t) => t.type === post.contentType);
+
+    const objectiveLabel = strategy.objective || 'education';
+    const toneLabel = strategy.communicationTone || 'professional';
+    const depthLabel = strategy.contentDepth || 'standard';
+    const audienceLabel = strategy.audience || 'general professionals';
+
+    const cta = post.suggestedCTA || contentTypeInfo?.ctaStrategy || 'Learn more';
+    const depthHint = depthLabel === 'brief' ? '150-300 words total, 4-6 sections'
+      : depthLabel === 'deep' ? '800-1500 words total, 8-12 sections'
+      : depthLabel === 'comprehensive' ? '1500-2500 words total, 10-15 sections'
+      : '400-800 words total, 6-10 sections';
+
+    const prompt = `You are an expert newsletter writer. Generate the full content for a newsletter with these details:
+
+Title: "${post.title}"
+Subject Line: "${post.subjectLine || ''}"
+Preview Text: "${post.previewText || ''}"
+Content Type: ${post.contentType || 'educational'}
+Funnel Stage: ${post.funnelStage || 'tofu'}
+CTA: ${cta}
+Strategy Objective: ${objectiveLabel}
+Communication Tone: ${toneLabel}
+Target Audience: ${audienceLabel}
+Content Depth: ${depthLabel} (${depthHint})
+
+${titleData ? `Suggested Keywords: ${titleData.suggestedKeywords?.join(', ') || 'N/A'}` : ''}
+
+You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element represents a section of the newsletter and must have exactly these fields:
+- "type": one of "heading", "subheading", "paragraph", "list", "quote", "cta"
+- "content": the text content for this section. For "list" type, use newline-separated items. For "quote" type, include attribution. For "cta" type, write a compelling call-to-action.
+- "order": integer starting from 1
+
+Guidelines:
+- Start with a heading that matches the newsletter title theme
+- Include a warm, engaging opening paragraph
+- Add substantive content sections with real insights (not placeholders)
+- Include at least one list section with actionable takeaways
+- Include one relevant quote section
+- End with a CTA section using: "${cta}"
+- Match the tone: ${toneLabel}
+- Match the depth: ${depthHint}
+
+Generate the sections now:`;
+
+    try {
+      console.log('[NewsletterContentOS] Calling AI for content generation...');
+      const response = await aiApi.generate({ prompt, maxTokens: 4000 });
+
+      console.log('[NewsletterContentOS] Content AI response:', { status: response.status, error: response.error, hasData: !!response.data });
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'AI content generation returned no data');
+      }
+
+      const aiResult = response.data as any;
+      let rawContent: string = aiResult.content || '';
+      if (typeof rawContent !== 'string') {
+        rawContent = JSON.stringify(rawContent);
+      }
+
+      rawContent = rawContent.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+      let parsed: any[];
+      try {
+        parsed = JSON.parse(rawContent);
+      } catch {
+        const match = rawContent.match(/\[[\s\S]*\]/);
+        if (match) {
+          parsed = JSON.parse(match[0]);
+        } else {
+          throw new Error('Could not parse AI content response as JSON');
+        }
+      }
+
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('AI response is not a valid sections array');
+      }
+
+      const validTypes = ['heading', 'subheading', 'paragraph', 'list', 'quote', 'cta'];
+      const sections: NewsletterSection[] = parsed
+        .filter((s: any) => s.type && s.content && validTypes.includes(s.type))
+        .map((s: any, i: number) => ({
+          id: `sec-${Date.now()}-${i + 1}`,
+          type: s.type as NewsletterSection['type'],
+          content: String(s.content),
+          order: s.order ?? (i + 1),
+        }))
+        .sort((a: NewsletterSection, b: NewsletterSection) => a.order - b.order);
+
+      if (sections.length === 0) {
+        throw new Error('AI generated no valid sections');
+      }
+
+      const content = sections.map((s) => s.content).join('\n\n');
+
+      onUpdatePost(post.id, {
+        status: 'draft',
+        content,
+        sections,
+      });
+      setGeneratingPostId(null);
+
+      console.log('[NewsletterContentOS] SUCCESS — AI generated', sections.length, 'sections via', aiResult.provider, '/', aiResult.model);
+
+      // Auto-map to next empty calendar slot after generation
+      if (autoMapEnabled && activeCalendar) {
+        const emptySlot = activeCalendar.timeline.find(
+          (item) => item.status === 'empty' || (item.status === 'planned' && item.titleId === post.titleId && !item.postId)
+        );
+        if (emptySlot) {
+          const updatedTimeline = activeCalendar.timeline.map((item) =>
+            item.id === emptySlot.id
+              ? { ...item, postId: post.id, titleId: post.titleId || item.titleId, status: 'assigned' as const }
+              : item
+          );
+          onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+        }
+      }
+    } catch (error) {
+      console.error('[NewsletterContentOS] AI content generation FAILED — falling back to template. Error:', error);
+
+      // Fallback to template content
       const sections: NewsletterSection[] = [
         { id: `sec-${Date.now()}-1`, type: 'heading', content: `Welcome to ${post.title}`, order: 1 },
         { id: `sec-${Date.now()}-2`, type: 'paragraph', content: `Hey there! In this edition, we dive into ${post.title.toLowerCase()} and what it means for you. Let us get started.`, order: 2 },
@@ -2013,8 +2551,23 @@ function ContentTab({
         content,
         sections,
       });
-      setIsGenerating(false);
-    }, 2000);
+      setGeneratingPostId(null);
+
+      // Auto-map to next empty calendar slot after generation (fallback too)
+      if (autoMapEnabled && activeCalendar) {
+        const emptySlot = activeCalendar.timeline.find(
+          (item) => item.status === 'empty' || (item.status === 'planned' && item.titleId === post.titleId && !item.postId)
+        );
+        if (emptySlot) {
+          const updatedTimeline = activeCalendar.timeline.map((item) =>
+            item.id === emptySlot.id
+              ? { ...item, postId: post.id, titleId: post.titleId || item.titleId, status: 'assigned' as const }
+              : item
+          );
+          onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+        }
+      }
+    }
   };
 
   return (
@@ -2025,15 +2578,34 @@ function ContentTab({
             <h3 className="text-lg font-semibold text-slate-200">Content Pipeline</h3>
             <p className="text-sm text-slate-400 mt-1">{posts.length} newsletters in pipeline</p>
           </div>
+          <button
+            onClick={onAutoMapToggle}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
+              autoMapEnabled
+                ? 'bg-primary-500/20 text-primary-400 border-primary-500/40 hover:bg-primary-500/30'
+                : 'bg-slate-700/50 text-slate-400 border-slate-600 hover:bg-slate-700 hover:text-slate-300'
+            )}
+            title={autoMapEnabled ? 'Auto-Map is ON: Newsletters will be automatically mapped to calendar slots' : 'Auto-Map is OFF: Manually schedule newsletters on the calendar'}
+          >
+            <Zap className={cn('w-3.5 h-3.5', autoMapEnabled && 'text-primary-400')} />
+            Auto-Map
+            <span className={cn(
+              'text-xs px-1.5 py-0.5 rounded',
+              autoMapEnabled ? 'bg-primary-500/30 text-primary-300' : 'bg-slate-600 text-slate-500'
+            )}>
+              {autoMapEnabled ? 'ON' : 'OFF'}
+            </span>
+          </button>
         </div>
       </div>
 
-      {titles.filter((t) => t.status === 'selected').length > 0 && posts.length === 0 && (
+      {titles.filter((t) => t.status === 'selected' && !posts.some((p) => p.titleId === t.id)).length > 0 && (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Create Newsletters from Selected Titles</h3>
           <div className="space-y-2">
             {titles
-              .filter((t) => t.status === 'selected')
+              .filter((t) => t.status === 'selected' && !posts.some((p) => p.titleId === t.id))
               .map((title) => (
                 <div key={title.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
                   <span className="text-sm text-slate-200">{title.title}</span>
@@ -2089,6 +2661,18 @@ function ContentTab({
                       {post.status}
                     </span>
                     <span className="text-xs text-slate-500">{post.contentType}</span>
+                    {(() => {
+                      const slot = findPostCalendarSlot(post.id);
+                      if (slot) {
+                        return (
+                          <span className="text-xs text-primary-400 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(slot.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -2098,17 +2682,61 @@ function ContentTab({
                         e.stopPropagation();
                         handleGenerateContent(post);
                       }}
-                      disabled={isGenerating}
+                      disabled={generatingPostId === post.id}
                       className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
                     >
                       <Sparkles className="w-3 h-3" />
-                      {isGenerating ? 'Generating...' : 'Generate'}
+                      {generatingPostId === post.id ? 'Generating...' : 'Generate'}
                     </button>
                   )}
+                  {(() => {
+                    const slot = findPostCalendarSlot(post.id);
+                    if (slot) {
+                      return (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSchedulingPostId(post.id);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1.5 text-primary-400 hover:text-primary-300 border border-primary-500/30 hover:border-primary-500/50 rounded-lg text-xs transition-colors"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Reschedule
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnschedulePost(post.id);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1.5 text-slate-400 hover:text-red-400 border border-slate-600 hover:border-red-500/30 rounded-lg text-xs transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                            Unschedule
+                          </button>
+                        </>
+                      );
+                    }
+                    if (activeCalendar) {
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSchedulingPostId(post.id);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1.5 text-slate-300 hover:text-primary-400 border border-slate-600 hover:border-primary-500/30 rounded-lg text-xs transition-colors"
+                        >
+                          <Calendar className="w-3 h-3" />
+                          Schedule
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDeletePost(post.id);
+                      handleDeletePost(post.id);
                     }}
                     className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
                   >
@@ -2119,80 +2747,233 @@ function ContentTab({
 
               {selectedPostId === post.id && (
                 <div className="border-t border-slate-700 p-4 space-y-4">
-                  {post.content && (
-                    <div className="bg-slate-900/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-slate-300 mb-2">Content Preview</h4>
-                      <div className="text-sm text-slate-400 whitespace-pre-wrap max-h-64 overflow-y-auto">
-                        {post.content}
+                  {editingPostId === post.id ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
+                          <input
+                            type="text"
+                            value={editForm.title}
+                            onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-300 mb-1.5">Subject Line</label>
+                          <input
+                            type="text"
+                            value={editForm.subjectLine}
+                            onChange={(e) => setEditForm((f) => ({ ...f, subjectLine: e.target.value }))}
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {post.sections && post.sections.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.sections.length}</div>
-                        <div className="text-xs text-slate-500">Sections</div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Preview Text</label>
+                        <input
+                          type="text"
+                          value={editForm.previewText}
+                          onChange={(e) => setEditForm((f) => ({ ...f, previewText: e.target.value }))}
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                          placeholder="Short preview shown in email clients"
+                        />
                       </div>
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{getEstimatedReadTime(post.content?.length || 0)}m</div>
-                        <div className="text-xs text-slate-500">Read Time</div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Content</label>
+                        <textarea
+                          value={editForm.content}
+                          onChange={(e) => setEditForm((f) => ({ ...f, content: e.target.value }))}
+                          rows={12}
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 transition-colors resize-y"
+                          placeholder="Newsletter body content"
+                        />
                       </div>
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.version}</div>
-                        <div className="text-xs text-slate-500">Version</div>
-                      </div>
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <div className="text-lg font-semibold text-slate-200">{post.content?.split(' ').length || 0}</div>
-                        <div className="text-xs text-slate-500">Words</div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    {post.status === 'draft' && (
-                      <button
-                        onClick={() => onUpdatePost(post.id, { status: 'review' })}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
-                      >
-                        <Eye className="w-3 h-3" />
-                        Send to Review
-                      </button>
-                    )}
-                    {post.status === 'review' && (
-                      <>
+                      <div className="flex items-center gap-2 pt-1">
                         <button
-                          onClick={() => onUpdatePost(post.id, { status: 'approved' })}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                          onClick={() => {
+                            onUpdatePost(post.id, {
+                              title: editForm.title,
+                              subjectLine: editForm.subjectLine,
+                              previewText: editForm.previewText,
+                              content: editForm.content,
+                            });
+                            setEditingPostId(null);
+                          }}
+                          className="flex items-center gap-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
                         >
-                          <CheckCircle className="w-3 h-3" />
-                          Approve
+                          <Check className="w-3.5 h-3.5" />
+                          Save Changes
                         </button>
                         <button
-                          onClick={() => onUpdatePost(post.id, { status: 'draft' })}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors"
+                          onClick={() => setEditingPostId(null)}
+                          className="flex items-center gap-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {post.content && (
+                        <div className="bg-slate-900/50 rounded-lg p-4">
+                          <h4 className="text-sm font-medium text-slate-300 mb-2">Content Preview</h4>
+                          <div className="text-sm text-slate-400 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                            {post.content}
+                          </div>
+                        </div>
+                      )}
+
+                      {post.sections && post.sections.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-semibold text-slate-200">{post.sections.length}</div>
+                            <div className="text-xs text-slate-500">Sections</div>
+                          </div>
+                          <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-semibold text-slate-200">{getEstimatedReadTime(post.content?.length || 0)}m</div>
+                            <div className="text-xs text-slate-500">Read Time</div>
+                          </div>
+                          <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-semibold text-slate-200">{post.version}</div>
+                            <div className="text-xs text-slate-500">Version</div>
+                          </div>
+                          <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                            <div className="text-lg font-semibold text-slate-200">{post.content?.split(' ').length || 0}</div>
+                            <div className="text-xs text-slate-500">Words</div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditForm({
+                              title: post.title,
+                              subjectLine: post.subjectLine || '',
+                              previewText: post.previewText || '',
+                              content: post.content || '',
+                            });
+                            setEditingPostId(post.id);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
                         >
                           <PenTool className="w-3 h-3" />
-                          Request Revisions
+                          Edit
                         </button>
-                      </>
-                    )}
-                    {post.status === 'approved' && (
-                      <button
-                        onClick={() => onUpdatePost(post.id, { status: 'published', publishedAt: new Date().toISOString() })}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
-                      >
-                        <Globe className="w-3 h-3" />
-                        Publish
-                      </button>
-                    )}
-                  </div>
+                        {post.status === 'draft' && (
+                          <button
+                            onClick={() => onUpdatePost(post.id, { status: 'review' })}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                          >
+                            <Eye className="w-3 h-3" />
+                            Send to Review
+                          </button>
+                        )}
+                        {post.status === 'review' && (
+                          <>
+                            <button
+                              onClick={() => onUpdatePost(post.id, { status: 'approved' })}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => onUpdatePost(post.id, { status: 'draft' })}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors"
+                            >
+                              <PenTool className="w-3 h-3" />
+                              Request Revisions
+                            </button>
+                          </>
+                        )}
+                        {post.status === 'approved' && (
+                          <button
+                            onClick={() => onUpdatePost(post.id, { status: 'published', publishedAt: new Date().toISOString() })}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
+                          >
+                            <Globe className="w-3 h-3" />
+                            Publish
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           ))
         )}
       </div>
+
+      {/* Schedule to Calendar Modal */}
+      {schedulingPostId && activeCalendar && (() => {
+        const currentSlot = findPostCalendarSlot(schedulingPostId);
+        const availableSlots = activeCalendar.timeline.filter(
+          (item) => item.status === 'empty' || item.id === currentSlot?.id
+        );
+        const post = posts.find((p) => p.id === schedulingPostId);
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setSchedulingPostId(null)}>
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-200">
+                  {currentSlot ? 'Reschedule Newsletter' : 'Schedule Newsletter'}
+                </h3>
+                <button onClick={() => setSchedulingPostId(null)} className="text-slate-400 hover:text-slate-200">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-slate-400 mb-4">
+                {post ? `"${post.title}"` : 'Select a calendar slot'} — choose a date to {currentSlot ? 'reschedule' : 'schedule'}:
+              </p>
+              {availableSlots.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+                  <p className="text-slate-400">No available slots in the calendar.</p>
+                  <p className="text-sm text-slate-500 mt-1">Edit the calendar to add more publishing dates.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {availableSlots.map((slot) => {
+                    const slotDate = new Date(slot.scheduledDate);
+                    const dayName = slotDate.toLocaleDateString('en-US', { weekday: 'long' });
+                    const dateStr = slotDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const isCurrentSlot = slot.id === currentSlot?.id;
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => handleSchedulePost(schedulingPostId, slot.id)}
+                        className={cn(
+                          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
+                          isCurrentSlot
+                            ? 'border-primary-500 bg-primary-500/10'
+                            : 'border-slate-700 bg-slate-900/50 hover:border-primary-500/50 hover:bg-slate-800/80'
+                        )}
+                      >
+                        <div className={cn(
+                          'w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold',
+                          isCurrentSlot ? 'bg-primary-500 text-white' : 'bg-slate-700 text-slate-300'
+                        )}>
+                          {slotDate.getDate()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-slate-200">{dayName}</div>
+                          <div className="text-xs text-slate-400">{dateStr}</div>
+                        </div>
+                        {isCurrentSlot && (
+                          <span className="text-xs text-primary-400 font-medium">Current</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
