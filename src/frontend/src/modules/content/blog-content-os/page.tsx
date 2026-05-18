@@ -98,6 +98,7 @@ import {
   blogPostApi,
   blogContentChunkApi,
   blogExportApi,
+  aiApi,
 } from '@/services/api';
 import type {
   BlogStrategy,
@@ -232,7 +233,10 @@ export default function BlogContentOSModule() {
   const data = useDataStore(s => s.data);
   const taskStore = useTaskStore();
 
+  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId, setItems } = dataStore;
+
   // Sync company from companyStore to dataStore
+  const companyId = companyStore.activeCompanyId;
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -339,6 +343,7 @@ export default function BlogContentOSModule() {
   const [activeStrategyId, setActiveStrategyId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
   const [showCreateStrategyModal, setShowCreateStrategyModal] = useState(false);
+  const [autoMapEnabled, setAutoMapEnabled] = useState(true);
 
   // Get active strategy
   const activeStrategy = useMemo(() => strategies.find((s) => s.id === activeStrategyId), [strategies, activeStrategyId]);
@@ -491,13 +496,13 @@ export default function BlogContentOSModule() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-0 border-t border-slate-800 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="px-6 flex gap-1 border-t border-slate-800">
           {[
             { id: 'strategy', label: 'Strategy', icon: Target },
-            { id: 'types', label: 'Types', icon: Layout },
-            { id: 'calendar', label: 'Calendar', icon: Calendar },
+            // { id: 'types', label: 'Content Types', icon: Layout },
             { id: 'titles', label: 'Titles', icon: Type },
             { id: 'content', label: 'Content', icon: FileEdit },
+            { id: 'calendar', label: 'Calendar', icon: Calendar },
             { id: 'assets', label: 'Assets', icon: Image },
             { id: 'review', label: 'Review', icon: CheckCircle },
             { id: 'export', label: 'Export', icon: Download },
@@ -538,31 +543,13 @@ export default function BlogContentOSModule() {
               />
             )}
 
-            {activeTab === 'types' && activeStrategy && (
+            {/* {activeTab === 'types' && activeStrategy && (
               <ContentTypesTab
                 strategyId={activeStrategy.id}
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
                 onUpdate={(id, updates) => updateItem('blogContentTypes', id, updates)}
               />
-            )}
-
-            {activeTab === 'calendar' && activeStrategy && (
-              <CalendarTab
-                strategy={activeStrategy}
-                calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
-                onCreateCalendar={async (data) => {
-                  const localId = addItem('blogCalendars', { ...data, strategyId: activeStrategy.id } as any);
-                  const res = await blogCalendarApi.create({ ...data, strategyId: activeStrategy.id, id: localId, companyId });
-                  if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
-                    updateItem('blogCalendars', localId, { id: (res.data as any).id });
-                  }
-                }}
-                onUpdateCalendar={async (id, updates) => {
-                  updateItem('blogCalendars', id, updates);
-                  await blogCalendarApi.update(id, updates);
-                }}
-              />
-            )}
+            )} */}
 
             {activeTab === 'titles' && activeStrategy && (
               <TitlesTab
@@ -578,6 +565,19 @@ export default function BlogContentOSModule() {
                   deleteItem('blogTitles', id);
                   await blogTitleApi.delete(id);
                 }}
+                onClearGenerated={async () => {
+                  const generated = titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'generated');
+                  setItems('blogTitles', titles.filter((t) => t.status !== 'generated' || t.strategyId !== activeStrategy.id));
+                  await Promise.all(generated.map((t) => blogTitleApi.delete(t.id).catch(() => {})));
+                }}
+                onClearSelected={async () => {
+                  const selected = titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected');
+                  const updated = titles.map((t) =>
+                    t.strategyId === activeStrategy.id && t.status === 'selected' ? { ...t, status: 'rejected' as const } : t
+                  );
+                  setItems('blogTitles', updated);
+                  await Promise.all(selected.map((t) => blogTitleApi.update(t.id, { status: 'rejected' }).catch(() => {})));
+                }}
               />
             )}
 
@@ -587,6 +587,9 @@ export default function BlogContentOSModule() {
                 posts={posts.filter((p) => p.strategyId === activeStrategy.id)}
                 titles={titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected')}
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
+                calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
+                autoMapEnabled={autoMapEnabled}
+                onAutoMapToggle={() => setAutoMapEnabled(!autoMapEnabled)}
                 onCreatePost={async (data) => {
                   const localId = addItem('blogPosts', data as any);
                   const res = await blogPostApi.create({ ...data, id: localId, companyId });
@@ -601,6 +604,29 @@ export default function BlogContentOSModule() {
                 onDeletePost={async (id) => {
                   deleteItem('blogPosts', id);
                   await blogPostApi.delete(id);
+                }}
+                onUpdateCalendar={async (id, updates) => {
+                  updateItem('blogCalendars', id, updates);
+                  await blogCalendarApi.update(id, updates);
+                }}
+              />
+            )}
+
+            {activeTab === 'calendar' && activeStrategy && (
+              <CalendarTab
+                strategy={activeStrategy}
+                calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
+                posts={posts.filter((p) => p.strategyId === activeStrategy.id)}
+                onCreateCalendar={async (data) => {
+                  const localId = addItem('blogCalendars', { ...data, strategyId: activeStrategy.id } as any);
+                  const res = await blogCalendarApi.create({ ...data, strategyId: activeStrategy.id, id: localId, companyId });
+                  if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
+                    updateItem('blogCalendars', localId, { id: (res.data as any).id });
+                  }
+                }}
+                onUpdateCalendar={async (id, updates) => {
+                  updateItem('blogCalendars', id, updates);
+                  await blogCalendarApi.update(id, updates);
                 }}
               />
             )}
@@ -1317,11 +1343,13 @@ function ContentTypesTab({
 function CalendarTab({
   strategy,
   calendars,
+  posts,
   onCreateCalendar,
   onUpdateCalendar,
 }: {
   strategy: BlogStrategy;
   calendars: BlogCalendar[];
+  posts: BlogPost[];
   onCreateCalendar: (data: Partial<BlogCalendar>) => void;
   onUpdateCalendar: (id: string, updates: Partial<BlogCalendar>) => void;
 }) {
@@ -1592,6 +1620,8 @@ function TitlesTab({
   onGenerate,
   onUpdate,
   onDelete,
+  onClearGenerated,
+  onClearSelected,
 }: {
   strategy: BlogStrategy;
   contentTypes: BlogContentTypeConfig[];
@@ -1599,6 +1629,8 @@ function TitlesTab({
   onGenerate: (count: number, style: TitleStyle) => void;
   onUpdate: (id: string, updates: Partial<BlogTitle>) => void;
   onDelete: (id: string) => void;
+  onClearGenerated: () => void;
+  onClearSelected: () => void;
 }) {
   const [selectedStyle, setSelectedStyle] = useState<TitleStyle>('seo');
   const [generateCount, setGenerateCount] = useState(10);
@@ -1683,6 +1715,15 @@ function TitlesTab({
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Editorial Pipeline ({selectedTitles.length})</h3>
+            {selectedTitles.length > 0 && (
+              <button
+                onClick={onClearSelected}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/40 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="divide-y divide-slate-700">
@@ -1714,8 +1755,17 @@ function TitlesTab({
 
         {/* Generated Titles */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-700">
+          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Generated Titles ({generatedTitles.length})</h3>
+            {generatedTitles.length > 0 && (
+              <button
+                onClick={onClearGenerated}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/40 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="divide-y divide-slate-700 max-h-[500px] overflow-y-auto">
@@ -2032,24 +2082,37 @@ function ContentTab({
   posts,
   titles,
   contentTypes,
+  calendars,
+  autoMapEnabled,
+  onAutoMapToggle,
   onCreatePost,
   onUpdatePost,
   onDeletePost,
+  onUpdateCalendar,
 }: {
   strategy: BlogStrategy;
   posts: BlogPost[];
   titles: BlogTitle[];
   contentTypes: BlogContentTypeConfig[];
+  calendars: BlogCalendar[];
+  autoMapEnabled: boolean;
+  onAutoMapToggle: () => void;
   onCreatePost: (data: Partial<BlogPost>) => void;
   onUpdatePost: (id: string, updates: Partial<BlogPost>) => void;
   onDeletePost: (id: string) => void;
+  onUpdateCalendar: (id: string, updates: Partial<BlogCalendar>) => void;
 }) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const selectedPost = posts.find((p) => p.id === selectedPostId);
 
+  // Find the active calendar
+  const activeCalendar = calendars[0];
+
+  // Auto-map to calendar if enabled
   const handleCreateFromTitle = (title: BlogTitle) => {
     const contentType = contentTypes.find((t) => t.type === title.contentType);
+
     onCreatePost({
       strategyId: strategy.id,
       titleId: title.id,
@@ -2058,8 +2121,8 @@ function ContentTab({
       excerpt: '',
       contentType: title.contentType,
       contentTypeId: contentType?.id,
-      primaryKeyword: title.suggestedKeywords[0],
-      secondaryKeywords: title.suggestedKeywords.slice(1),
+      primaryKeyword: title.suggestedKeywords?.[0],
+      secondaryKeywords: title.suggestedKeywords?.slice(1) || [],
       nlpKeywords: [],
       metaTitle: title.title,
       metaDescription: '',
@@ -2122,6 +2185,20 @@ function ContentTab({
             <h3 className="text-lg font-semibold text-slate-200">Content Pipeline</h3>
             <p className="text-sm text-slate-400 mt-1">{posts.length} posts in pipeline</p>
           </div>
+          {activeCalendar && (
+            <button
+              onClick={onAutoMapToggle}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors',
+                autoMapEnabled
+                  ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                  : 'bg-slate-800 text-slate-400 border border-slate-700'
+              )}
+            >
+              <Zap className="w-4 h-4" />
+              Auto-Map {autoMapEnabled ? 'ON' : 'OFF'}
+            </button>
+          )}
         </div>
       </div>
 
