@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { getTemplateForContentType, buildTemplatePromptGuidance } from './templates';
 import {
   Mail,
   Target,
@@ -34,9 +35,14 @@ import {
   RotateCcw,
   Eye,
   BookOpen,
+  Database,
+  FolderOpen,
+  UserCircle,
+  MessageSquare,
+  Copy,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { useDataStore, useCompanyStore, useTaskStore } from '@/stores';
+import { useDataStore, useCompanyStore, useTaskStore, useAuthStore } from '@/stores';
 import {
   newsletterStrategyApi,
   newsletterCalendarApi,
@@ -104,12 +110,13 @@ const CONTENT_DEPTH_OPTIONS: { value: ContentDepth; label: string; wordRange: st
 const DEFAULT_CONTENT_TYPES: Array<Partial<NewsletterContentTypeConfig>> = [
   { name: 'Educational Newsletter', type: 'educational', enabled: true, percentageAllocation: 25, priority: 1, recommendedLength: 600, funnelPosition: 'tofu', ctaStrategy: 'Read full guide', conversionGoal: 'Click-through' },
   { name: 'Product Updates', type: 'product-update', enabled: true, percentageAllocation: 15, priority: 2, recommendedLength: 400, funnelPosition: 'mofu', ctaStrategy: 'Try new feature', conversionGoal: 'Product adoption' },
-  { name: 'Curated Content', type: 'curated', enabled: true, percentageAllocation: 15, priority: 3, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Read article', conversionGoal: 'Engagement' },
-  { name: 'Community Digest', type: 'community', enabled: true, percentageAllocation: 10, priority: 4, recommendedLength: 400, funnelPosition: 'tofu', ctaStrategy: 'Join community', conversionGoal: 'Community growth' },
+  // { name: 'Curated Content', type: 'curated', enabled: true, percentageAllocation: 15, priority: 3, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Read article', conversionGoal: 'Engagement' },
+  { name: 'Community', type: 'community', enabled: true, percentageAllocation: 10, priority: 4, recommendedLength: 400, funnelPosition: 'tofu', ctaStrategy: 'Join community', conversionGoal: 'Community growth' },
   { name: 'Founder Letter', type: 'founder-letter', enabled: true, percentageAllocation: 10, priority: 5, recommendedLength: 800, funnelPosition: 'mofu', ctaStrategy: 'Reply to founder', conversionGoal: 'Relationship building' },
   { name: 'Case Study', type: 'case-study', enabled: true, percentageAllocation: 10, priority: 6, recommendedLength: 700, funnelPosition: 'mofu', ctaStrategy: 'Book demo', conversionGoal: 'Lead capture' },
   { name: 'Industry News', type: 'industry-news', enabled: true, percentageAllocation: 8, priority: 7, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Share opinion', conversionGoal: 'Social engagement' },
   { name: 'Promotional', type: 'promotional', enabled: true, percentageAllocation: 7, priority: 8, recommendedLength: 350, funnelPosition: 'bofu', ctaStrategy: 'Claim offer', conversionGoal: 'Direct sale' },
+  { name: 'AI Newsletter', type: 'ai', enabled: true, percentageAllocation: 5, priority: 9, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Explore AI tools', conversionGoal: 'Engagement' },
 ];
 
 const SUBJECT_LINE_STYLES: { value: SubjectLineStyle; label: string; description: string }[] = [
@@ -137,6 +144,223 @@ const NEWSLETTER_STATUS_CONFIG: Record<NewsletterContentStatus, { label: string;
 
 function getEstimatedReadTime(wordCount: number): number {
   return Math.ceil(wordCount / 200);
+}
+
+function transformMongoIds(obj: any): any {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) return obj.map(transformMongoIds);
+  if (typeof obj === 'object') {
+    const result: any = {};
+    for (const key of Object.keys(obj)) {
+      result[key === '_id' ? 'id' : key] = transformMongoIds(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+}
+
+// ============================================
+// FOUNDATIONAL CONTEXT
+// ============================================
+
+interface FoundationalContext {
+  isLoading: boolean;
+  error: string | null;
+  businessProfile: any | null;
+  founders: any[];
+  icps: any[];
+  personas: any[];
+  products: any[];
+  productCategories: any[];
+  competitors: any[];
+  brandAssets: any[];
+  brandStrategy: any | null;
+  visualIdentity: any | null;
+  salesCollateral: any[];
+  allIcps: any[];
+  allPersonas: any[];
+  allProducts: any[];
+  allProductCategories: any[];
+  allCompetitors: any[];
+  allBrandAssets: any[];
+  allSalesCollateral: any[];
+}
+
+function useFoundationalContext(strategy: NewsletterStrategy | null): FoundationalContext {
+  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const getItems = useDataStore(s => s.getItems);
+  const storeData = useDataStore(s => s.data);
+  const storeActiveCompanyId = useDataStore(s => s.activeCompanyId);
+
+  // State for API-fetched data (primary source)
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
+  const [founders, setFounders] = useState<any[]>([]);
+  const [allIcps, setAllIcps] = useState<any[]>([]);
+  const [allPersonas, setAllPersonas] = useState<any[]>([]);
+  const [brandStrategy, setBrandStrategy] = useState<any>(null);
+  const [visualIdentity, setVisualIdentity] = useState<any>(null);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allProductCategories, setAllProductCategories] = useState<any[]>([]);
+  const [allCompetitors, setAllCompetitors] = useState<any[]>([]);
+  const [allBrandAssets, setAllBrandAssets] = useState<any[]>([]);
+  const [allSalesCollateral, setAllSalesCollateral] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const linkedData = strategy?.linkedData || {};
+
+  const resolveIds = (items: any[], ids: string[]) =>
+    ids.map(id => items.find((i: any) => i.id === id)).filter(Boolean);
+
+  const icps = linkedData.icpIds?.length ? resolveIds(allIcps, linkedData.icpIds) : [];
+  const personas = linkedData.personaIds?.length ? resolveIds(allPersonas, linkedData.personaIds) : [];
+  const products = resolveIds(allProducts, linkedData.productIds || []);
+  const productCategories = resolveIds(allProductCategories, linkedData.productCategoryIds || []);
+  const competitors = resolveIds(allCompetitors, linkedData.competitorIds || []);
+  const brandAssets = resolveIds(allBrandAssets, linkedData.brandAssetIds || []);
+  const salesCollateral = resolveIds(allSalesCollateral, linkedData.salesCollateralIds || []);
+
+  useEffect(() => {
+    if (!companyId) {
+      setBusinessProfile(null);
+      setFounders([]);
+      setAllIcps([]);
+      setAllPersonas([]);
+      setBrandStrategy(null);
+      setVisualIdentity(null);
+      setAllProducts([]);
+      setAllProductCategories([]);
+      setAllCompetitors([]);
+      setAllBrandAssets([]);
+      setAllSalesCollateral([]);
+      return;
+    }
+    let cancelled = false;
+
+    const fetchFoundationalData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      // First, try to populate from local store (instant, no API call needed)
+      const storeBp = (getItems('businessProfiles') as any[]) || [];
+      if (storeBp.length > 0) setBusinessProfile(storeBp[0]);
+
+      const storeFoundersList = (getItems('founders') as any[]) || [];
+      if (storeFoundersList.length > 0) setFounders(storeFoundersList);
+
+      const storeIcpsList = (getItems('icps') as any[]) || [];
+      if (storeIcpsList.length > 0) setAllIcps(storeIcpsList);
+
+      const storePersonasList = (getItems('personas') as any[]) || [];
+      if (storePersonasList.length > 0) setAllPersonas(storePersonasList);
+
+      const storeProductsList = (getItems('products') as any[]) || [];
+      if (storeProductsList.length > 0) setAllProducts(storeProductsList);
+
+      const storeCompetitorsList = (getItems('competitors') as any[]) || [];
+      if (storeCompetitorsList.length > 0) setAllCompetitors(storeCompetitorsList);
+
+      const storeBrandAssetsList = (getItems('brandAssets') as any[]) || [];
+      if (storeBrandAssetsList.length > 0) setAllBrandAssets(storeBrandAssetsList);
+
+      const storeSalesCollateralList = (getItems('salesCollateral') as any[]) || [];
+      if (storeSalesCollateralList.length > 0) setAllSalesCollateral(storeSalesCollateralList);
+
+      // Then fetch from API to get latest data and fill gaps
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3101/api';
+        const token = typeof window !== 'undefined' ? useAuthStore.getState().token : '';
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const [bpRes, foundersRes, icpsRes, personasRes, strategyRes, visualRes,
+               productsRes, productCategoriesRes, competitorsRes,
+               brandAssetsRes, salesCollateralRes] =
+          await Promise.allSettled([
+            fetch(`${baseUrl}/business-profiles/${companyId}`, { headers }),
+            fetch(`${baseUrl}/founders/${companyId}`, { headers }),
+            fetch(`${baseUrl}/icps/${companyId}`, { headers }),
+            fetch(`${baseUrl}/personas/${companyId}`, { headers }),
+            fetch(`${baseUrl}/module-data/brand-strategy/${companyId}`, { headers }),
+            fetch(`${baseUrl}/module-data/visual-identity/${companyId}`, { headers }),
+            fetch(`${baseUrl}/products/${companyId}`, { headers }),
+            fetch(`${baseUrl}/products/categories/${companyId}`, { headers }),
+            fetch(`${baseUrl}/competitors/${companyId}`, { headers }),
+            fetch(`${baseUrl}/brand-assets/${companyId}`, { headers }),
+            fetch(`${baseUrl}/sales-collateral/collateral/${companyId}`, { headers }),
+          ]);
+
+        if (!cancelled) {
+          if (bpRes.status === 'fulfilled' && bpRes.value.ok) {
+            const bp = await bpRes.value.json();
+            if (bp && !bp.error) setBusinessProfile(transformMongoIds(bp));
+          }
+          if (foundersRes.status === 'fulfilled' && foundersRes.value.ok) {
+            const fList = await foundersRes.value.json();
+            if (Array.isArray(fList) && fList.length > 0) setFounders(transformMongoIds(fList));
+          }
+          if (icpsRes.status === 'fulfilled' && icpsRes.value.ok) {
+            const icpList = await icpsRes.value.json();
+            if (Array.isArray(icpList) && icpList.length > 0) setAllIcps(transformMongoIds(icpList));
+          }
+          if (personasRes.status === 'fulfilled' && personasRes.value.ok) {
+            const pList = await personasRes.value.json();
+            if (Array.isArray(pList) && pList.length > 0) setAllPersonas(transformMongoIds(pList));
+          }
+          if (strategyRes.status === 'fulfilled' && strategyRes.value.ok) {
+            const sd = await strategyRes.value.json();
+            const strategyData = sd?.data || sd;
+            if (strategyData && typeof strategyData === 'object' && Object.keys(strategyData).length > 0) {
+              setBrandStrategy(transformMongoIds(strategyData));
+            }
+          }
+          if (visualRes.status === 'fulfilled' && visualRes.value.ok) {
+            const vd = await visualRes.value.json();
+            const identityData = vd?.data || vd;
+            if (identityData && typeof identityData === 'object' && Object.keys(identityData).length > 0) {
+              setVisualIdentity(transformMongoIds(identityData));
+            }
+          }
+          if (productsRes.status === 'fulfilled' && productsRes.value.ok) {
+            const pList = await productsRes.value.json();
+            if (Array.isArray(pList) && pList.length > 0) setAllProducts(transformMongoIds(pList));
+          }
+          if (productCategoriesRes.status === 'fulfilled' && productCategoriesRes.value.ok) {
+            const pcList = await productCategoriesRes.value.json();
+            if (Array.isArray(pcList) && pcList.length > 0) setAllProductCategories(transformMongoIds(pcList));
+          }
+          if (competitorsRes.status === 'fulfilled' && competitorsRes.value.ok) {
+            const cList = await competitorsRes.value.json();
+            if (Array.isArray(cList) && cList.length > 0) setAllCompetitors(transformMongoIds(cList));
+          }
+          if (brandAssetsRes.status === 'fulfilled' && brandAssetsRes.value.ok) {
+            const baList = await brandAssetsRes.value.json();
+            if (Array.isArray(baList) && baList.length > 0) setAllBrandAssets(transformMongoIds(baList));
+          }
+          if (salesCollateralRes.status === 'fulfilled' && salesCollateralRes.value.ok) {
+            const scRes = await salesCollateralRes.value.json();
+            if (Array.isArray(scRes) && scRes.length > 0) {
+              setAllSalesCollateral(transformMongoIds(scRes));
+            }
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load foundational data');
+      }
+      if (!cancelled) setIsLoading(false);
+    };
+
+    fetchFoundationalData();
+    return () => { cancelled = true; };
+  }, [companyId, storeData, storeActiveCompanyId, getItems]);
+
+  return {
+    isLoading, error, businessProfile, founders, icps, personas,
+    products, productCategories, competitors, brandAssets,
+    salesCollateral, brandStrategy, visualIdentity,
+    allIcps, allPersonas, allProducts, allProductCategories,
+    allCompetitors, allBrandAssets, allSalesCollateral,
+  };
 }
 
 // ============================================
@@ -265,6 +489,23 @@ export default function NewsletterContentOSModule() {
         setItems('newsletterExports', mergeById(local, eRes.data as NewsletterExport[]));
       }
 
+      // Ensure content types exist for every strategy (they are only stored locally
+      // and are never synced from the server, so server-loaded strategies lose them)
+      const allStrategies = (getItems('newsletterStrategies') as NewsletterStrategy[]) || [];
+      const existingCT = (getItems('newsletterContentTypes') as NewsletterContentTypeConfig[]) || [];
+      const existingStrategyIds = new Set(existingCT.map((ct) => ct.strategyId));
+      allStrategies.forEach((s) => {
+        if (!existingStrategyIds.has(s.id)) {
+          DEFAULT_CONTENT_TYPES.forEach((type) => {
+            addItem('newsletterContentTypes', {
+              ...type,
+              strategyId: s.id,
+              companyId,
+            } as any);
+          });
+        }
+      });
+
       setIsLoading(false);
     };
 
@@ -278,11 +519,14 @@ export default function NewsletterContentOSModule() {
 
   // Active selections
   const [activeStrategyId, setActiveStrategyId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
+  const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'data' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
   const [showCreateStrategyModal, setShowCreateStrategyModal] = useState(false);
   const [autoMapEnabled, setAutoMapEnabled] = useState(true);
 
   const activeStrategy = useMemo(() => strategies.find((s) => s.id === activeStrategyId), [strategies, activeStrategyId]);
+
+  // Foundational context — fetched from API, filtered by linkedData
+  const foundationalContext = useFoundationalContext(activeStrategy ?? null);
 
   // Strategy actions
   const handleCreateStrategy = useCallback(async (data: Partial<NewsletterStrategy>) => {
@@ -336,7 +580,7 @@ export default function NewsletterContentOSModule() {
   }, [deleteItem, activeStrategyId]);
 
   // Title generation
-  const handleGenerateTitles = useCallback(async (count: number = 10, style: SubjectLineStyle = 'educational') => {
+  const handleGenerateTitles = useCallback(async (count: number = 10, style: SubjectLineStyle = 'educational', selectedContentType?: string) => {
     if (!activeStrategyId || !activeStrategy) return;
 
     const taskId = taskStore.createTask(
@@ -347,8 +591,63 @@ export default function NewsletterContentOSModule() {
 
     const brandContext = brand ? `Brand voice: ${brand.voice || 'professional'}, Brand personality: ${brand.personality || 'friendly'}` : '';
     const businessContext = businessProfile ? `Industry: ${businessProfile.primaryIndustry || 'general'}, Company: ${businessProfile.name || 'our company'}` : '';
-    const enabledTypes = contentTypes.filter((t) => t.enabled && t.strategyId === activeStrategyId);
-    const typeNames = enabledTypes.length > 0 ? enabledTypes.map((t) => `${t.name} (${t.type}, ${t.funnelPosition} funnel)`).join(', ') : 'Educational (tofu), Product Update (mofu), Promotional (bofu)';
+    const storeTypes = contentTypes.filter((t) => t.enabled && t.strategyId === activeStrategyId);
+    const enabledTypes = storeTypes.length > 0 ? storeTypes : DEFAULT_CONTENT_TYPES.filter((t) => t.enabled) as NewsletterContentTypeConfig[];
+    // If user selected a specific content type, generate only that type
+    const targetTypes = selectedContentType
+      ? enabledTypes.filter((t) => t.type === selectedContentType)
+      : enabledTypes;
+    const typeNames = targetTypes.length > 0 ? targetTypes.map((t) => `${t.name} (${t.type}, ${t.funnelPosition} funnel)`).join(', ') : 'Educational (tofu), Product Update (mofu), Promotional (bofu)';
+
+    // Build foundational context from linked data
+    const linkedCtx = foundationalContext;
+    const contextParts: string[] = [];
+    if (linkedCtx.businessProfile) {
+      const bp = linkedCtx.businessProfile;
+      contextParts.push(`BUSINESS: ${bp.name || bp.companyName || 'N/A'}${bp.primaryIndustry ? `, Industry: ${bp.primaryIndustry}` : ''}${bp.description ? `, Description: ${bp.description}` : ''}${bp.usp ? `, USP: ${bp.usp}` : ''}`);
+    }
+    if (linkedCtx.founders.length > 0) {
+      contextParts.push(`FOUNDERS: ${linkedCtx.founders.map((f: any) => `${f.name}${f.title ? ` (${f.title})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx.icps.length > 0) {
+      contextParts.push(`ICPs: ${linkedCtx.icps.map((i: any) => `${i.name}${i.industry ? ` (${i.industry})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx.personas.length > 0) {
+      contextParts.push(`PERSONAS: ${linkedCtx.personas.map((p: any) => `${p.name}${p.jobTitle ? ` (${p.jobTitle})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx.products.length > 0) {
+      contextParts.push(`PRODUCTS: ${linkedCtx.products.map((p: any) => `${p.name}${p.category ? ` (${p.category})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx.productCategories.length > 0) {
+      contextParts.push(`PRODUCT CATEGORIES: ${linkedCtx.productCategories.map((c: any) => c.name).join(', ')}`);
+    }
+    if (linkedCtx.competitors.length > 0) {
+      contextParts.push(`COMPETITORS: ${linkedCtx.competitors.map((c: any) => c.name).join(', ')}`);
+    }
+    if (linkedCtx.brandAssets.length > 0) {
+      contextParts.push(`BRAND ASSETS: ${linkedCtx.brandAssets.map((a: any) => `${a.name} (${a.type})`).join(', ')}`);
+    }
+    if (linkedCtx.brandStrategy) {
+      const bs = linkedCtx.brandStrategy;
+      contextParts.push(`BRAND STRATEGY: ${bs.brandName || 'Brand'}${bs.brandArchetype ? `, Archetype: ${bs.brandArchetype}` : ''}${bs.brandVoice ? `, Voice: ${bs.brandVoice}` : ''}`);
+    }
+    if (linkedCtx.visualIdentity) {
+      const vi = linkedCtx.visualIdentity;
+      contextParts.push(`VISUAL IDENTITY: ${vi.primaryColor ? `Primary Color: ${vi.primaryColor}` : ''}${vi.headingFont ? `, Fonts: ${vi.headingFont}/${vi.bodyFont}` : ''}`);
+    }
+    if (linkedCtx.salesCollateral.length > 0) {
+      contextParts.push(`SALES COLLATERAL: ${linkedCtx.salesCollateral.map((s: any) => s.name || s.title).join(', ')}`);
+    }
+    const linkedContextStr = contextParts.length > 0 ? `\n\nLinked Module Context:\n${contextParts.join('\n')}` : '';
+
+    // Build template guidance for each enabled content type
+    const templateGuidanceParts = enabledTypes.map((t) => {
+      const template = getTemplateForContentType(t.type);
+      return `- "${t.type}" → Use "${template.name}" template. Subject patterns: "${template.subjectPatterns.slice(0, 2).join('" or "')}"`;
+    });
+    const templateGuidance = templateGuidanceParts.length > 0
+      ? `\n\nTemplate Structure Guidance:\nEach contentType must follow its corresponding newsletter template:\n${templateGuidanceParts.join('\n')}\nEnsure titles and subject lines match the template's tone and structure.`
+      : '';
 
     const objectiveLabel = activeStrategy.objective || 'education';
     const funnelLabel = activeStrategy.funnelStage || 'tofu';
@@ -365,6 +664,8 @@ Strategy context:
 - Content depth: ${depthLabel}
 ${brandContext ? '- ' + brandContext : ''}
 ${businessContext ? '- ' + businessContext : ''}
+${linkedContextStr}
+${templateGuidance}
 
 Content types to cover: ${typeNames}
 
@@ -381,7 +682,7 @@ You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no c
 - "title": string — the newsletter title
 - "subjectLine": string — the email subject line
 - "previewText": string — short preview text shown after the subject line in email clients (under 100 characters)
-- "contentType": string — one of: ${enabledTypes.length > 0 ? enabledTypes.map((t) => t.type).join(', ') : 'educational, product-update, curated, community, founder-letter, case-study, industry-news, promotional'}
+- "contentType": string — one of: ${targetTypes.length > 0 ? targetTypes.map((t) => t.type).join(', ') : 'educational, product-update, curated, community, founder-letter, case-study, industry-news, promotional, ai'}
 - "funnelStage": string — one of: tofu, mofu, bofu
 - "engagementScore": number — estimated engagement score from 70-99
 - "suggestedCTA": string — a call-to-action phrase
@@ -430,10 +731,36 @@ Generate ${count} diverse, creative titles now:`;
       }
 
       const titlesToCreate: any[] = [];
+      const enabledTypeKeys = enabledTypes.map((t) => t.type);
       parsed.slice(0, count).forEach((item: any, i: number) => {
-        const contentType = enabledTypes.length > 0
-          ? enabledTypes[i % enabledTypes.length]
-          : { type: item.contentType || 'educational', funnelPosition: item.funnelStage || 'tofu', ctaStrategy: item.suggestedCTA || 'Learn more' };
+        // Determine the content type for this title:
+        // 1. If user selected a specific type from dropdown → force that type
+        // 2. If AI returned a valid contentType → trust the AI
+        // 3. Fall back to round-robin across enabled types
+        let resolvedType: string;
+        let resolvedFunnel: string;
+        let resolvedCta: string;
+
+        if (selectedContentType) {
+          resolvedType = selectedContentType;
+          const ctInfo = targetTypes[0];
+          resolvedFunnel = ctInfo?.funnelPosition || 'tofu';
+          resolvedCta = ctInfo?.ctaStrategy || 'Learn more';
+        } else if (item.contentType && enabledTypeKeys.includes(item.contentType)) {
+          // Trust the AI's contentType if it's a valid enabled type
+          resolvedType = item.contentType;
+          const ctInfo = enabledTypes.find((t) => t.type === item.contentType);
+          resolvedFunnel = ctInfo?.funnelPosition || item.funnelStage || 'tofu';
+          resolvedCta = ctInfo?.ctaStrategy || item.suggestedCTA || 'Learn more';
+        } else {
+          // Fallback: round-robin across enabled types
+          const ctInfo = enabledTypes.length > 0
+            ? enabledTypes[i % enabledTypes.length]
+            : null;
+          resolvedType = ctInfo?.type || item.contentType || 'educational';
+          resolvedFunnel = ctInfo?.funnelPosition || item.funnelStage || 'tofu';
+          resolvedCta = ctInfo?.ctaStrategy || item.suggestedCTA || 'Learn more';
+        }
 
         const titleData = {
           id: `nlt-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
@@ -441,12 +768,12 @@ Generate ${count} diverse, creative titles now:`;
           title: item.title || 'Untitled Newsletter',
           subjectLine: item.subjectLine || '',
           previewText: item.previewText || '',
-          contentType: contentType?.type || item.contentType || 'educational',
+          contentType: resolvedType,
           style,
           engagementScore: typeof item.engagementScore === 'number' ? item.engagementScore : Math.floor(Math.random() * 30) + 70,
-          funnelStage: item.funnelStage || contentType?.funnelPosition || 'tofu',
-          suggestedKeywords: Array.isArray(item.suggestedKeywords) ? item.suggestedKeywords : generateKeywords(item.contentType || 'educational'),
-          suggestedCTA: item.suggestedCTA || contentType?.ctaStrategy || 'Learn more',
+          funnelStage: item.funnelStage || resolvedFunnel,
+          suggestedKeywords: Array.isArray(item.suggestedKeywords) ? item.suggestedKeywords : generateKeywords(resolvedType),
+          suggestedCTA: item.suggestedCTA || resolvedCta,
           status: 'generated',
           order: i,
           companyId,
@@ -465,12 +792,14 @@ Generate ${count} diverse, creative titles now:`;
       console.error('[NewsletterContentOS] AI title generation FAILED — falling back to templates. Error:', error);
 
       // Fallback to sample titles if AI fails
-      const fallbackType = { type: 'educational', funnelPosition: 'tofu', ctaStrategy: 'Learn more' };
+      const fallbackType = { type: selectedContentType || 'educational', funnelPosition: 'tofu', ctaStrategy: 'Learn more' };
       const titlesToCreate: any[] = [];
       for (let i = 0; i < count; i++) {
-        const contentType = enabledTypes.length > 0
-          ? enabledTypes[i % enabledTypes.length]
-          : fallbackType;
+        const contentType = selectedContentType
+          ? targetTypes[0] || fallbackType
+          : enabledTypes.length > 0
+            ? enabledTypes[i % enabledTypes.length]
+            : fallbackType;
         const result = generateSampleTitle(contentType?.type || 'educational', style, brandContext, businessContext);
 
         const titleData = {
@@ -498,7 +827,7 @@ Generate ${count} diverse, creative titles now:`;
       await Promise.all(titlesToCreate.map((t) => newsletterTitleApi.create(t).catch(() => {})));
       taskStore.completeBatch(taskId, 0, Array(count).fill('title'));
     }
-  }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, addItem, taskStore, companyId]);
+  }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, addItem, taskStore, companyId, foundationalContext]);
 
   if (!companyId) {
     return (
@@ -574,10 +903,10 @@ Generate ${count} diverse, creative titles now:`;
           {[
             { id: 'strategy', label: 'Strategy', icon: Target },
             // { id: 'types', label: 'Content Types', icon: Layout },
-          
+            { id: 'data', label: 'Data Sources', icon: Database },
             { id: 'titles', label: 'Titles', icon: Type },
             { id: 'content', label: 'Content', icon: FileText },
-              { id: 'calendar', label: 'Calendar', icon: Calendar },
+            { id: 'calendar', label: 'Calendar', icon: Calendar },
             { id: 'assets', label: 'Assets', icon: Image },
             { id: 'review', label: 'Review', icon: CheckCircle },
             { id: 'export', label: 'Export', icon: Download },
@@ -614,7 +943,16 @@ Generate ${count} diverse, creative titles now:`;
                 personas={personas}
                 products={products}
                 competitors={competitors}
+                foundationalContext={foundationalContext}
                 onUpdate={(updates) => handleUpdateStrategy(activeStrategy!.id, updates)}
+              />
+            )}
+
+            {activeTab === 'data' && activeStrategy && (
+              <DataSourcesTab
+                strategy={activeStrategy}
+                onUpdate={(updates) => handleUpdateStrategy(activeStrategy!.id, updates)}
+                foundationalContext={foundationalContext}
               />
             )}
 
@@ -684,6 +1022,7 @@ Generate ${count} diverse, creative titles now:`;
                 calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
                 autoMapEnabled={autoMapEnabled}
                 onAutoMapToggle={() => setAutoMapEnabled(!autoMapEnabled)}
+                foundationalContext={foundationalContext}
                 onCreatePost={async (data) => {
                   const localId = addItem('newsletterPosts', data as any);
                   const res = await newsletterPostApi.create({ ...data, id: localId, companyId });
@@ -784,6 +1123,7 @@ function StrategyTab({
   personas,
   products,
   competitors,
+  foundationalContext,
   onUpdate,
 }: {
   strategy: NewsletterStrategy;
@@ -793,6 +1133,7 @@ function StrategyTab({
   personas: Persona[];
   products: Product[];
   competitors: Competitor[];
+  foundationalContext?: FoundationalContext;
   onUpdate: (updates: Partial<NewsletterStrategy>) => void;
 }) {
   const [activeSection, setActiveSection] = useState<'goals' | 'audience' | 'linked'>('goals');
@@ -1055,163 +1396,158 @@ function StrategyTab({
       )}
 
       {/* Linked Modules Section */}
-      {activeSection === 'linked' && (
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <p className="text-slate-400 mb-6">
-            Link data from other modules to enrich your newsletter generation with business context,
-            ICP insights, product details, and competitive intelligence.
-          </p>
+      {activeSection === 'linked' && (() => {
+        const fCtx = foundationalContext;
+        const linkedCount = [
+          linkedData.businessProfileId ? 1 : 0,
+          (linkedData.founderIds || []).length,
+          (linkedData.icpIds || []).length,
+          (linkedData.personaIds || []).length,
+          (linkedData.productIds || []).length,
+          (linkedData.productCategoryIds || []).length,
+          (linkedData.competitorIds || []).length,
+          (linkedData.brandAssetIds || []).length,
+          linkedData.brandStrategyId ? 1 : 0,
+          linkedData.visualIdentityId ? 1 : 0,
+          (linkedData.salesCollateralIds || []).length,
+        ].reduce((a, b) => a + b, 0);
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {icps.length > 0 && (
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-                <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
-                  <Target className="w-4 h-4 text-primary-400" />
-                  ICPs ({icps.length})
-                </h5>
-                <div className="space-y-2">
-                  {icps.map((icp) => {
-                    const isLinked = linkedData.icpIds?.includes(icp.id);
-                    return (
-                      <button
-                        key={icp.id}
-                        onClick={() => toggleLinkedId('icp', icp.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors',
-                          isLinked ? 'bg-primary-500/10' : 'hover:bg-slate-800'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded border flex items-center justify-center',
-                            isLinked ? 'bg-primary-500 border-primary-500' : 'border-slate-600'
-                          )}
-                        >
-                          {isLinked && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={cn('text-sm', isLinked ? 'text-slate-200' : 'text-slate-400')}>{icp.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+        type LinkedModule = { key: string; label: string; icon: any; count: number; linked: number; items: { id: string; name: string; sub?: string }[] };
+        const modules: LinkedModule[] = [
+          {
+            key: 'businessProfile', label: 'Business Profile', icon: Building2,
+            count: fCtx?.businessProfile ? 1 : 0, linked: linkedData.businessProfileId ? 1 : 0,
+            items: fCtx?.businessProfile ? [{ id: fCtx.businessProfile.id || 'bp', name: fCtx.businessProfile.name || fCtx.businessProfile.companyName || 'Business Profile', sub: fCtx.businessProfile.primaryIndustry }] : [],
+          },
+          {
+            key: 'founder', label: 'Founders', icon: Users,
+            count: fCtx?.allIcps ? (fCtx as any).founders?.length || 0 : 0, linked: (linkedData.founderIds || []).length,
+            items: (fCtx as any)?.founders?.map((f: any) => ({ id: f.id, name: f.name, sub: f.title })) || [],
+          },
+          {
+            key: 'icp', label: 'ICPs', icon: Target,
+            count: fCtx?.allIcps?.length || icps.length, linked: (linkedData.icpIds || []).length,
+            items: (fCtx?.allIcps || icps).map((i: any) => ({ id: i.id, name: i.name, sub: i.industry })),
+          },
+          {
+            key: 'persona', label: 'Buyer Personas', icon: UserCircle,
+            count: fCtx?.allPersonas?.length || personas.length, linked: (linkedData.personaIds || []).length,
+            items: (fCtx?.allPersonas || personas).map((p: any) => ({ id: p.id, name: p.name, sub: p.jobTitle })),
+          },
+          {
+            key: 'product', label: 'Products', icon: Package,
+            count: fCtx?.allProducts?.length || products.length, linked: (linkedData.productIds || []).length,
+            items: (fCtx?.allProducts || products).map((p: any) => ({ id: p.id, name: p.name, sub: p.category })),
+          },
+          {
+            key: 'productCategory', label: 'Product Categories', icon: FolderOpen,
+            count: fCtx?.allProductCategories?.length || 0, linked: (linkedData.productCategoryIds || []).length,
+            items: (fCtx?.allProductCategories || []).map((c: any) => ({ id: c.id, name: c.name })),
+          },
+          {
+            key: 'competitor', label: 'Competitors', icon: Swords,
+            count: fCtx?.allCompetitors?.length || competitors.length, linked: (linkedData.competitorIds || []).length,
+            items: (fCtx?.allCompetitors || competitors).map((c: any) => ({ id: c.id, name: c.name, sub: c.website })),
+          },
+          {
+            key: 'brandAsset', label: 'Brand Assets', icon: Image,
+            count: fCtx?.allBrandAssets?.length || 0, linked: (linkedData.brandAssetIds || []).length,
+            items: (fCtx?.allBrandAssets || []).map((a: any) => ({ id: a.id, name: a.name, sub: a.type })),
+          },
+          {
+            key: 'brandStrategy', label: 'Brand Strategy', icon: Sparkles,
+            count: fCtx?.brandStrategy ? 1 : 0, linked: linkedData.brandStrategyId ? 1 : 0,
+            items: fCtx?.brandStrategy ? [{ id: 'brand-strategy', name: fCtx.brandStrategy.brandName || 'Brand Strategy', sub: fCtx.brandStrategy.brandArchetype ? `Archetype: ${fCtx.brandStrategy.brandArchetype}` : undefined }] : [],
+          },
+          {
+            key: 'visualIdentity', label: 'Visual Identity', icon: Palette,
+            count: fCtx?.visualIdentity ? 1 : 0, linked: linkedData.visualIdentityId ? 1 : 0,
+            items: fCtx?.visualIdentity ? [{ id: 'visual-identity', name: fCtx.visualIdentity.headingFont ? `${fCtx.visualIdentity.headingFont} / ${fCtx.visualIdentity.bodyFont}` : 'Visual Identity', sub: fCtx.visualIdentity.primaryColor }] : [],
+          },
+          {
+            key: 'salesCollateral', label: 'Sales Collateral', icon: FileText,
+            count: fCtx?.allSalesCollateral?.length || 0, linked: (linkedData.salesCollateralIds || []).length,
+            items: (fCtx?.allSalesCollateral || []).map((s: any) => ({ id: s.id, name: s.name || s.title, sub: s.type || s.scriptType })),
+          },
+        ];
 
-            {personas.length > 0 && (
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-                <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary-400" />
-                  Buyer Personas ({personas.length})
-                </h5>
-                <div className="space-y-2">
-                  {personas.map((persona) => {
-                    const isLinked = linkedData.personaIds?.includes(persona.id);
-                    return (
-                      <button
-                        key={persona.id}
-                        onClick={() => toggleLinkedId('persona', persona.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors',
-                          isLinked ? 'bg-primary-500/10' : 'hover:bg-slate-800'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded border flex items-center justify-center',
-                            isLinked ? 'bg-primary-500 border-primary-500' : 'border-slate-600'
-                          )}
-                        >
-                          {isLinked && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={cn('text-sm', isLinked ? 'text-slate-200' : 'text-slate-400')}>{persona.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+        return (
+          <div className="space-y-6">
+            <div className="bg-primary-500/5 border border-primary-500/20 rounded-lg p-4">
+              <h4 className="font-medium text-primary-400 mb-2 flex items-center gap-2">
+                <Link className="w-4 h-4" />
+                Linked Modules
+              </h4>
+              <p className="text-sm text-slate-400">
+                {linkedCount > 0
+                  ? `${linkedCount} data source${linkedCount === 1 ? '' : 's'} linked — this data enriches AI-generated titles and newsletter content.`
+                  : 'No data sources linked yet. Use the Data Sources tab to link modules for richer AI generation.'}
+              </p>
+            </div>
 
-            {products.length > 0 && (
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-                <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-primary-400" />
-                  Products ({products.length})
-                </h5>
-                <div className="space-y-2">
-                  {products.map((product) => {
-                    const isLinked = linkedData.productIds?.includes(product.id);
-                    return (
-                      <button
-                        key={product.id}
-                        onClick={() => toggleLinkedId('product', product.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors',
-                          isLinked ? 'bg-primary-500/10' : 'hover:bg-slate-800'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded border flex items-center justify-center',
-                            isLinked ? 'bg-primary-500 border-primary-500' : 'border-slate-600'
-                          )}
-                        >
-                          {isLinked && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={cn('text-sm', isLinked ? 'text-slate-200' : 'text-slate-400')}>{product.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {modules.map((mod) => {
+                if (mod.count === 0 && mod.linked === 0) return null;
+                const Icon = mod.icon;
+                return (
+                  <div key={mod.key} className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="font-medium text-slate-200 flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-primary-400" />
+                        {mod.label}
+                      </h5>
+                      <span className={cn(
+                        'text-xs px-2 py-0.5 rounded-full',
+                        mod.linked > 0 ? 'bg-primary-500/10 text-primary-400' : 'bg-slate-800 text-slate-500'
+                      )}>
+                        {mod.linked}/{mod.count}
+                      </span>
+                    </div>
+                    {mod.items.length > 0 ? (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {mod.items.map((item) => {
+                          const isLinked = mod.key === 'businessProfile' || mod.key === 'brandStrategy' || mod.key === 'visualIdentity'
+                            ? !!(linkedData as any)[`${mod.key}Id`]
+                            : ((linkedData as any)[`${mod.key}Ids`] || []).includes(item.id);
+                          return (
+                            <div
+                              key={item.id}
+                              className={cn(
+                                'flex items-center gap-2 p-1.5 rounded text-sm',
+                                isLinked ? 'text-slate-200' : 'text-slate-500'
+                              )}
+                            >
+                              <div className={cn(
+                                'w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0',
+                                isLinked ? 'bg-primary-500 border-primary-500' : 'border-slate-600'
+                              )}>
+                                {isLinked && <Check className="w-2.5 h-2.5 text-white" />}
+                              </div>
+                              <span className="truncate">{item.name}</span>
+                              {item.sub && <span className="text-xs text-slate-500 truncate ml-auto">{item.sub}</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-500">No items available</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-            {competitors.length > 0 && (
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-                <h5 className="font-medium text-slate-200 mb-3 flex items-center gap-2">
-                  <Swords className="w-4 h-4 text-primary-400" />
-                  Competitors ({competitors.length})
-                </h5>
-                <div className="space-y-2">
-                  {competitors.map((competitor) => {
-                    const isLinked = linkedData.competitorIds?.includes(competitor.id);
-                    return (
-                      <button
-                        key={competitor.id}
-                        onClick={() => toggleLinkedId('competitor', competitor.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors',
-                          isLinked ? 'bg-primary-500/10' : 'hover:bg-slate-800'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded border flex items-center justify-center',
-                            isLinked ? 'bg-primary-500 border-primary-500' : 'border-slate-600'
-                          )}
-                        >
-                          {isLinked && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={cn('text-sm', isLinked ? 'text-slate-200' : 'text-slate-400')}>{competitor.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+            {linkedCount === 0 && (
+              <div className="text-center py-6">
+                <p className="text-slate-500 mb-3">No data sources linked yet.</p>
+                <p className="text-sm text-slate-400">
+                  Go to the <strong className="text-primary-400">Data Sources</strong> tab to link modules for richer AI-generated content.
+                </p>
               </div>
             )}
           </div>
-
-          {icps.length === 0 && personas.length === 0 && products.length === 0 && competitors.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-slate-500">No modules available to link. Add data in:</p>
-              <ul className="text-slate-400 mt-2 space-y-1">
-                <li>ICPs & Personas module</li>
-                <li>Products module</li>
-                <li>Competitors module</li>
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -1726,13 +2062,14 @@ function TitlesTab({
   strategy: NewsletterStrategy;
   contentTypes: NewsletterContentTypeConfig[];
   titles: NewsletterTitle[];
-  onGenerate: (count: number, style: SubjectLineStyle) => void;
+  onGenerate: (count: number, style: SubjectLineStyle, contentType?: string) => void;
   onUpdate: (id: string, updates: Partial<NewsletterTitle>) => void;
   onDelete: (id: string) => void;
   onClearGenerated: () => void;
   onClearSelected: () => void;
 }) {
   const [selectedStyles, setSelectedStyles] = useState<SubjectLineStyle[]>([]);
+  const [selectedContentType, setSelectedContentType] = useState<string>('');
   const [styleCounts, setStyleCounts] = useState<Record<SubjectLineStyle, number>>({
     educational: 3,
     conversational: 3,
@@ -1762,7 +2099,7 @@ function TitlesTab({
     if (selectedStyles.length === 0) return;
     setIsGenerating(true);
     for (const style of selectedStyles) {
-      await onGenerate(styleCounts[style], style);
+      await onGenerate(styleCounts[style], style, selectedContentType || undefined);
     }
     setIsGenerating(false);
   };
@@ -1831,6 +2168,25 @@ function TitlesTab({
               );
             })}
           </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-400 mb-2">Newsletter Type</label>
+          <select
+            value={selectedContentType}
+            onChange={(e) => setSelectedContentType(e.target.value)}
+            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 transition-colors"
+          >
+            <option value="">All Types (auto-distribute)</option>
+            {(contentTypes.length > 0 ? contentTypes : DEFAULT_CONTENT_TYPES).filter((t) => t.enabled).map((ct) => (
+              <option key={ct.type} value={ct.type}>{ct.name}</option>
+            ))}
+          </select>
+          {selectedContentType && (
+            <p className="text-xs text-primary-400 mt-1.5">
+              Generating only: <span className="font-medium">{contentTypes.find((t) => t.type === selectedContentType)?.name || selectedContentType}</span>
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -2114,8 +2470,338 @@ function generateKeywords(contentType: string): string[] {
     'case-study': ['case study', 'success story', 'results', 'example', 'proof'],
     'industry-news': ['news', 'trends', 'industry', 'update', 'insights'],
     promotional: ['offer', 'deal', 'discount', 'limited', 'exclusive'],
+    ai: ['AI', 'artificial intelligence', 'automation', 'tools', 'productivity'],
   };
   return keywordMap[contentType] || ['newsletter', 'marketing', 'growth', 'business'];
+}
+
+// ============================================
+// DATA SOURCES TAB
+// ============================================
+
+function DataSourcesTab({
+  strategy,
+  onUpdate,
+  foundationalContext,
+}: {
+  strategy: NewsletterStrategy;
+  onUpdate: (updates: Partial<NewsletterStrategy>) => void;
+  foundationalContext?: FoundationalContext;
+}) {
+  const linkedData = strategy.linkedData || {};
+
+  const businessProfileData = foundationalContext?.businessProfile || null;
+  const foundersData = (foundationalContext as any)?.founders || [];
+  const icpsData = foundationalContext?.allIcps || [];
+  const personasData = foundationalContext?.allPersonas || [];
+  const brandStrategyData = foundationalContext?.brandStrategy || null;
+  const visualIdentityData = foundationalContext?.visualIdentity || null;
+  const productsData = foundationalContext?.allProducts || [];
+  const productCategoriesData = foundationalContext?.allProductCategories || [];
+  const competitorsData = foundationalContext?.allCompetitors || [];
+  const brandAssetsData = foundationalContext?.allBrandAssets || [];
+  const salesCollateralData = foundationalContext?.allSalesCollateral || [];
+
+  const toggleLink = (type: string, id: string, isArray = false) => {
+    const currentIds = (linkedData as any)[`${type}Ids`] || [];
+    let newIds: string[];
+    if (isArray) {
+      newIds = currentIds.includes(id)
+        ? currentIds.filter((i: string) => i !== id)
+        : [...currentIds, id];
+    } else {
+      newIds = currentIds.includes(id) ? [] : [id];
+    }
+    onUpdate({
+      linkedData: { ...linkedData, [`${type}Ids`]: newIds },
+    });
+  };
+
+  const toggleSingleLink = (type: string, id: string) => {
+    const currentId = (linkedData as any)[`${type}Id`];
+    onUpdate({
+      linkedData: { ...linkedData, [`${type}Id`]: currentId === id ? undefined : id },
+    });
+  };
+
+  const DataSection = ({
+    title,
+    icon: Icon,
+    items,
+    type,
+    isArray = false,
+    single = false,
+    renderItem,
+    emptyMessage,
+  }: {
+    title: string;
+    icon: any;
+    items: any[];
+    type: string;
+    isArray?: boolean;
+    single?: boolean;
+    renderItem: (item: any) => React.ReactNode;
+    emptyMessage?: string;
+  }) => {
+    if (!items || items.length === 0) {
+      return (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 opacity-60">
+          <div className="flex items-center gap-2 mb-3">
+            <Icon className="w-5 h-5 text-slate-500" />
+            <h3 className="text-lg font-semibold text-slate-400">{title}</h3>
+          </div>
+          <p className="text-sm text-slate-500">{emptyMessage || `No ${title.toLowerCase()} available. Add data in the ${title} module first.`}</p>
+        </div>
+      );
+    }
+
+    const isLinked = (item: any) => {
+      if (single) {
+        return (linkedData as any)[`${type}Id`] === item.id;
+      }
+      const ids = (linkedData as any)[`${type}Ids`] || [];
+      return ids.includes(item.id);
+    };
+
+    return (
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Icon className="w-5 h-5 text-primary-400" />
+          <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
+          <span className="ml-auto text-sm text-slate-500">{items.length} items</span>
+        </div>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              onClick={() =>
+                single ? toggleSingleLink(type, item.id) : toggleLink(type, item.id, isArray)
+              }
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all',
+                isLinked(item)
+                  ? 'bg-primary-500/10 border border-primary-500/30'
+                  : 'bg-slate-900/50 border border-slate-700 hover:border-slate-600'
+              )}
+            >
+              <div
+                className={cn(
+                  'w-5 h-5 rounded border flex items-center justify-center',
+                  isLinked(item)
+                    ? 'bg-primary-500 border-primary-500'
+                    : 'border-slate-600'
+                )}
+              >
+                {isLinked(item) && <Check className="w-3 h-3 text-white" />}
+              </div>
+              <div className="flex-1">{renderItem(item)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-primary-500/5 border border-primary-500/20 rounded-lg p-4 mb-6">
+        <h4 className="font-medium text-primary-400 mb-2 flex items-center gap-2">
+          <Database className="w-4 h-4" />
+          Data Sources for Newsletter Generation
+        </h4>
+        <p className="text-sm text-slate-400">
+          Link data from other modules to enrich your newsletter content generation with business context,
+          ICP insights, product details, brand identity, and competitive intelligence. Selected data will be
+          used as context for AI-generated titles and newsletters.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Business Foundation */}
+        <DataSection
+          title="Business Profile"
+          icon={Building2}
+          items={businessProfileData ? [businessProfileData] : []}
+          type="businessProfile"
+          single
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name || item.companyName || 'Business Profile'}</div>
+              {item.primaryIndustry && <div className="text-xs text-slate-500">{item.primaryIndustry}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Founders"
+          icon={Users}
+          items={foundersData}
+          type="founder"
+          isArray
+          renderItem={(item) => (
+            <div className="flex items-center gap-2">
+              {item.photos?.length && (
+                <img src={item.photos[0]} alt="" className="w-8 h-8 rounded-full object-cover" />
+              )}
+              <div>
+                <div className="font-medium text-slate-200">{item.name}</div>
+                {item.title && <div className="text-xs text-slate-500">{item.title}</div>}
+              </div>
+            </div>
+          )}
+        />
+
+        {/* ICPs & Personas */}
+        <DataSection
+          title="Ideal Customer Profiles (ICPs)"
+          icon={Target}
+          items={icpsData}
+          type="icp"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.industry && <div className="text-xs text-slate-500">{item.industry}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Buyer Personas"
+          icon={UserCircle}
+          items={personasData}
+          type="persona"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.jobTitle && <div className="text-xs text-slate-500">{item.jobTitle}</div>}
+            </div>
+          )}
+        />
+
+        {/* Products */}
+        <DataSection
+          title="Products"
+          icon={Package}
+          items={productsData}
+          type="product"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.category && <div className="text-xs text-slate-500">{item.category}</div>}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Product Categories"
+          icon={FolderOpen}
+          items={productCategoriesData}
+          type="productCategory"
+          isArray
+          renderItem={(item) => (
+            <div className="font-medium text-slate-200">{item.name}</div>
+          )}
+        />
+
+        {/* Competitors */}
+        <DataSection
+          title="Competitors"
+          icon={Swords}
+          items={competitorsData}
+          type="competitor"
+          isArray
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.name}</div>
+              {item.website && (
+                <div className="text-xs text-slate-500 truncate">{item.website}</div>
+              )}
+            </div>
+          )}
+        />
+
+        <DataSection
+          title="Brand Assets"
+          icon={Image}
+          items={brandAssetsData}
+          type="brandAsset"
+          isArray
+          emptyMessage="No brand assets available. Add logos and assets in Brand Assets module."
+          renderItem={(item) => (
+            <div className="flex items-center gap-2">
+              {item.thumbnailUrl && (
+                <img src={item.thumbnailUrl} alt="" className="w-8 h-8 rounded object-cover" />
+              )}
+              <div>
+                <div className="font-medium text-slate-200">{item.name}</div>
+                <div className="text-xs text-slate-500 capitalize">{item.type}</div>
+              </div>
+            </div>
+          )}
+        />
+
+        {/* Brand Strategy */}
+        <DataSection
+          title="Brand Strategy"
+          icon={Sparkles}
+          items={brandStrategyData ? [{ id: 'brand-strategy', ...brandStrategyData }] : []}
+          type="brandStrategy"
+          single
+          emptyMessage="No brand strategy available. Configure brand strategy in the Brand Strategy module."
+          renderItem={(item) => (
+            <div>
+              <div className="font-medium text-slate-200">{item.brandName || 'Brand Strategy'}</div>
+              {item.brandArchetype && <div className="text-xs text-slate-500">Archetype: {item.brandArchetype}</div>}
+              {item.brandVoice && <div className="text-xs text-slate-500">Voice: {item.brandVoice}</div>}
+            </div>
+          )}
+        />
+
+        {/* Visual Identity */}
+        <DataSection
+          title="Visual Identity"
+          icon={Palette}
+          items={visualIdentityData ? [{ id: 'visual-identity', ...visualIdentityData }] : []}
+          type="visualIdentity"
+          single
+          emptyMessage="No visual identity available. Configure visual identity in the Visual Identity module."
+          renderItem={(item) => (
+            <div className="flex items-center gap-2">
+              {item.primaryColor && (
+                <div className="w-6 h-6 rounded-md border border-slate-600" style={{ backgroundColor: item.primaryColor }} />
+              )}
+              <div>
+                <div className="font-medium text-slate-200">{item.headingFont ? `${item.headingFont} / ${item.bodyFont}` : 'Visual Identity'}</div>
+                {item.primaryColor && <div className="text-xs text-slate-500">Primary: {item.primaryColor}</div>}
+              </div>
+            </div>
+          )}
+        />
+
+        {/* Sales Collateral */}
+        <DataSection
+          title="Sales Collateral"
+          icon={FileText}
+          items={salesCollateralData}
+          type="salesCollateral"
+          isArray
+          emptyMessage="No sales collateral available. Add documents in Sales Collateral module."
+          renderItem={(item) => (
+            <div className="min-w-0">
+              <div className="font-medium text-slate-200 truncate">{item.name || item.title}</div>
+              <div className="flex items-center gap-2">
+                {(item.type || item.scriptType) && <span className="text-xs text-slate-500 capitalize">{item.type || item.scriptType}</span>}
+                {item.funnelStage && <span className="text-xs text-slate-600">&middot; {item.funnelStage}</span>}
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
 }
 
 // ============================================
@@ -2292,6 +2978,7 @@ function ContentTab({
   onUpdateCalendar,
   autoMapEnabled,
   onAutoMapToggle,
+  foundationalContext,
 }: {
   strategy: NewsletterStrategy;
   posts: NewsletterPost[];
@@ -2304,14 +2991,36 @@ function ContentTab({
   onUpdateCalendar: (id: string, updates: Partial<NewsletterCalendar>) => void;
   autoMapEnabled: boolean;
   onAutoMapToggle: () => void;
+  foundationalContext?: FoundationalContext;
 }) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [generatingPostId, setGeneratingPostId] = useState<string | null>(null);
   const [schedulingPostId, setSchedulingPostId] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ title: string; subjectLine: string; previewText: string; content: string }>({ title: '', subjectLine: '', previewText: '', content: '' });
   const selectedPost = posts.find((p) => p.id === selectedPostId);
   const activeCalendar = calendars[0];
+
+  const handleCopyContent = async (post: NewsletterPost) => {
+    const text = post.content || post.sections?.map((s) => s.content).join('\n\n') || '';
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedPostId(post.id);
+      setTimeout(() => setCopiedPostId(null), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopiedPostId(post.id);
+      setTimeout(() => setCopiedPostId(null), 2000);
+    }
+  };
 
   const findPostCalendarSlot = (postId: string) => {
     if (!activeCalendar) return undefined;
@@ -2411,7 +3120,7 @@ function ContentTab({
     setGeneratingPostId(post.id);
 
     const titleData = titles.find((t) => t.id === post.titleId);
-    const contentTypeInfo = contentTypes.find((t) => t.type === post.contentType);
+    const contentTypeInfo = contentTypes.find((t) => t.type === post.contentType) || DEFAULT_CONTENT_TYPES.find((t) => t.type === post.contentType);
 
     const objectiveLabel = strategy.objective || 'education';
     const toneLabel = strategy.communicationTone || 'professional';
@@ -2423,6 +3132,51 @@ function ContentTab({
       : depthLabel === 'deep' ? '800-1500 words total, 8-12 sections'
       : depthLabel === 'comprehensive' ? '1500-2500 words total, 10-15 sections'
       : '400-800 words total, 6-10 sections';
+
+    // Build foundational context from linked data
+    const linkedCtx = foundationalContext;
+    const contextParts: string[] = [];
+    if (linkedCtx?.businessProfile) {
+      const bp = linkedCtx.businessProfile;
+      contextParts.push(`BUSINESS: ${bp.name || bp.companyName || 'N/A'}${bp.primaryIndustry ? `, Industry: ${bp.primaryIndustry}` : ''}${bp.description ? `, Description: ${bp.description}` : ''}${bp.usp ? `, USP: ${bp.usp}` : ''}`);
+    }
+    if (linkedCtx?.founders && linkedCtx.founders.length > 0) {
+      contextParts.push(`FOUNDERS: ${linkedCtx.founders.map((f: any) => `${f.name}${f.title ? ` (${f.title})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx?.icps && linkedCtx.icps.length > 0) {
+      contextParts.push(`ICPs: ${linkedCtx.icps.map((i: any) => `${i.name}${i.industry ? ` (${i.industry})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx?.personas && linkedCtx.personas.length > 0) {
+      contextParts.push(`PERSONAS: ${linkedCtx.personas.map((p: any) => `${p.name}${p.jobTitle ? ` (${p.jobTitle})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx?.products && linkedCtx.products.length > 0) {
+      contextParts.push(`PRODUCTS: ${linkedCtx.products.map((p: any) => `${p.name}${p.category ? ` (${p.category})` : ''}`).join(', ')}`);
+    }
+    if (linkedCtx?.productCategories && linkedCtx.productCategories.length > 0) {
+      contextParts.push(`PRODUCT CATEGORIES: ${linkedCtx.productCategories.map((c: any) => c.name).join(', ')}`);
+    }
+    if (linkedCtx?.competitors && linkedCtx.competitors.length > 0) {
+      contextParts.push(`COMPETITORS: ${linkedCtx.competitors.map((c: any) => c.name).join(', ')}`);
+    }
+    if (linkedCtx?.brandAssets && linkedCtx.brandAssets.length > 0) {
+      contextParts.push(`BRAND ASSETS: ${linkedCtx.brandAssets.map((a: any) => `${a.name} (${a.type})`).join(', ')}`);
+    }
+    if (linkedCtx?.brandStrategy) {
+      const bs = linkedCtx.brandStrategy;
+      contextParts.push(`BRAND STRATEGY: ${bs.brandName || 'Brand'}${bs.brandArchetype ? `, Archetype: ${bs.brandArchetype}` : ''}${bs.brandVoice ? `, Voice: ${bs.brandVoice}` : ''}`);
+    }
+    if (linkedCtx?.visualIdentity) {
+      const vi = linkedCtx.visualIdentity;
+      contextParts.push(`VISUAL IDENTITY: ${vi.primaryColor ? `Primary Color: ${vi.primaryColor}` : ''}${vi.headingFont ? `, Fonts: ${vi.headingFont}/${vi.bodyFont}` : ''}`);
+    }
+    if (linkedCtx?.salesCollateral && linkedCtx.salesCollateral.length > 0) {
+      contextParts.push(`SALES COLLATERAL: ${linkedCtx.salesCollateral.map((s: any) => s.name || s.title).join(', ')}`);
+    }
+    const linkedContextStr = contextParts.length > 0 ? `\n\nLinked Data Context:\n${contextParts.join('\n')}` : '';
+
+    // Get the template for this content type
+    const template = getTemplateForContentType(post.contentType || 'educational');
+    const templatePromptGuidance = buildTemplatePromptGuidance(template);
 
     const prompt = `You are an expert newsletter writer. Generate the full content for a newsletter with these details:
 
@@ -2439,13 +3193,18 @@ Content Depth: ${depthLabel} (${depthHint})
 
 ${titleData ? `Suggested Keywords: ${titleData.suggestedKeywords?.join(', ') || 'N/A'}` : ''}
 
+${templatePromptGuidance}
+
+${linkedContextStr}
+
 You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element represents a section of the newsletter and must have exactly these fields:
 - "type": one of "heading", "subheading", "paragraph", "list", "quote", "cta"
 - "content": the text content for this section. For "list" type, use newline-separated items. For "quote" type, include attribution. For "cta" type, write a compelling call-to-action.
 - "order": integer starting from 1
 
 Guidelines:
-- Start with a heading that matches the newsletter title theme
+- Follow the template structure described above precisely
+- Start with the first required section from the template
 - Include a warm, engaging opening paragraph
 - Add substantive content sections with real insights (not placeholders)
 - Include at least one list section with actionable takeaways
@@ -2453,12 +3212,19 @@ Guidelines:
 - End with a CTA section using: "${cta}"
 - Match the tone: ${toneLabel}
 - Match the depth: ${depthHint}
+- Use data from the linked context above to make content specific and relevant
 
 Generate the sections now:`;
 
     try {
       console.log('[NewsletterContentOS] Calling AI for content generation...');
-      const response = await aiApi.generate({ prompt, maxTokens: 4000 });
+      const response = await aiApi.generate({
+        prompt,
+        maxTokens: 4000,
+        context: {
+          systemPrompt: `You are an expert newsletter writer specializing in ${template.name}. Follow the ${template.name} template structure strictly. Generate newsletter content that matches the tone, depth, and section structure specified.`,
+        },
+      });
 
       console.log('[NewsletterContentOS] Content AI response:', { status: response.status, error: response.error, hasData: !!response.data });
 
@@ -2533,17 +3299,16 @@ Generate the sections now:`;
     } catch (error) {
       console.error('[NewsletterContentOS] AI content generation FAILED — falling back to template. Error:', error);
 
-      // Fallback to template content
-      const sections: NewsletterSection[] = [
-        { id: `sec-${Date.now()}-1`, type: 'heading', content: `Welcome to ${post.title}`, order: 1 },
-        { id: `sec-${Date.now()}-2`, type: 'paragraph', content: `Hey there! In this edition, we dive into ${post.title.toLowerCase()} and what it means for you. Let us get started.`, order: 2 },
-        { id: `sec-${Date.now()}-3`, type: 'heading', content: 'What You Will Learn', order: 3 },
-        { id: `sec-${Date.now()}-4`, type: 'list', content: 'Key insight #1\nKey insight #2\nActionable takeaway\nResource recommendation', order: 4 },
-        { id: `sec-${Date.now()}-5`, type: 'heading', content: 'Deep Dive', order: 5 },
-        { id: `sec-${Date.now()}-6`, type: 'paragraph', content: 'Here is where we unpack the details. Whether you are new to this or a seasoned pro, there is something here for you.', order: 6 },
-        { id: `sec-${Date.now()}-7`, type: 'quote', content: '"The best way to predict the future is to create it." — Peter Drucker', order: 7 },
-        { id: `sec-${Date.now()}-8`, type: 'cta', content: post.suggestedCTA || 'Check out our latest resources', order: 8 },
-      ];
+      // Fallback to template-aware content
+      const fallbackTemplate = getTemplateForContentType(post.contentType || 'educational');
+      const sections: NewsletterSection[] = fallbackTemplate.sections.map((sec, i) => ({
+        id: `sec-${Date.now()}-${i + 1}`,
+        type: sec.type,
+        content: sec.type === 'heading' ? post.title
+          : sec.type === 'cta' ? (post.suggestedCTA || 'Check out our latest resources')
+          : sec.description,
+        order: sec.order,
+      }));
 
       const content = sections.map((s) => s.content).join('\n\n');
       onUpdatePost(post.id, {
@@ -2660,7 +3425,7 @@ Generate the sections now:`;
                     >
                       {post.status}
                     </span>
-                    <span className="text-xs text-slate-500">{post.contentType}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20">{getTemplateForContentType(post.contentType || 'educational').name}</span>
                     {(() => {
                       const slot = findPostCalendarSlot(post.id);
                       if (slot) {
@@ -2817,7 +3582,30 @@ Generate the sections now:`;
                     <>
                       {post.content && (
                         <div className="bg-slate-900/50 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-slate-300 mb-2">Content Preview</h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium text-slate-300">Content Preview</h4>
+                            <button
+                              onClick={() => handleCopyContent(post)}
+                              className={cn(
+                                'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all',
+                                copiedPostId === post.id
+                                  ? 'bg-green-600/20 text-green-400 border border-green-500/30'
+                                  : 'bg-slate-700/50 text-slate-400 border border-slate-600 hover:text-slate-200 hover:bg-slate-700 hover:border-slate-500'
+                              )}
+                            >
+                              {copiedPostId === post.id ? (
+                                <>
+                                  <Check className="w-3 h-3" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  Copy
+                                </>
+                              )}
+                            </button>
+                          </div>
                           <div className="text-sm text-slate-400 whitespace-pre-wrap max-h-64 overflow-y-auto">
                             {post.content}
                           </div>
@@ -2825,7 +3613,11 @@ Generate the sections now:`;
                       )}
 
                       {post.sections && post.sections.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                          {/* <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                            <div className="text-sm font-semibold text-primary-400">{getTemplateForContentType(post.contentType || 'educational').name}</div>
+                            <div className="text-xs text-slate-500">Newsletter Type</div>
+                          </div> */}
                           <div className="bg-slate-900/50 rounded-lg p-3 text-center">
                             <div className="text-lg font-semibold text-slate-200">{post.sections.length}</div>
                             <div className="text-xs text-slate-500">Sections</div>
@@ -3014,7 +3806,7 @@ function AssetsTab({
               <div key={post.id} className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
                 <div className="flex items-center justify-between mb-3">
                   <div className="font-medium text-slate-200">{post.title}</div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">{post.contentType}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20">{getTemplateForContentType(post.contentType || 'educational').name}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3080,6 +3872,24 @@ function ReviewTab({
   posts: NewsletterPost[];
   onUpdatePost: (id: string, updates: Partial<NewsletterPost>) => void;
 }) {
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+
+  const handleCopyContent = async (post: NewsletterPost) => {
+    const text = post.sections?.map((s) => `[${s.type}] ${s.content}`).join('\n\n') || post.content || '';
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedPostId(post.id);
+    setTimeout(() => setCopiedPostId(null), 2000);
+  };
+
   const reviewPosts = posts.filter((p) => ['review', 'draft', 'approved'].includes(p.status));
 
   return (
@@ -3123,6 +3933,30 @@ function ReviewTab({
 
                 {post.content && (
                   <div className="bg-slate-800/30 rounded-lg p-3 mb-3 max-h-48 overflow-y-auto">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex-1" />
+                      <button
+                        onClick={() => handleCopyContent(post)}
+                        className={cn(
+                          'flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all shrink-0',
+                          copiedPostId === post.id
+                            ? 'bg-green-600/20 text-green-400 border border-green-500/30'
+                            : 'bg-slate-700/50 text-slate-500 border border-slate-600 hover:text-slate-300 hover:bg-slate-700 hover:border-slate-500'
+                        )}
+                      >
+                        {copiedPostId === post.id ? (
+                          <>
+                            <Check className="w-3 h-3" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <div className="text-sm text-slate-400 whitespace-pre-wrap">{post.content}</div>
                   </div>
                 )}
@@ -3265,7 +4099,7 @@ function ExportTab({
                 <div>
                   <div className="font-medium text-slate-200">{post.title}</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-500">{post.contentType}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20">{getTemplateForContentType(post.contentType || 'educational').name}</span>
                     <span className="text-xs text-slate-500">{post.content?.split(' ').length || 0} words</span>
                   </div>
                 </div>
