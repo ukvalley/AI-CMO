@@ -168,6 +168,7 @@ export const useChatStore = create<ChatStore>()(
     }),
     {
       name: 'ai-cmo-chat',
+      skipHydration: true,
       partialize: (state) => ({
         sessions: state.sessions.slice(-10), // Keep last 10 sessions
         activeSessionId: state.activeSessionId,

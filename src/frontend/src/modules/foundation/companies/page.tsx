@@ -34,8 +34,12 @@ import type { Company } from '@/types/entities';
 
 export default function CompaniesPage() {
   const router = useRouter();
-  const { user, logout, switchCompany, setUser } = useAuthStore();
-  const { setCompanies: setCompanyStoreCompanies, setActiveCompany: setCompanyStoreActive } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
+  const switchCompany = useAuthStore(s => s.switchCompany);
+  const setUser = useAuthStore(s => s.setUser);
+  const setCompanyStoreCompanies = useCompanyStore(s => s.setCompanies);
+  const setCompanyStoreActive = useCompanyStore(s => s.setActiveCompany);
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -447,8 +447,8 @@ function TagInput({
 // ============================================
 
 export default function BrandStrategyPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const activeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || activeCompanyId;
 
   const [loading, setLoading] = useState(true);

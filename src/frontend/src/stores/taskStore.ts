@@ -165,6 +165,7 @@ export const useTaskStore = create<TaskStore>()(
     }),
     {
       name: 'ai-cmo-tasks',
+      skipHydration: true,
       partialize: (state) => ({
         tasks: state.tasks.filter((t) => t.status !== 'running'),
       }),

@@ -479,8 +479,6 @@ useDataStore.subscribe(
     if (hasUnsavedChanges) {
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(() => {
-        useDataStore.setState({ isSaving: true });
-
         // Simulate cloud save via window.storage
         if (typeof window !== 'undefined') {
           const state = useDataStore.getState();

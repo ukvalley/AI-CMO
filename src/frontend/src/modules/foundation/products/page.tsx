@@ -326,8 +326,8 @@ const categoryFormFields: FormField[] = [
 // ============================================
 
 export default function ProductsPage() {
-  const { user } = useAuthStore();
-  const { activeCompanyId: storeCompanyId } = useCompanyStore();
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
   const companyId = user?.activeCompanyId || storeCompanyId;
 
   const [products, setProducts] = useState<Product[]>([]);
