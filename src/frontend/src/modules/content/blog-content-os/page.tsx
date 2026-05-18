@@ -233,10 +233,7 @@ export default function BlogContentOSModule() {
   const data = useDataStore(s => s.data);
   const taskStore = useTaskStore();
 
-  const { getItems, addItem, updateItem, deleteItem, setActiveCompany, activeCompanyId, setItems } = dataStore;
-
   // Sync company from companyStore to dataStore
-  const companyId = companyStore.activeCompanyId;
   useMemo(() => {
     if (companyId && companyId !== activeCompanyId) {
       setActiveCompany(companyId);
@@ -393,54 +390,167 @@ export default function BlogContentOSModule() {
     }
   }, [deleteItem, activeStrategyId]);
 
-  // Title generation (simulated - would connect to Ollama Cloud)
-  const handleGenerateTitles = useCallback(async (count: number = 10, style: TitleStyle = 'seo') => {
+  // Title generation
+  const handleGenerateTitles = useCallback(async (count: number, style: TitleStyle) => {
     if (!activeStrategyId || !activeStrategy) return;
 
-    // Create background task
     const taskId = taskStore.createTask(
       `Generate ${count} Blog Titles`,
       'blog-content-os',
       count
     );
 
-    // Simulate AI generation with context
-    const brandContext = brand ? `Brand: ${brand.voice || 'professional'}, Tone: ${brand.personality || 'friendly'}` : '';
-    const businessContext = businessProfile ? `Industry: ${businessProfile.primaryIndustry || 'general'}` : '';
-
-    // Generate titles based on content types
+    const brandContext = brand ? `Brand voice: ${brand.voice || 'professional'}, Brand personality: ${brand.personality || 'friendly'}` : '';
+    const businessContext = businessProfile ? `Industry: ${businessProfile.primaryIndustry || 'general'}, Company: ${businessProfile.name || 'our company'}` : '';
     const enabledTypes = contentTypes.filter((t) => t.enabled && t.strategyId === activeStrategyId);
+    const typeNames = enabledTypes.length > 0 ? enabledTypes.map((t) => `${t.name} (${t.type}, ${t.funnelPosition} funnel)`).join(', ') : 'Educational (tofu), How-To Guide (tofu), Case Study (mofu)';
 
-    setTimeout(async () => {
+    const goalLabel = activeStrategy.goals?.[0] || 'seo';
+    const funnelLabel = activeStrategy.funnelStage || 'tofu';
+    const audienceLabel = activeStrategy.targetAudience || 'general professionals';
+
+    const prompt = `You are an expert blog content strategist. Generate exactly ${count} blog post titles for a business blog.
+
+Strategy context:
+- Primary Goal: ${goalLabel}
+- Target Audience: ${audienceLabel}
+- Funnel Stage: ${funnelLabel}
+${brandContext ? '- ' + brandContext : ''}
+${businessContext ? '- ' + businessContext : ''}
+
+Content types to cover: ${typeNames}
+
+Title style: ${style}
+${style === 'seo' ? 'Use keyword-rich, search-optimized titles that rank well.' : ''}
+${style === 'viral' ? 'Use emotional, curiosity-driven titles that encourage clicks and shares.' : ''}
+${style === 'authority' ? 'Use expert, credible positioning titles that establish thought leadership.' : ''}
+${style === 'technical' ? 'Use precise, industry-specific titles for technical audiences.' : ''}
+${style === 'emotional' ? 'Use feeling-driven, relatable titles that connect with readers.' : ''}
+${style === 'founder' ? 'Use personal, authentic founder-style titles.' : ''}
+${style === 'linkedin' ? 'Use professional, shareable titles optimized for LinkedIn.' : ''}
+${style === 'thought-leadership' ? 'Use visionary, perspective-based titles that showcase expertise.' : ''}
+
+You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element must be an object with exactly these fields:
+- "title": string — the blog post title
+- "slug": string — URL-friendly slug (lowercase, hyphens)
+- "excerpt": string — brief summary (under 160 characters)
+- "contentType": string — one of: ${enabledTypes.length > 0 ? enabledTypes.map((t) => t.type).join(', ') : 'educational, how-to-guide, industry-trends, case-study, comparison, product-focused, listicle, problem-solution, thought-leadership'}
+- "funnelStage": string — one of: tofu, mofu, bofu
+- "seoScore": number — estimated SEO score from 70-99
+- "searchIntent": string — one of: informational, commercial, transactional
+- "suggestedKeywords": array of 5 relevant keyword strings
+- "suggestedCTA": string — a call-to-action phrase
+
+Example of one item:
+{"title": "The Complete Guide to SEO Strategy for 2024", "slug": "complete-guide-seo-strategy-2024", "excerpt": "Discover actionable SEO strategies to boost your organic traffic.", "contentType": "educational", "funnelStage": "tofu", "seoScore": 85, "searchIntent": "informational", "suggestedKeywords": ["seo strategy", "organic traffic", "search optimization", "keyword research", "content marketing"], "suggestedCTA": "Read the full guide"}
+
+Generate ${count} diverse, creative titles now:`;
+
+    try {
+      console.log('[BlogContentOS] Calling AI generate API...');
+      const response = await aiApi.generate({ prompt, maxTokens: 4000 });
+
+      console.log('[BlogContentOS] AI API response:', { status: response.status, error: response.error, hasData: !!response.data });
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'AI generation returned no data');
+      }
+
+      const aiResult = response.data as any;
+      let content: string = aiResult.content || '';
+      console.log('[BlogContentOS] AI raw content length:', content.length);
+
+      if (typeof content !== 'string') {
+        content = JSON.stringify(content);
+      }
+
+      // Strip markdown code fences if present
+      content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+      let parsed: any[];
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        const match = content.match(/\[[\s\S]*\]/);
+        if (match) {
+          parsed = JSON.parse(match[0]);
+        } else {
+          throw new Error('Could not parse AI response as JSON');
+        }
+      }
+
+      if (!Array.isArray(parsed)) {
+        throw new Error('AI response is not an array');
+      }
+
       const titlesToCreate: any[] = [];
-      for (let i = 0; i < count; i++) {
-        const contentType = enabledTypes[i % enabledTypes.length] || enabledTypes[0];
-        const title = generateSampleTitle(contentType?.type || 'educational', style, brandContext, businessContext);
+      parsed.slice(0, count).forEach((item: any, i: number) => {
+        const contentType = enabledTypes.length > 0
+          ? enabledTypes[i % enabledTypes.length]
+          : { type: item.contentType || 'educational', funnelPosition: item.funnelStage || 'tofu', ctaStrategy: item.suggestedCTA || 'Learn more', seoIntent: item.searchIntent || 'informational' };
 
         const titleData = {
+          id: `bt-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
           strategyId: activeStrategyId,
-          title,
-          contentType: contentType?.type || 'educational',
+          title: item.title || 'Untitled Blog Post',
+          slug: item.slug || generateSlug(item.title || 'Untitled'),
+          excerpt: item.excerpt || '',
+          contentType: contentType?.type || item.contentType || 'educational',
           style,
-          seoScore: Math.floor(Math.random() * 30) + 70,
-          searchIntent: contentType?.seoIntent || 'informational',
-          funnelStage: contentType?.funnelPosition || 'tofu',
-          suggestedKeywords: generateKeywords(contentType?.type || 'educational'),
-          suggestedCTA: contentType?.ctaStrategy || 'Learn more',
+          seoScore: typeof item.seoScore === 'number' ? item.seoScore : Math.floor(Math.random() * 30) + 70,
+          searchIntent: item.searchIntent || (contentType as any)?.seoIntent || 'informational',
+          funnelStage: item.funnelStage || (contentType as any)?.funnelPosition || 'tofu',
+          suggestedKeywords: Array.isArray(item.suggestedKeywords) ? item.suggestedKeywords : generateKeywords(item.contentType || 'educational'),
+          suggestedCTA: item.suggestedCTA || (contentType as any)?.ctaStrategy || 'Learn more',
           status: 'generated',
           order: i,
           companyId,
+          aiModel: aiResult.model || 'unknown',
+        };
+
+        addItem('blogTitles', titleData as any);
+        titlesToCreate.push(titleData);
+      });
+
+      await Promise.all(titlesToCreate.map((t) => blogTitleApi.create(t).catch(() => {})));
+      taskStore.completeBatch(taskId, 0, Array(Math.min(parsed.length, count)).fill('title'));
+      console.log('[BlogContentOS] SUCCESS — AI generated', titlesToCreate.length, 'titles');
+    } catch (error) {
+      console.error('[BlogContentOS] AI title generation FAILED — falling back to templates. Error:', error);
+
+      // Fallback to sample titles
+      const fallbackType = { type: 'educational', funnelPosition: 'tofu', ctaStrategy: 'Learn more', seoIntent: 'informational' as const };
+      const titlesToCreate: any[] = [];
+      for (let i = 0; i < count; i++) {
+        const contentType = enabledTypes.length > 0 ? enabledTypes[i % enabledTypes.length] : fallbackType;
+        const result = generateSampleTitle((contentType as any)?.type || 'educational', style, brandContext, businessContext);
+
+        const titleData = {
+          id: `bt-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+          strategyId: activeStrategyId,
+          title: result.title,
+          slug: generateSlug(result.title),
+          excerpt: result.excerpt,
+          contentType: (contentType as any)?.type || 'educational',
+          style,
+          seoScore: Math.floor(Math.random() * 30) + 70,
+          searchIntent: (contentType as any)?.seoIntent || 'informational',
+          funnelStage: (contentType as any)?.funnelPosition || 'tofu',
+          suggestedKeywords: generateKeywords((contentType as any)?.type || 'educational'),
+          suggestedCTA: (contentType as any)?.ctaStrategy || 'Learn more',
+          status: 'generated',
+          order: i,
+          companyId,
+          aiModel: 'template',
         };
 
         addItem('blogTitles', titleData as any);
         titlesToCreate.push(titleData);
       }
 
-      // Sync to backend in parallel
-      await Promise.all(titlesToCreate.map((t) => blogTitleApi.create(t)));
-
+      await Promise.all(titlesToCreate.map((t) => blogTitleApi.create(t).catch(() => {})));
       taskStore.completeBatch(taskId, 0, Array(count).fill('title'));
-    }, 2000);
+    }
   }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, addItem, taskStore, companyId]);
 
   if (!companyId) {
@@ -496,10 +606,10 @@ export default function BlogContentOSModule() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 flex gap-1 border-t border-slate-800">
+        <div className="flex gap-0 border-t border-slate-800 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {[
             { id: 'strategy', label: 'Strategy', icon: Target },
-            // { id: 'types', label: 'Content Types', icon: Layout },
+            // { id: 'types', label: 'Types', icon: Layout },
             { id: 'titles', label: 'Titles', icon: Type },
             { id: 'content', label: 'Content', icon: FileEdit },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
@@ -1354,7 +1464,17 @@ function CalendarTab({
   onUpdateCalendar: (id: string, updates: Partial<BlogCalendar>) => void;
 }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const activeCalendar = calendars[0];
+
+  // Get content title for a calendar item
+  const getContentTitle = (item: BlogCalendarItem) => {
+    if (item.postId) {
+      const post = posts.find(p => p.id === item.postId);
+      if (post) return { type: 'post', title: post.title, status: post.status };
+    }
+    return null;
+  };
 
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -1396,7 +1516,7 @@ function CalendarTab({
                 </div>
               </div>
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => setShowEditModal(true)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
               >
                 <Settings className="w-4 h-4" />
@@ -1430,30 +1550,62 @@ function CalendarTab({
 
             {/* Timeline */}
             <div>
-              <h4 className="text-sm font-medium text-slate-400 mb-3">Content Pipeline ({activeCalendar.timeline.length} posts)</h4>
+              <h4 className="text-sm font-medium text-slate-400 mb-3">
+                Content Pipeline ({activeCalendar.timeline.length} posts
+                {activeCalendar.publishingDays.length > 0 && (
+                  <span className="text-primary-400"> on {activeCalendar.publishingDays.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}</span>
+                )})
+              </h4>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {activeCalendar.timeline.slice(0, 20).map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
-                    <div className="text-sm font-medium text-slate-500 w-8">#{index + 1}</div>
-                    <div className="flex-1">
-                      <div className="text-sm text-slate-200">{item.scheduledDate ? new Date(item.scheduledDate).toLocaleDateString() : 'Not scheduled'}</div>
-                      <div className="text-xs text-slate-500">Status: {item.status}</div>
+                {activeCalendar.timeline.slice(0, 20).map((item, index) => {
+                  const scheduledDate = item.scheduledDate ? new Date(item.scheduledDate) : null;
+                  const dayName = scheduledDate ? scheduledDate.toLocaleDateString('en-US', { weekday: 'long' }) : 'Not scheduled';
+                  const dayNameLower = dayName.toLowerCase();
+                  const isPublishingDay = scheduledDate && activeCalendar.publishingDays.includes(dayNameLower);
+                  const contentInfo = getContentTitle(item);
+
+                  return (
+                    <div key={item.id} className="flex items-center gap-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                      <div className="text-sm font-medium text-slate-500 w-8">#{index + 1}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-slate-200">
+                          {scheduledDate ? scheduledDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not scheduled'}
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2">
+                          <span className="text-primary-400">{dayName}</span>
+                          {isPublishingDay && (
+                            <span className="text-green-400">• Publishing Day</span>
+                          )}
+                        </div>
+                        {/* Show content title if assigned */}
+                        {contentInfo && (
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className={cn(
+                              'text-xs px-1.5 py-0.5 rounded',
+                              contentInfo.type === 'title' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                            )}>
+                              {contentInfo.type === 'title' ? 'Title' : 'Post'}
+                            </span>
+                            <span className="text-xs text-slate-300 truncate">{contentInfo.title}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className={cn(
+                          'px-2 py-1 rounded text-xs flex-shrink-0',
+                          item.status === 'empty' && 'bg-slate-700 text-slate-400',
+                          item.status === 'planned' && 'bg-blue-500/20 text-blue-400',
+                          item.status === 'title-generated' && 'bg-purple-500/20 text-purple-400',
+                          item.status === 'assigned' && 'bg-amber-500/20 text-amber-400',
+                          item.status === 'in-progress' && 'bg-orange-500/20 text-orange-400',
+                          item.status === 'ready' && 'bg-green-500/20 text-green-400'
+                        )}
+                      >
+                        {item.status}
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        'px-2 py-1 rounded text-xs',
-                        item.status === 'empty' && 'bg-slate-700 text-slate-400',
-                        item.status === 'planned' && 'bg-blue-500/20 text-blue-400',
-                        item.status === 'title-generated' && 'bg-purple-500/20 text-purple-400',
-                        item.status === 'assigned' && 'bg-amber-500/20 text-amber-400',
-                        item.status === 'in-progress' && 'bg-orange-500/20 text-orange-400',
-                        item.status === 'ready' && 'bg-green-500/20 text-green-400'
-                      )}
-                    >
-                      {item.status}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1465,6 +1617,17 @@ function CalendarTab({
           strategy={strategy}
           onClose={() => setShowCreateModal(false)}
           onCreate={onCreateCalendar}
+        />
+      )}
+
+      {showEditModal && activeCalendar && (
+        <EditCalendarModal
+          calendar={activeCalendar}
+          onClose={() => setShowEditModal(false)}
+          onUpdate={(updates) => {
+            onUpdateCalendar(activeCalendar.id, updates);
+            setShowEditModal(false);
+          }}
         />
       )}
     </div>
@@ -1500,15 +1663,54 @@ function CreateCalendarModal({
   };
 
   const handleSubmit = () => {
-    // Generate timeline
+    // Generate timeline based on selected publishing days
     const timeline: BlogCalendarItem[] = [];
     const startDate = new Date();
 
+    // Sort publishing days by day of week (0=Sunday, 1=Monday, etc.)
+    const dayOrder: Record<string, number> = {
+      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+      'thursday': 4, 'friday': 5, 'saturday': 6
+    };
+
+    const sortedPublishingDays = [...publishingDays].sort((a, b) => dayOrder[a] - dayOrder[b]);
+
+    // Get current day of week (0-6)
+    const currentDayOfWeek = startDate.getDay();
+
+    // Generate dates for each post, cycling through selected publishing days
     for (let i = 0; i < postsPerCycle; i++) {
+      const dayIndex = i % sortedPublishingDays.length;
+      const targetDay = sortedPublishingDays[dayIndex];
+      const targetDayOfWeek = dayOrder[targetDay];
+
+      // Calculate days to add to get to the target publishing day
+      let daysToAdd = targetDayOfWeek - currentDayOfWeek;
+
+      // If we've already passed this day in the current week, move to next week
+      if (daysToAdd < 0) {
+        daysToAdd += 7;
+      }
+
+      // For posts beyond the first cycle, add weeks
+      const weekOffset = Math.floor(i / sortedPublishingDays.length);
+      daysToAdd += weekOffset * 7;
+
+      // If this is the first post and it's today, start from today
+      if (i === 0 && daysToAdd === 0) {
+        daysToAdd = 0;
+      }
+
+      const scheduledDate = new Date(startDate);
+      scheduledDate.setDate(startDate.getDate() + daysToAdd);
+
       timeline.push({
         id: `calendar-item-${i}`,
-        scheduledDate: new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000).toISOString(),
+        scheduledDate: scheduledDate.toISOString(),
         status: 'empty',
+        contentTypeId: undefined,
+        titleId: undefined,
+        postId: undefined,
       });
     }
 
@@ -1610,6 +1812,197 @@ function CreateCalendarModal({
 }
 
 // ============================================
+// EDIT CALENDAR MODAL
+// ============================================
+
+function EditCalendarModal({
+  calendar,
+  onClose,
+  onUpdate,
+}: {
+  calendar: BlogCalendar;
+  onClose: () => void;
+  onUpdate: (updates: Partial<BlogCalendar>) => void;
+}) {
+  const [name, setName] = useState(calendar.name);
+  const [frequency, setFrequency] = useState<BloggingFrequency>(calendar.frequency);
+  const [postsPerCycle, setPostsPerCycle] = useState(calendar.postsPerCycle);
+  const [publishingDays, setPublishingDays] = useState<string[]>(calendar.publishingDays);
+
+  const weekDays = [
+    { value: 'sunday', label: 'Sunday' },
+    { value: 'monday', label: 'Monday' },
+    { value: 'tuesday', label: 'Tuesday' },
+    { value: 'wednesday', label: 'Wednesday' },
+    { value: 'thursday', label: 'Thursday' },
+    { value: 'friday', label: 'Friday' },
+    { value: 'saturday', label: 'Saturday' },
+  ];
+
+  const toggleDay = (day: string) => {
+    setPublishingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  };
+
+  const generateTimeline = (days: string[], count: number): BlogCalendarItem[] => {
+    const timeline: BlogCalendarItem[] = [];
+    const startDate = new Date();
+
+    const dayOrder: Record<string, number> = {
+      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+      'thursday': 4, 'friday': 5, 'saturday': 6
+    };
+
+    const sortedDays = [...days].sort((a, b) => dayOrder[a] - dayOrder[b]);
+    const currentDayOfWeek = startDate.getDay();
+
+    for (let i = 0; i < count; i++) {
+      const dayIndex = i % sortedDays.length;
+      const targetDay = sortedDays[dayIndex];
+      const targetDayOfWeek = dayOrder[targetDay];
+
+      let daysToAdd = targetDayOfWeek - currentDayOfWeek;
+
+      if (daysToAdd < 0) {
+        daysToAdd += 7;
+      }
+
+      const weekOffset = Math.floor(i / sortedDays.length);
+      daysToAdd += weekOffset * 7;
+
+      if (i === 0 && daysToAdd === 0) {
+        daysToAdd = 0;
+      }
+
+      const scheduledDate = new Date(startDate);
+      scheduledDate.setDate(startDate.getDate() + daysToAdd);
+
+      // Preserve existing item data if it exists
+      const existingItem = calendar.timeline[i];
+
+      timeline.push({
+        id: existingItem?.id || `calendar-item-${i}`,
+        scheduledDate: scheduledDate.toISOString(),
+        status: existingItem?.status || 'empty',
+        contentTypeId: existingItem?.contentTypeId,
+        titleId: existingItem?.titleId,
+        postId: existingItem?.postId,
+      });
+    }
+
+    return timeline;
+  };
+
+  const handleSubmit = () => {
+    const newTimeline = generateTimeline(publishingDays, postsPerCycle);
+
+    onUpdate({
+      name,
+      frequency,
+      postsPerCycle,
+      publishingDays,
+      timeline: newTimeline,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-slate-800">
+          <h2 className="text-lg font-semibold text-slate-200">Edit Blog Calendar</h2>
+          <p className="text-sm text-slate-400">Update your publishing schedule</p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Calendar Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Publishing Frequency</label>
+            <select
+              value={frequency}
+              onChange={(e) => setFrequency(e.target.value as BloggingFrequency)}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="bi-weekly">Bi-weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Posts per Cycle</label>
+            <input
+              type="number"
+              min="1"
+              max="52"
+              value={postsPerCycle}
+              onChange={(e) => setPostsPerCycle(parseInt(e.target.value) || 1)}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Changing this will regenerate the content pipeline
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Publishing Days</label>
+            <div className="grid grid-cols-7 gap-2">
+              {weekDays.map((day) => {
+                const isSelected = publishingDays.includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    onClick={() => toggleDay(day.value)}
+                    className={cn(
+                      'p-2 text-center text-sm rounded-lg transition-colors',
+                      isSelected
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                    )}
+                  >
+                    {day.label.slice(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Posts will be scheduled on these days
+            </p>
+          </div>
+
+          <div className="bg-slate-800/50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-slate-300 mb-2">Preview</h4>
+            <div className="text-sm text-slate-400">
+              <p><span className="text-slate-300">{postsPerCycle}</span> posts on <span className="text-primary-400">{publishingDays.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ') || 'No days selected'}</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-slate-800 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-slate-200 transition-colors">Cancel</button>
+          <button
+            onClick={handleSubmit}
+            disabled={!name || publishingDays.length === 0}
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // TITLES TAB - AI Title Generation
 // ============================================
 
@@ -1632,86 +2025,128 @@ function TitlesTab({
   onClearGenerated: () => void;
   onClearSelected: () => void;
 }) {
-  const [selectedStyle, setSelectedStyle] = useState<TitleStyle>('seo');
-  const [generateCount, setGenerateCount] = useState(10);
+  const [selectedStyles, setSelectedStyles] = useState<TitleStyle[]>([]);
+  const [styleCounts, setStyleCounts] = useState<Record<TitleStyle, number>>({
+    seo: 3,
+    viral: 3,
+    authority: 3,
+    technical: 3,
+    emotional: 3,
+    founder: 3,
+    linkedin: 3,
+    'thought-leadership': 3,
+  });
   const [isGenerating, setIsGenerating] = useState(false);
 
   const selectedTitles = titles.filter((t) => t.status === 'selected').sort((a, b) => a.order - b.order);
   const generatedTitles = titles.filter((t) => t.status === 'generated');
 
+  const toggleStyle = (style: TitleStyle) => {
+    setSelectedStyles((prev) =>
+      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
+    );
+  };
+
+  const updateStyleCount = (style: TitleStyle, count: number) => {
+    setStyleCounts((prev) => ({ ...prev, [style]: Math.max(1, Math.min(50, count)) }));
+  };
+
   const handleGenerate = async () => {
+    if (selectedStyles.length === 0) return;
     setIsGenerating(true);
-    await onGenerate(generateCount, selectedStyle);
+    for (const style of selectedStyles) {
+      await onGenerate(styleCounts[style], style);
+    }
     setIsGenerating(false);
   };
 
   const handleSelect = (title: BlogTitle) => {
-    onUpdate(title.id, { status: 'selected', order: selectedTitles.length });
+    const currentSelected = titles.filter((t) => t.status === 'selected');
+    onUpdate(title.id, { status: 'selected', order: currentSelected.length });
   };
 
   const handleReject = (title: BlogTitle) => {
     onUpdate(title.id, { status: 'rejected' });
   };
 
+  const groupedTitles = generatedTitles.reduce<Record<string, BlogTitle[]>>((acc, title) => {
+    const key = title.style || 'seo';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(title);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-6">
-      {/* Generation Controls */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary-400" />
           AI Title Generator
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Title Style</label>
-            <select
-              value={selectedStyle}
-              onChange={(e) => setSelectedStyle(e.target.value as TitleStyle)}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
-            >
-              {TITLE_STYLES.map((style) => (
-                <option key={style.value} value={style.value}>{style.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Number of Titles</label>
-            <input
-              type="number"
-              min="1"
-              max="50"
-              value={generateCount}
-              onChange={(e) => setGenerateCount(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
-            />
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || contentTypes.filter((t) => t.enabled).length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors w-full justify-center"
-            >
-              {isGenerating ? (
-                <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</>
-              ) : (
-                <><Zap className="w-4 h-4" /> Generate Titles</>
-              )}
-            </button>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-400 mb-3">Title Styles</label>
+          <div className="space-y-3">
+            {TITLE_STYLES.map((style) => {
+              const isChecked = selectedStyles.includes(style.value);
+              return (
+                <div key={style.value} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleStyle(style.value)}
+                      className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-slate-200">{style.label}</div>
+                      <div className="text-xs text-slate-500">{style.description}</div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <span className="text-slate-400">{groupedTitles[style.value]?.length || 0}</span>
+                      generated
+                    </div>
+                  </div>
+                  {isChecked && (
+                    <div className="mt-3 ml-7 flex items-center gap-3">
+                      <label className="text-sm text-slate-400 whitespace-nowrap">Titles to generate:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={styleCounts[style.value]}
+                        onChange={(e) => updateStyleCount(style.value, parseInt(e.target.value) || 1)}
+                        className="w-20 px-2 py-1 bg-slate-800 border border-slate-700 rounded text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="text-sm text-slate-500">
-          Using: <span className="text-primary-400">Ollama Cloud GLM 5.1</span> |
-          Context: {strategy.targetAudience || 'General audience'} |
-          Content types: {contentTypes.filter((t) => t.enabled).length} enabled
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || selectedStyles.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+          >
+            {isGenerating ? (
+              <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</>
+            ) : (
+              <><Zap className="w-4 h-4" /> Generate Titles ({selectedStyles.length} {selectedStyles.length === 1 ? 'style' : 'styles'})</>
+            )}
+          </button>
+          <div className="text-sm text-slate-500">
+            Using: <span className="text-primary-400">Ollama Cloud GLM 5.1</span> |
+            Context: {strategy.targetAudience || 'General audience'} |
+            Content types: {contentTypes.filter((t) => t.enabled).length} enabled
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Selected Titles */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Editorial Pipeline ({selectedTitles.length})</h3>
@@ -1735,9 +2170,10 @@ function TitlesTab({
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <div className="font-medium text-slate-200">{title.title}</div>
+                      <div className="text-sm text-primary-400 mt-1">{title.excerpt || title.slug}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-slate-500">SEO Score: {title.seoScore}/100</span>
-                        <span className="text-xs text-slate-500">{title.funnelStage.toUpperCase()}</span>
+                        <span className="text-xs text-slate-500">{title.funnelStage?.toUpperCase()}</span>
                       </div>
                     </div>
                     <button
@@ -1753,7 +2189,6 @@ function TitlesTab({
           </div>
         </div>
 
-        {/* Generated Titles */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-200">Generated Titles ({generatedTitles.length})</h3>
@@ -1770,44 +2205,56 @@ function TitlesTab({
 
           <div className="divide-y divide-slate-700 max-h-[500px] overflow-y-auto">
             {generatedTitles.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">No titles generated yet. Click "Generate Titles" to start.</div>
+              <div className="p-8 text-center text-slate-500">No titles generated yet. Select styles above and click "Generate Titles" to start.</div>
             ) : (
-              generatedTitles.map((title) => (
-                <div key={title.id} className="p-4 hover:bg-slate-800/50 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-200">{title.title}</div>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className={cn(
-                          'text-xs px-2 py-0.5 rounded-full',
-                          title.seoScore >= 80 && 'bg-green-500/20 text-green-400',
-                          title.seoScore >= 60 && title.seoScore < 80 && 'bg-yellow-500/20 text-yellow-400',
-                          title.seoScore < 60 && 'bg-red-500/20 text-red-400'
-                        )}>
-                          SEO {title.seoScore}
-                        </span>
-                        <span className="text-xs text-slate-500 capitalize">{title.contentType}</span>
-                      </div>
+              Object.entries(groupedTitles).map(([style, styleTitles]) => {
+                const styleInfo = TITLE_STYLES.find((s) => s.value === style);
+                return (
+                  <div key={style}>
+                    <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-700 sticky top-0 z-10">
+                      <span className="text-sm font-medium text-primary-400">{styleInfo?.label || style}</span>
+                      <span className="text-xs text-slate-500 ml-2">({styleTitles.length})</span>
                     </div>
+                    {styleTitles.map((title) => (
+                      <div key={title.id} className="p-4 hover:bg-slate-800/50 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="font-medium text-slate-200">{title.title}</div>
+                            <div className="text-sm text-primary-400 mt-1">{title.excerpt || title.slug}</div>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className={cn(
+                                'text-xs px-2 py-0.5 rounded-full',
+                                title.seoScore >= 80 && 'bg-green-500/20 text-green-400',
+                                title.seoScore >= 60 && title.seoScore < 80 && 'bg-yellow-500/20 text-yellow-400',
+                                title.seoScore < 60 && 'bg-red-500/20 text-red-400'
+                              )}>
+                                SEO {title.seoScore}
+                              </span>
+                              <span className="text-xs text-slate-500 capitalize">{title.contentType}</span>
+                            </div>
+                          </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleSelect(title)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
-                      >
-                        <Check className="w-3 h-3" />
-                        Select
-                      </button>
-                      <button
-                        onClick={() => handleReject(title)}
-                        className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSelect(title)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
+                            >
+                              <Check className="w-3 h-3" />
+                              Select
+                            </button>
+                            <button
+                              onClick={() => handleReject(title)}
+                              className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -1825,7 +2272,7 @@ function generateSampleTitle(
   style: string,
   _brandContext: string,
   _businessContext: string
-): string {
+): { title: string; excerpt: string } {
   const topics = [
     'Marketing Automation',
     'SEO Strategy',
@@ -1858,62 +2305,62 @@ function generateSampleTitle(
   const action = actions[Math.floor(Math.random() * actions.length)];
   const number = numbers[Math.floor(Math.random() * numbers.length)];
 
-  const templates: Record<string, string[]> = {
+  const templates: Record<string, { title: string; excerpt: string }[]> = {
     seo: [
-      `How to ${action} with ${topic} in ${number} Steps`,
-      `The Complete Guide to ${topic} for ${number}x Growth`,
-      `What is ${topic}? A Comprehensive Guide`,
-      `${number} Proven ${topic} Strategies That Work`,
-      `Why ${topic} Matters for Your Business`,
+      { title: `How to ${action} with ${topic} in ${number} Steps`, excerpt: `Learn how to ${action.toLowerCase()} using proven ${topic.toLowerCase()} strategies.` },
+      { title: `The Complete Guide to ${topic} for ${number}x Growth`, excerpt: `Discover everything you need to know about ${topic.toLowerCase()} for rapid growth.` },
+      { title: `What is ${topic}? A Comprehensive Guide`, excerpt: `An in-depth look at ${topic.toLowerCase()} and how it can transform your business.` },
+      { title: `${number} Proven ${topic} Strategies That Work`, excerpt: `Actionable ${topic.toLowerCase()} tactics you can implement today.` },
+      { title: `Why ${topic} Matters for Your Business`, excerpt: `Understanding the impact of ${topic.toLowerCase()} on your bottom line.` },
     ],
     viral: [
-      `The Shocking Truth About ${topic} Nobody Talks About`,
-      `I Tried ${topic} for 30 Days. Here's What Happened.`,
-      `Stop Doing ${topic} Wrong: ${number} Mistakes to Avoid`,
-      `This ${topic} Hack Changed Everything for Me`,
-      `Why 90% of Businesses Fail at ${topic}`,
+      { title: `The Shocking Truth About ${topic} Nobody Talks About`, excerpt: `Discover the hidden secrets of ${topic.toLowerCase()} that will change your approach.` },
+      { title: `I Tried ${topic} for 30 Days. Here's What Happened.`, excerpt: `My personal experiment with ${topic.toLowerCase()} revealed surprising results.` },
+      { title: `Stop Doing ${topic} Wrong: ${number} Mistakes to Avoid`, excerpt: `Common ${topic.toLowerCase()} pitfalls and how to fix them.` },
+      { title: `This ${topic} Hack Changed Everything for Me`, excerpt: `The simple ${topic.toLowerCase()} technique that transformed my results.` },
+      { title: `Why 90% of Businesses Fail at ${topic}`, excerpt: `Avoid these ${topic.toLowerCase()} mistakes to stay ahead of the competition.` },
     ],
     authority: [
-      `The State of ${topic}: Industry Report`,
-      `Expert Insights: How Top Brands Approach ${topic}`,
-      `A Data-Driven Look at ${topic} Trends`,
-      `The Science Behind ${topic}`,
-      `What ${number} Years in ${topic} Taught Me`,
+      { title: `The State of ${topic}: Industry Report`, excerpt: `Data-driven insights on ${topic.toLowerCase()} trends and benchmarks.` },
+      { title: `Expert Insights: How Top Brands Approach ${topic}`, excerpt: `Learn from industry leaders about their ${topic.toLowerCase()} strategies.` },
+      { title: `A Data-Driven Look at ${topic} Trends`, excerpt: `Research-backed analysis of ${topic.toLowerCase()} developments.` },
+      { title: `The Science Behind ${topic}`, excerpt: `Evidence-based ${topic.toLowerCase()} principles explained.` },
+      { title: `What ${number} Years in ${topic} Taught Me`, excerpt: `Lessons learned from decades of ${topic.toLowerCase()} experience.` },
     ],
     technical: [
-      `${topic}: Architecture, Implementation, and Best Practices`,
-      `Deep Dive: How ${topic} Algorithms Work`,
-      `${topic} API Integration Guide`,
-      `Optimising ${topic} Performance: A Technical Analysis`,
-      `Building Scalable ${topic} Systems`,
+      { title: `${topic}: Architecture, Implementation, and Best Practices`, excerpt: `Technical deep dive into ${topic.toLowerCase()} implementation.` },
+      { title: `Deep Dive: How ${topic} Algorithms Work`, excerpt: `Understanding the mechanics behind ${topic.toLowerCase()}.` },
+      { title: `${topic} API Integration Guide`, excerpt: `Step-by-step ${topic.toLowerCase()} integration instructions.` },
+      { title: `Optimising ${topic} Performance: A Technical Analysis`, excerpt: `Performance tuning strategies for ${topic.toLowerCase()}.` },
+      { title: `Building Scalable ${topic} Systems`, excerpt: `Architecture patterns for ${topic.toLowerCase()} at scale.` },
     ],
     emotional: [
-      `The Frustration of ${topic} (And How to Fix It)`,
-      `Feeling Overwhelmed by ${topic}? Read This.`,
-      `The Relief of Finally Getting ${topic} Right`,
-      `Why ${topic} Keeps You Up at Night`,
-      `Finding Peace Through Better ${topic}`,
+      { title: `The Frustration of ${topic} (And How to Fix It)`, excerpt: `Overcome ${topic.toLowerCase()} challenges with these solutions.` },
+      { title: `Feeling Overwhelmed by ${topic}? Read This.`, excerpt: `Find clarity and direction in your ${topic.toLowerCase()} journey.` },
+      { title: `The Relief of Finally Getting ${topic} Right`, excerpt: `How mastering ${topic.toLowerCase()} transformed my approach.` },
+      { title: `Why ${topic} Keeps You Up at Night`, excerpt: `Addressing the anxieties around ${topic.toLowerCase()}.` },
+      { title: `Finding Peace Through Better ${topic}`, excerpt: `Stress-free ${topic.toLowerCase()} strategies for busy professionals.` },
     ],
     founder: [
-      `Why I Built Our ${topic} Strategy from Scratch`,
-      `The ${topic} Lessons I Learned the Hard Way`,
-      `How We 10x'd Our ${topic} in 6 Months`,
-      `What I Wish I Knew About ${topic} Before Starting`,
-      `Our ${topic} Journey: From Zero to One`,
+      { title: `Why I Built Our ${topic} Strategy from Scratch`, excerpt: `My journey building a ${topic.toLowerCase()} strategy that works.` },
+      { title: `The ${topic} Lessons I Learned the Hard Way`, excerpt: `Painful but valuable ${topic.toLowerCase()} experiences shared.` },
+      { title: `How We 10x'd Our ${topic} in 6 Months`, excerpt: `Our rapid ${topic.toLowerCase()} growth story and lessons.` },
+      { title: `What I Wish I Knew About ${topic} Before Starting`, excerpt: `Founder insights on ${topic.toLowerCase()} fundamentals.` },
+      { title: `Our ${topic} Journey: From Zero to One`, excerpt: `Building ${topic.toLowerCase()} capability from the ground up.` },
     ],
     linkedin: [
-      `${number} ${topic} Insights Every Professional Should Know`,
-      `The ${topic} Framework That Got Me Promoted`,
-      `Why Leaders Prioritise ${topic} in 2026`,
-      `The ${topic} Skills Gap (And How to Close It)`,
-      `My Thoughts on the Future of ${topic}`,
+      { title: `${number} ${topic} Insights Every Professional Should Know`, excerpt: `Key ${topic.toLowerCase()} takeaways for career growth.` },
+      { title: `The ${topic} Framework That Got Me Promoted`, excerpt: `How mastering ${topic.toLowerCase()} accelerated my career.` },
+      { title: `Why Leaders Prioritise ${topic} in 2026`, excerpt: `Executive perspectives on ${topic.toLowerCase()} importance.` },
+      { title: `The ${topic} Skills Gap (And How to Close It)`, excerpt: `Developing ${topic.toLowerCase()} expertise for the modern workplace.` },
+      { title: `My Thoughts on the Future of ${topic}`, excerpt: `Personal reflections on ${topic.toLowerCase()} evolution.` },
     ],
     'thought-leadership': [
-      `The Future of ${topic}: A Vision for 2030`,
-      `Rethinking ${topic}: A New Perspective`,
-      `Why ${topic} Needs a Paradigm Shift`,
-      `The Unspoken Rules of ${topic}`,
-      `Beyond ${topic}: What's Next for the Industry`,
+      { title: `The Future of ${topic}: A Vision for 2030`, excerpt: `Forward-thinking perspectives on ${topic.toLowerCase()} direction.` },
+      { title: `Rethinking ${topic}: A New Perspective`, excerpt: `Challenging conventional ${topic.toLowerCase()} wisdom.` },
+      { title: `Why ${topic} Needs a Paradigm Shift`, excerpt: `The case for reimagining ${topic.toLowerCase()} approaches.` },
+      { title: `The Unspoken Rules of ${topic}`, excerpt: `Implicit ${topic.toLowerCase()} knowledge shared openly.` },
+      { title: `Beyond ${topic}: What's Next for the Industry`, excerpt: `Looking past current ${topic.toLowerCase()} trends.` },
     ],
   };
 
@@ -2109,9 +2556,55 @@ function ContentTab({
   // Find the active calendar
   const activeCalendar = calendars[0];
 
-  // Auto-map to calendar if enabled
+  // Find a calendar slot for a post
+  const findPostCalendarSlot = (postId: string): BlogCalendarItem | undefined => {
+    if (!activeCalendar) return undefined;
+    return activeCalendar.timeline?.find((item) => item.postId === postId);
+  };
+
+  // Handle scheduling a post to a calendar slot
+  const handleSchedulePost = (postId: string, slotId: string) => {
+    if (!activeCalendar) return;
+
+    const updatedTimeline = activeCalendar.timeline?.map((item) => {
+      if (item.id === slotId) {
+        return { ...item, postId, status: 'assigned' as const };
+      }
+      // Remove from previous slot if any
+      if (item.postId === postId) {
+        return { ...item, postId: undefined, status: 'empty' as const };
+      }
+      return item;
+    });
+
+    onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+  };
+
+  // Handle unscheduling a post from calendar
+  const handleUnschedulePost = (postId: string) => {
+    if (!activeCalendar) return;
+
+    const updatedTimeline = activeCalendar.timeline?.map((item) => {
+      if (item.postId === postId) {
+        return { ...item, postId: undefined, status: 'empty' as const };
+      }
+      return item;
+    });
+
+    onUpdateCalendar(activeCalendar.id, { timeline: updatedTimeline });
+  };
+
   const handleCreateFromTitle = (title: BlogTitle) => {
     const contentType = contentTypes.find((t) => t.type === title.contentType);
+
+    // Auto-map to calendar if enabled
+    let scheduledDate: string | undefined = undefined;
+    if (autoMapEnabled && activeCalendar) {
+      const emptySlot = activeCalendar.timeline?.find((item) => item.status === 'empty' || item.status === 'planned');
+      if (emptySlot) {
+        scheduledDate = emptySlot.scheduledDate;
+      }
+    }
 
     onCreatePost({
       strategyId: strategy.id,
@@ -2137,6 +2630,7 @@ function ContentTab({
       faqs: [],
       internalLinks: [],
       externalLinks: [],
+      scheduledDate,
     });
   };
 
@@ -2202,15 +2696,23 @@ function ContentTab({
         </div>
       </div>
 
-      {titles.filter((t) => t.status === 'selected').length > 0 && posts.length === 0 && (
+      {titles.filter((t) => t.status === 'selected' && !posts.some((p) => p.titleId === t.id)).length > 0 && (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Create Posts from Selected Titles</h3>
           <div className="space-y-2">
             {titles
-              .filter((t) => t.status === 'selected')
+              .filter((t) => t.status === 'selected' && !posts.some((p) => p.titleId === t.id))
               .map((title) => (
                 <div key={title.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                  <span className="text-sm text-slate-200">{title.title}</span>
+                  <div className="flex-1">
+                    <span className="text-sm text-slate-200">{title.title}</span>
+                    {title.scheduledDate && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-green-400">
+                        <Calendar className="w-3 h-3" />
+                        <span>{new Date(title.scheduledDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => handleCreateFromTitle(title)}
                     className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
@@ -2248,7 +2750,7 @@ function ContentTab({
               >
                 <div className="flex-1">
                   <div className="font-medium text-slate-200">{post.title}</div>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
                     <span
                       className={cn(
                         'text-xs px-2 py-0.5 rounded-full',
@@ -2264,6 +2766,13 @@ function ContentTab({
                     <span className="text-xs text-slate-500">{post.contentType}</span>
                     {post.seoAnalysis && (
                       <span className="text-xs text-slate-500">{post.seoAnalysis.wordCount} words</span>
+                    )}
+                    {post.scheduledDate && (
+                      <span className="text-xs text-green-400 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(post.scheduledDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {post.scheduledTime && <span className="text-slate-400">@ {post.scheduledTime}</span>}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -2324,6 +2833,74 @@ function ContentTab({
                       </div>
                     </div>
                   )}
+
+                  {/* Reschedule Section */}
+                  <div className="bg-slate-900/50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary-400" />
+                      Schedule Publication
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">Date</label>
+                        <input
+                          type="date"
+                          value={post.scheduledDate ? new Date(post.scheduledDate).toISOString().split('T')[0] : ''}
+                          onChange={(e) => {
+                            const newDate = e.target.value ? new Date(e.target.value).toISOString() : undefined;
+                            onUpdatePost(post.id, { scheduledDate: newDate });
+                          }}
+                          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">Time</label>
+                        <input
+                          type="time"
+                          value={post.scheduledTime}
+                          onChange={(e) => onUpdatePost(post.id, { scheduledTime: e.target.value })}
+                          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                        />
+                      </div>
+                    </div>
+                    {/* Swap with other posts */}
+                    {posts.filter(p => p.id !== post.id && p.scheduledDate).length > 0 && (
+                      <div className="mt-3">
+                        <label className="block text-xs text-slate-500 mb-2">Swap date with:</label>
+                        <div className="flex flex-wrap gap-2">
+                          {posts
+                            .filter(p => p.id !== post.id && p.scheduledDate)
+                            .slice(0, 5)
+                            .map(otherPost => (
+                              <button
+                                key={otherPost.id}
+                                onClick={() => {
+                                  // Swap dates
+                                  const tempDate = post.scheduledDate;
+                                  const tempTime = post.scheduledTime;
+                                  onUpdatePost(post.id, {
+                                    scheduledDate: otherPost.scheduledDate,
+                                    scheduledTime: otherPost.scheduledTime
+                                  });
+                                  onUpdatePost(otherPost.id, {
+                                    scheduledDate: tempDate,
+                                    scheduledTime: tempTime
+                                  });
+                                }}
+                                className="text-xs px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 truncate max-w-32"
+                                title={otherPost.title}
+                              >
+                                <span className="text-green-400">
+                                  {new Date(otherPost.scheduledDate!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                                {' - '}
+                                {otherPost.title.length > 15 ? otherPost.title.slice(0, 15) + '...' : otherPost.title}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-2">
                     {post.status === 'draft' && (
