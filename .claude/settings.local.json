@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"require\\('./src/routes/ai.ts'\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -X POST http://localhost:11434/api/chat -H \"Content-Type: application/json\" -d '{\"model\":\"llama3\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}],\"stream\":false}' --connect-timeout 3 --max-time 5)",
+      "Bash(curl *)",
+      "Bash(npx tsx *)",
+      "Bash(node *)",
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")",
+      "Bash(findstr \"node\")",
+      "Bash(tasklist)",
+      "Bash(Select-String \"newsletter-content-os\")",
+      "Bash(Select-Object -First 15)",
+      "Bash(findstr \"newsletter-content-os\")"
+    ]
+  }
+}
