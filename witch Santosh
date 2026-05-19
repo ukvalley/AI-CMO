@@ -1,0 +1,23 @@
+[33m3a57bbc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: checkout: moving from Santosh to main
+[33m9a6e0c0[m[33m ([m[1;31morigin/Santosh[m[33m, [m[1;32mSantosh[m[33m)[m HEAD@{1}: checkout: moving from main to Santosh
+[33m3a57bbc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: checkout: moving from Santosh to main
+[33m9a6e0c0[m[33m ([m[1;31morigin/Santosh[m[33m, [m[1;32mSantosh[m[33m)[m HEAD@{3}: checkout: moving from main to Santosh
+[33m3a57bbc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{4}: checkout: moving from Santosh to main
+[33m9a6e0c0[m[33m ([m[1;31morigin/Santosh[m[33m, [m[1;32mSantosh[m[33m)[m HEAD@{5}: commit: Update In Newslater Module
+[33m1a1f5eb[m HEAD@{6}: checkout: moving from main to Santosh
+[33m3a57bbc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{7}: reset: moving to HEAD~1
+[33me5c205e[m HEAD@{8}: checkout: moving from Santosh to main
+[33m1a1f5eb[m HEAD@{9}: checkout: moving from main to Santosh
+[33me5c205e[m HEAD@{10}: commit: Update In Newslater
+[33m3a57bbc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{11}: reset: moving to HEAD
+[33m3a57bbc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{12}: pull origin main: Fast-forward
+[33mb213688[m HEAD@{13}: checkout: moving from Santosh to main
+[33m1a1f5eb[m HEAD@{14}: commit: NewsLater Module Complete
+[33mb213688[m HEAD@{15}: checkout: moving from main to Santosh
+[33mb213688[m HEAD@{16}: pull origin main: Fast-forward
+[33m91cee14[m HEAD@{17}: pull origin main: Fast-forward
+[33mfeb60cc[m[33m ([m[1;32mNiket[m[33m)[m HEAD@{18}: pull origin main: Fast-forward
+[33mbef3ee3[m HEAD@{19}: checkout: moving from Niket to main
+[33mfeb60cc[m[33m ([m[1;32mNiket[m[33m)[m HEAD@{20}: pull origin main: Fast-forward
+[33m271c6a1[m[33m ([m[1;31morigin/Niket[m[33m)[m HEAD@{21}: checkout: moving from main to Niket
+[33mbef3ee3[m HEAD@{22}: clone: from https://github.com/ukvalley/AI-CMO.git
