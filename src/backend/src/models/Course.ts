@@ -391,6 +391,29 @@ CourseSchema.pre('save', function (this: ICourse) {
 export const Course = mongoose.model<ICourse>('Course', CourseSchema);
 
 // ============================================
+// QUIZ QUESTION (shared by chapters and lessons)
+// ============================================
+
+export interface IQuizQuestion extends Document {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation?: string;
+}
+
+const QuizQuestionSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    question: { type: String, required: true },
+    options: [String],
+    correctAnswer: { type: Number, required: true },
+    explanation: { type: String },
+  },
+  { _id: false }
+);
+
+// ============================================
 // COURSE CHAPTER
 // ============================================
 
@@ -408,6 +431,7 @@ export interface ICourseChapter extends Document {
   duration?: string;
   lessonCount: number;
   learningObjectives: string[];
+  quizQuestions: IQuizQuestion[];
   internalNotes?: string;
   aiGenerated: boolean;
   createdAt: Date;
@@ -463,6 +487,7 @@ const CourseChapterSchema = new Schema<ICourseChapter>(
       default: 0,
     },
     learningObjectives: [String],
+    quizQuestions: [QuizQuestionSchema],
     internalNotes: {
       type: String,
       trim: true,
@@ -495,25 +520,6 @@ export const CourseChapter = mongoose.model<ICourseChapter>('CourseChapter', Cou
 
 export type LessonFormat = 'video' | 'text' | 'audio' | 'pdf' | 'presentation' | 'interactive' | 'quiz';
 export type LessonStatus = 'draft' | 'review' | 'approved' | 'published';
-
-export interface IQuizQuestion extends Document {
-  id: string;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation?: string;
-}
-
-const QuizQuestionSchema = new Schema(
-  {
-    id: { type: String, required: true },
-    question: { type: String, required: true },
-    options: [String],
-    correctAnswer: { type: Number, required: true },
-    explanation: { type: String },
-  },
-  { _id: false }
-);
 
 export interface ILessonAttachment extends Document {
   url: string;

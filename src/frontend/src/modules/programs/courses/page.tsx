@@ -99,6 +99,7 @@ const FIELD_AI_PROMPTS: Record<string, { system: string; promptFn: (ctx: string)
   metaDescription: { system: 'You are an SEO expert. Write SEO meta descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write an SEO meta description (max 160 characters) for: ${ctx}`, maxTokens: 300 },
   chapterDescription: { system: 'You are a course content creator. Write chapter descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a chapter description for: ${ctx}`, maxTokens: 800 },
   chapterObjectives: { system: 'You are a course content creator. Generate learning objectives. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate learning objectives for chapter: ${ctx}`, maxTokens: 600 },
+  chapterQuiz: { system: 'You are an expert assessment creator for business courses. Generate multiple-choice quiz questions. Use British English. Respond with a JSON object containing a "questions" array. Each question must have: question (string), options (array of 4 strings), correctAnswer (number 0-3), explanation (string).', promptFn: (ctx) => `Generate 3-5 quiz questions for the chapter: ${ctx}`, maxTokens: 2000 },
   lessonDescription: { system: 'You are a course content creator. Write lesson descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a lesson description for: ${ctx}`, maxTokens: 800 },
   lessonContent: { system: 'You are a course content creator. Write comprehensive lesson content. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write comprehensive lesson content for: ${ctx}`, maxTokens: 2000 },
   lessonObjectives: { system: 'You are a course content creator. Generate learning objectives. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate learning objectives for lesson: ${ctx}`, maxTokens: 600 },
@@ -1043,6 +1044,34 @@ function ChapterDetailView({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Chapter Quiz Questions */}
+      {chapter.quizQuestions?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Quiz Questions ({chapter.quizQuestions.length})</label>
+          <div className="mt-2 space-y-3">
+            {chapter.quizQuestions.map((q, qi) => (
+              <div key={q.id || qi} className="bg-[#151920] rounded-lg border border-white/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[#C8FF2E] text-xs font-medium">Q{qi + 1}</span>
+                  <span className="text-white text-sm">{q.question}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {q.options.map((opt, oi) => (
+                    <div
+                      key={oi}
+                      className={`px-2 py-1.5 rounded text-xs ${oi === q.correctAnswer ? 'bg-[#C8FF2E]/15 text-[#C8FF2E] border border-[#C8FF2E]/30' : 'bg-[#0d1117] text-[#878e9a] border border-white/5'}`}
+                    >
+                      <span className="font-medium mr-1">{String.fromCharCode(65 + oi)}.</span>{opt}
+                    </div>
+                  ))}
+                </div>
+                {q.explanation && <p className="text-[#686f7e] text-xs mt-2 italic">Explanation: {q.explanation}</p>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -2058,9 +2087,61 @@ function ChapterForm({
 }) {
   const [form, setForm] = useState<Partial<CourseChapter>>(chapter || {
     title: '', status: 'draft', order: 0, lessonCount: 0,
-    learningObjectives: [], aiGenerated: false,
+    learningObjectives: [], quizQuestions: [], aiGenerated: false,
   });
   const [chAiField, setChAiField] = useState<string>('');
+  const [showQuizEditor, setShowQuizEditor] = useState((form.quizQuestions?.length ?? 0) > 0);
+
+  const handleAddQuestion = () => {
+    const currentQuestions = form.quizQuestions || [];
+    setForm(prev => ({ ...prev, quizQuestions: [...currentQuestions, { id: `q-${Date.now()}`, question: '', options: ['', '', '', ''], correctAnswer: 0, explanation: '' }] }));
+  };
+  const handleRemoveQuestion = (index: number) => {
+    setForm(prev => ({ ...prev, quizQuestions: (prev.quizQuestions || []).filter((_, i) => i !== index) }));
+  };
+  const handleUpdateQuestion = (index: number, field: string, value: any) => {
+    setForm(prev => {
+      const questions = [...(prev.quizQuestions || [])];
+      questions[index] = { ...questions[index], [field]: value };
+      return { ...prev, quizQuestions: questions };
+    });
+  };
+  const handleUpdateOption = (qIndex: number, oIndex: number, value: string) => {
+    setForm(prev => {
+      const questions = [...(prev.quizQuestions || [])];
+      const options = [...questions[qIndex].options];
+      options[oIndex] = value;
+      questions[qIndex] = { ...questions[qIndex], options };
+      return { ...prev, quizQuestions: questions };
+    });
+  };
+  const handleGenerateQuiz = async () => {
+    setChAiField('quiz');
+    try {
+      const context = `${form.title || 'Untitled Chapter'}${form.description ? ` — ${form.description}` : ''}`;
+      const messages: GLMMessage[] = [
+        { role: 'system', content: FIELD_AI_PROMPTS.chapterQuiz.system },
+        { role: 'user', content: FIELD_AI_PROMPTS.chapterQuiz.promptFn(context) },
+      ];
+      const result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: FIELD_AI_PROMPTS.chapterQuiz.maxTokens, responseFormat: 'json_object' }));
+      const parsed = parseJsonFromAI(result);
+      if (parsed?.questions && Array.isArray(parsed.questions)) {
+        const newQuestions: QuizQuestion[] = parsed.questions.map((q: any, i: number) => ({
+          id: `q-${Date.now()}-${i}`,
+          question: q.question || '',
+          options: Array.isArray(q.options) ? q.options.slice(0, 4).concat(Array(4).fill('')).slice(0, 4) : ['', '', '', ''],
+          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+          explanation: q.explanation || '',
+        }));
+        setForm(prev => ({ ...prev, quizQuestions: [...(prev.quizQuestions || []), ...newQuestions] }));
+        setShowQuizEditor(true);
+      }
+    } catch (err: any) {
+      console.error('Quiz generation failed:', err);
+    } finally {
+      setChAiField('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2069,8 +2150,8 @@ function ChapterForm({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onCancel}>
-      <div className="bg-[#0d1117] border border-white/10 rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <div className="bg-[#0d1117] border border-white/10 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 bg-[#0d1117] z-10">
           <h2 className="text-xl font-bold text-white">{chapter ? 'Edit Chapter' : 'Create Chapter'}</h2>
           <button onClick={onCancel} className="text-[#686f7e] hover:text-white"><X className="w-5 h-5" /></button>
         </div>
@@ -2115,7 +2196,53 @@ function ChapterForm({
               {CHAPTER_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
-          <div className="flex items-center justify-end gap-3 pt-4">
+
+          {/* Quiz Questions Section */}
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <button type="button" onClick={() => setShowQuizEditor(!showQuizEditor)} className="flex items-center gap-2 text-white font-medium">
+                {showQuizEditor ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                Quiz Questions ({(form.quizQuestions || []).length})
+              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleGenerateQuiz} disabled={chAiField === 'quiz'} className="flex items-center gap-1 px-2 py-1 text-xs bg-[#C8FF2E]/10 text-[#C8FF2E] hover:bg-[#C8FF2E]/20 rounded border border-[#C8FF2E]/30 disabled:opacity-40 transition-colors">
+                  {chAiField === 'quiz' ? <div className="w-3 h-3 border-2 border-[#C8FF2E]/30 border-t-[#C8FF2E] rounded-full animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  Generate Quiz
+                </button>
+                {showQuizEditor && <button type="button" onClick={handleAddQuestion} className="flex items-center gap-1 px-2 py-1 text-xs bg-[#151920] border border-white/10 rounded text-[#afb6c4] hover:border-[#C8FF2E]/30 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Question
+                </button>}
+              </div>
+            </div>
+            {showQuizEditor && (form.quizQuestions || []).length === 0 && (
+              <p className="text-sm text-[#686f7e] text-center py-4">No quiz questions yet. Click "Add Question" or "Generate Quiz" to add some.</p>
+            )}
+            {showQuizEditor && (form.quizQuestions || []).map((q, qi) => (
+              <div key={q.id || qi} className="bg-[#0d1117] rounded-lg p-3 border border-white/5 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-[#C8FF2E] font-medium">Q{qi + 1}</span>
+                  <button type="button" onClick={() => handleRemoveQuestion(qi)} className="text-[#686f7e] hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
+                </div>
+                <input type="text" value={q.question} onChange={(e) => handleUpdateQuestion(qi, 'question', e.target.value)} placeholder="Question text..."
+                  className="w-full px-2 py-1.5 bg-[#151920] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#C8FF2E]/50 mb-2" />
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {q.options.map((opt, oi) => (
+                    <div key={oi} className="flex items-center gap-1">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer ${oi === q.correctAnswer ? 'bg-[#C8FF2E]/20 text-[#C8FF2E]' : 'bg-[#151920] text-[#686f7e]'}`} onClick={() => handleUpdateQuestion(qi, 'correctAnswer', oi)}>
+                        {String.fromCharCode(65 + oi)}
+                      </span>
+                      <input type="text" value={opt} onChange={(e) => handleUpdateOption(qi, oi, e.target.value)} placeholder={`Option ${oi + 1}`}
+                        className="flex-1 px-2 py-1 bg-[#151920] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#C8FF2E]/50" />
+                    </div>
+                  ))}
+                </div>
+                <textarea value={q.explanation || ''} onChange={(e) => handleUpdateQuestion(qi, 'explanation', e.target.value)} placeholder="Explanation (optional)" rows={1}
+                  className="w-full px-2 py-1 bg-[#151920] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
             <button type="button" onClick={onCancel} className="px-4 py-2 text-[#878e9a] hover:text-white transition-colors">Cancel</button>
             <button type="submit" className="px-6 py-2 bg-[#C8FF2E] hover:bg-[#d4ff5c] text-white rounded-lg font-medium transition-colors">
               {chapter ? 'Update Chapter' : 'Create Chapter'}

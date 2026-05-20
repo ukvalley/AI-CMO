@@ -1881,6 +1881,7 @@ export interface CourseChapter extends BaseEntity {
   duration?: string;
   lessonCount: number;
   learningObjectives: string[];
+  quizQuestions: QuizQuestion[];
   internalNotes?: string;
   aiGenerated: boolean;
 }
