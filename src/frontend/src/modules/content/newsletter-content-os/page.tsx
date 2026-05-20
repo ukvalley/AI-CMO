@@ -293,7 +293,7 @@ function useFoundationalContext(strategy: NewsletterStrategy | null): Foundation
 
       // Then fetch from API to get latest data and fill gaps
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3101/api';
+        const baseUrl = process.env.BACKEND_URL;
         const token = typeof window !== 'undefined' ? useAuthStore.getState().token : '';
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
