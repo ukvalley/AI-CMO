@@ -1881,6 +1881,7 @@ export interface CourseChapter extends BaseEntity {
   duration?: string;
   lessonCount: number;
   learningObjectives: string[];
+  quizQuestions: QuizQuestion[];
   internalNotes?: string;
   aiGenerated: boolean;
 }
@@ -2345,14 +2346,122 @@ export interface SOP extends BaseEntity {
 // EVENTS
 // ============================================
 
-export type EventType = 'webinar' | 'workshop' | 'conference' | 'meetup' | 'demo-day';
+export type EventCategoryStatus = 'active' | 'archived';
+export type EventStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived' | 'cancelled';
+export type EventVisibility = 'private' | 'internal' | 'public';
+export type EventPriority = 'low' | 'medium' | 'high' | 'critical';
+export type EventMode = 'online' | 'offline' | 'hybrid';
+export type EventType = 'meeting' | 'workshop' | 'conference' | 'webinar' | 'training' | 'product_launch' | 'campaign_event' | 'sop_training' | 'team_activity' | 'onboarding' | 'hr_activity' | 'other';
+export type EventAudienceType = 'public' | 'internal' | 'team_specific' | 'department_specific' | 'admin_only';
+export type SessionStatus = 'draft' | 'review' | 'approved' | 'published' | 'cancelled';
+export type ResourceType = 'presentation' | 'pdf' | 'docx' | 'video' | 'audio' | 'image' | 'url' | 'other';
+export type ResourceStatus = 'draft' | 'active' | 'archived';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface EventCategory extends BaseEntity {
+  name: string;
+  slug?: string;
+  description?: string;
+  parentId?: string;
+  icon?: string;
+  colour?: string;
+  order: number;
+  eventCount: number;
+  status: EventCategoryStatus;
+}
+
+export interface EventAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size?: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+  order: number;
+}
 
 export interface Event extends BaseEntity {
-  name: string;
-  type: EventType;
-  date?: string;
-  goals?: string;
-  eventPlan?: string;
+  title: string;
+  slug?: string;
+  shortDescription?: string;
+  detailedDescription?: string;
+  summary?: string;
+  eventType: EventType;
+  tags: string[];
+  status: EventStatus;
+  priority: EventPriority;
+  visibility: EventVisibility;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string;
+  timeZone?: string;
+  duration?: string;
+  eventMode: EventMode;
+  location?: string;
+  meetingLink?: string;
+  organizer?: string;
+  coordinator?: string;
+  categoryId?: string;
+  audienceType: EventAudienceType;
+  departmentId?: string;
+  teamId?: string;
+  productId?: string;
+  serviceId?: string;
+  sopId?: string;
+  campaignId?: string;
+  objectives: string[];
+  expectedOutcomes: string[];
+  prerequisites: string[];
+  relatedEventIds: string[];
+  relatedCourseIds: string[];
+  relatedSopIds: string[];
+  thumbnail?: string;
+  banner?: string;
+  attachments: EventAttachment[];
+  documentUrls: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  seoKeywords: string[];
+  version: number;
+  reviewNotes?: string;
+  approvalStatus?: ApprovalStatus;
+  viewCount: number;
+  rsvpCount: number;
+  attendanceCount: number;
+  isFeatured: boolean;
+  aiGenerated: boolean;
+}
+
+export interface EventSession extends BaseEntity {
+  eventId: string;
+  title: string;
+  slug?: string;
+  description?: string;
+  order: number;
+  status: SessionStatus;
+  duration?: string;
+  speakerInfo?: string;
+  objectives: string[];
+  attachments: EventAttachment[];
+  checklistItems: ChecklistItem[];
+  aiNotes?: string;
+  aiSummary?: string;
+  aiGenerated: boolean;
+}
+
+export interface EventResource extends BaseEntity {
+  eventId: string;
+  sessionId?: string;
+  title: string;
+  type: ResourceType;
+  url?: string;
+  description?: string;
+  order: number;
+  status: ResourceStatus;
 }
 
 // ============================================
@@ -2824,9 +2933,6 @@ export type ChunkStatus = 'pending' | 'generating' | 'completed' | 'failed';
 
 // Approval Stages
 export type ApprovalStage = 'content-review' | 'seo-review' | 'editorial-review' | 'final-approval';
-
-// Approval Status
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 // Asset Suggestion Types
 export type AssetSuggestionType =

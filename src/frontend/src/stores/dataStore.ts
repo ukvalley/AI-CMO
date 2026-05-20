@@ -54,6 +54,9 @@ import type {
   Competitor,
   SOP,
   Event,
+  EventCategory,
+  EventSession,
+  EventResource,
   LegalDocument,
   // Blog Content OS
   BlogStrategy,
@@ -164,6 +167,9 @@ interface ModuleData {
   prItems: PRItem[];
   emailTemplates: EmailTemplate[];
   events: Event[];
+  eventCategories: EventCategory[];
+  eventSessions: EventSession[];
+  eventResources: EventResource[];
 
   // Social Media Content OS
   socialMediaCalendar: SocialMediaCalendar | null;
@@ -266,6 +272,9 @@ const createEmptyModuleData = (): ModuleData => ({
   prItems: [],
   emailTemplates: [],
   events: [],
+  eventCategories: [],
+  eventSessions: [],
+  eventResources: [],
 
   // Social Media Content OS
   socialMediaCalendar: null,

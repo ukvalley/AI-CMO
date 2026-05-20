@@ -144,6 +144,10 @@ export const loadModels = () => {
       Course: createMockModel('courses'),
       CourseChapter: createMockModel('courseChapters'),
       CourseLesson: createMockModel('courseLessons'),
+      EventCategory: createMockModel('eventCategories'),
+      Event: createMockModel('events'),
+      EventSession: createMockModel('eventSessions'),
+      EventResource: createMockModel('eventResources'),
     };
   } else {
     // Import and return real models
@@ -170,6 +174,7 @@ export const loadModels = () => {
     const { Testimonial: RealTestimonial } = require('./Testimonial');
     const { SalesScript: RealSalesScript } = require('./SalesScript');
     const { CourseCategory: RealCourseCategory, Course: RealCourse, CourseChapter: RealCourseChapter, CourseLesson: RealCourseLesson } = require('./Course');
+    const { EventCategory: RealEventCategory, Event: RealEvent, EventSession: RealEventSession, EventResource: RealEventResource } = require('./Event');
 
     models = {
       User: RealUser,
@@ -200,6 +205,10 @@ export const loadModels = () => {
       Course: RealCourse,
       CourseChapter: RealCourseChapter,
       CourseLesson: RealCourseLesson,
+      EventCategory: RealEventCategory,
+      Event: RealEvent,
+      EventSession: RealEventSession,
+      EventResource: RealEventResource,
     };
   }
 
@@ -233,3 +242,4 @@ export type { IFAQ, IFAQCategory } from './FAQ';
 export type { ITestimonial, TestimonialType, TestimonialStatus, CollectionMethod, AuthorityLevel, DetailDepth } from './Testimonial';
 export type { ISalesScript, ScriptType, ScriptStatus, FunnelStage, AudienceType, CommunicationChannel, ScriptPriority } from './SalesScript';
 export type { ICourseCategory, CourseCategoryStatus, ICourse, CourseStatus, CourseVisibility, CourseDifficulty, CourseFormat, CourseAudienceType, ICourseChapter, ChapterStatus, ICourseLesson, LessonFormat, LessonStatus } from './Course';
+export type { IEventCategory, EventCategoryStatus, IEvent, EventStatus, EventVisibility, EventPriority, EventMode, EventType as EventEventType, EventAudienceType, ApprovalStatus, IEventSession, SessionStatus, IEventResource, ResourceType, ResourceStatus } from './Event';
