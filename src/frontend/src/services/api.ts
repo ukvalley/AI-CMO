@@ -5,7 +5,7 @@
 
 import { useAuthStore } from '@/stores';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3101/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /**
  * Transform MongoDB _id to id for frontend compatibility

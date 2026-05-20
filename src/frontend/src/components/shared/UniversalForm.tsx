@@ -636,7 +636,7 @@ function ImageGalleryInput({ value, onChange, placeholder }: ImageGalleryInputPr
                 </div>
               ) : (
                 <img
-                  src={url.startsWith('/') ? `${process.env.NEXT_PUBLIC_API_URL}${url}` : url}
+                  src={url.startsWith('/') ? `${process.env.BACKEND_URL}${url}` : url}
                   alt={`Product image ${index + 1}`}
                   className="w-full h-full object-cover rounded-lg border border-white/10"
                   onError={() => handleImageError(index)}
@@ -761,7 +761,7 @@ function PdfUploadInput({ value, onChange, placeholder }: PdfUploadInputProps) {
   const getFileName = (url: string) => {
     if (!url) return '';
     try {
-      const pathname = new URL(url.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL}${url}`).pathname;
+      const pathname = new URL(url.startsWith('http') ? url : `${process.env.BACKEND_URL}${url}`).pathname;
       return pathname.split('/').pop() || url;
     } catch {
       return url.split('/').pop() || url;
@@ -783,7 +783,7 @@ function PdfUploadInput({ value, onChange, placeholder }: PdfUploadInputProps) {
           </div>
           <div className="flex gap-2">
             <a
-              href={value.startsWith('/') ? `${process.env.NEXT_PUBLIC_API_URL}${value}` : value}
+              href={value.startsWith('/') ? `${process.env.BACKEND_URL}${value}` : value}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 text-sm bg-[#C8FF2E]/10 text-[#C8FF2E] rounded-lg hover:bg-[#C8FF2E]/20 transition-colors"
