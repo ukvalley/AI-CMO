@@ -1634,6 +1634,10 @@ function AIGenerateTab({
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiResult, setAiResult] = useState<string>('');
   const [aiError, setAiError] = useState<string>('');
+  const [parsedResult, setParsedResult] = useState<any>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string>('');
 
   // Description generation state
   const [descTitle, setDescTitle] = useState('');
@@ -1663,6 +1667,8 @@ function AIGenerateTab({
     setIsGenerating(true);
     setAiError('');
     setAiResult('');
+    setParsedResult(null);
+    setSaveSuccess('');
 
     try {
       let result = '';
@@ -1674,7 +1680,7 @@ function AIGenerateTab({
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1686,7 +1692,7 @@ function AIGenerateTab({
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 4000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1697,7 +1703,7 @@ function AIGenerateTab({
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 3000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1726,6 +1732,204 @@ function AIGenerateTab({
     }
   };
 
+  // Save AI result to course data
+  const handleSaveResult = async () => {
+    if (!parsedResult && aiMode !== 'enhance') return;
+    setIsSaving(true);
+    setSaveSuccess('');
+
+    try {
+      const store = useDataStore.getState();
+      switch (aiMode) {
+        case 'description': {
+          if (!selectedCourseId) { setIsSaving(false); return; }
+          const updates: Partial<Course> = {};
+          if (parsedResult.shortDescription) updates.shortDescription = parsedResult.shortDescription;
+          if (parsedResult.detailedDescription) updates.detailedDescription = parsedResult.detailedDescription;
+          if (parsedResult.summary) updates.summary = parsedResult.summary;
+          if (Array.isArray(parsedResult.learningObjectives)) updates.learningObjectives = parsedResult.learningObjectives;
+          if (Array.isArray(parsedResult.outcomes)) updates.outcomes = parsedResult.outcomes;
+          updates.aiGenerated = true;
+          await courseApi.update(selectedCourseId, updates);
+          store.updateItem('courses', selectedCourseId, updates);
+          setSaveSuccess('Description saved to course!');
+          onCourseCreated();
+          break;
+        }
+        case 'structure': {
+          if (!selectedCourseId || !parsedResult?.chapters) { setIsSaving(false); return; }
+          const chapters = parsedResult.chapters;
+          for (let i = 0; i < chapters.length; i++) {
+            const ch = chapters[i];
+            const chapterData = { title: ch.title || `Chapter ${i + 1}`, description: ch.description || '', order: i, status: 'draft' as const, learningObjectives: ch.learningObjectives || [], aiGenerated: true, courseId: selectedCourseId, companyId };
+            const chapter = await courseChapterApi.create(chapterData);
+            store.addItem('courseChapters', (chapter.data || chapter) as any);
+            if (Array.isArray(ch.lessons)) {
+              for (let j = 0; j < ch.lessons.length; j++) {
+                const les = ch.lessons[j];
+                const lessonData = { title: les.title || `Lesson ${j + 1}`, description: les.description || '', format: (les.format || 'text') as LessonFormat, duration: les.duration || '', order: j, status: 'draft' as const, learningObjectives: [], keyTakeaways: [], videoUrls: [], documentUrls: [], quizQuestions: [], attachments: [], isFree: false, aiGenerated: true, chapterId: ((chapter.data || chapter) as any).id, courseId: selectedCourseId, companyId };
+                const lesson = await courseLessonApi.create(lessonData);
+                store.addItem('courseLessons', (lesson.data || lesson) as any);
+              }
+            }
+          }
+          setSaveSuccess(`Created ${chapters.length} chapters with lessons!`);
+          onCourseCreated();
+          break;
+        }
+        case 'quiz': {
+          if (!selectedCourseId || !parsedResult?.questions) { setIsSaving(false); return; }
+          const storeData = store.getItems('courseLessons') as CourseLesson[];
+          const lesson = storeData.find(l => l.courseId === selectedCourseId);
+          if (!lesson) { setSaveSuccess('No lesson found for this course.'); setIsSaving(false); return; }
+          const quizQuestions = parsedResult.questions.map((q: any) => ({
+            question: q.question || '',
+            options: Array.isArray(q.options) ? q.options : [],
+            correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+            explanation: q.explanation || '',
+          }));
+          await courseLessonApi.update(lesson.id, { quizQuestions: [...(lesson.quizQuestions || []), ...quizQuestions] });
+          store.updateItem('courseLessons', lesson.id, { quizQuestions: [...(lesson.quizQuestions || []), ...quizQuestions] });
+          setSaveSuccess(`Added ${quizQuestions.length} quiz questions!`);
+          onCourseCreated();
+          break;
+        }
+        case 'enhance': {
+          if (!selectedCourseId) { setIsSaving(false); return; }
+          await courseApi.update(selectedCourseId, { detailedDescription: aiResult, aiGenerated: true });
+          store.updateItem('courses', selectedCourseId, { detailedDescription: aiResult, aiGenerated: true });
+          setSaveSuccess('Enhanced content saved to course!');
+          onCourseCreated();
+          break;
+        }
+      }
+    } catch (error: any) {
+      setAiError(error.message || 'Failed to save. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Render structured AI result based on mode
+  const renderStructuredResult = () => {
+    if (!parsedResult && aiMode !== 'enhance') {
+      if (aiResult) {
+        return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+      }
+      return null;
+    }
+
+    if (aiMode === 'enhance') {
+      return (
+        <div className="space-y-4">
+          <div className="text-sm text-[#878e9a] mb-1">Enhanced Content</div>
+          <div className="text-[#afb6c4] whitespace-pre-wrap leading-relaxed bg-[#0d1117] rounded-lg p-4 max-h-[400px] overflow-y-auto">{aiResult}</div>
+        </div>
+      );
+    }
+
+    const data = parsedResult;
+
+    if (aiMode === 'description') {
+      return (
+        <div className="space-y-4">
+          {data.shortDescription && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Short Description</div>
+              <div className="text-sm text-[#afb6c4]">{data.shortDescription}</div>
+            </div>
+          )}
+          {data.detailedDescription && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Detailed Description</div>
+              <div className="text-sm text-[#afb6c4] whitespace-pre-wrap leading-relaxed">{data.detailedDescription}</div>
+            </div>
+          )}
+          {data.summary && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Summary</div>
+              <div className="text-sm text-[#afb6c4]">{data.summary}</div>
+            </div>
+          )}
+          {Array.isArray(data.learningObjectives) && data.learningObjectives.length > 0 && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Learning Objectives</div>
+              <ul className="space-y-1">{data.learningObjectives.map((obj: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{obj}</li>
+              ))}</ul>
+            </div>
+          )}
+          {Array.isArray(data.outcomes) && data.outcomes.length > 0 && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Expected Outcomes</div>
+              <ul className="space-y-1">{data.outcomes.map((out: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{out}</li>
+              ))}</ul>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (aiMode === 'structure') {
+      const chapters = data.chapters || data;
+      if (!Array.isArray(chapters)) return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+      return (
+        <div className="space-y-3">
+          {chapters.map((ch: any, ci: number) => (
+            <div key={ci} className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-[#C8FF2E]/20 text-[#C8FF2E] text-xs font-bold px-2 py-0.5 rounded">Ch {ci + 1}</span>
+                <span className="text-white font-medium text-sm">{ch.title}</span>
+              </div>
+              {ch.description && <p className="text-sm text-[#878e9a] mb-2">{ch.description}</p>}
+              {Array.isArray(ch.learningObjectives) && ch.learningObjectives.length > 0 && (
+                <div className="mb-2">
+                  <span className="text-xs text-[#C8FF2E]">Objectives: </span>
+                  <span className="text-xs text-[#878e9a]">{ch.learningObjectives.join(', ')}</span>
+                </div>
+              )}
+              {Array.isArray(ch.lessons) && ch.lessons.length > 0 && (
+                <div className="ml-4 space-y-1">{ch.lessons.map((les: any, li: number) => (
+                  <div key={li} className="flex items-center gap-2 text-sm">
+                    <span className="text-[#878e9a]">{li + 1}.</span>
+                    <span className="text-[#afb6c4]">{les.title}</span>
+                    {les.format && <span className="text-xs text-[#686f7e]">({les.format})</span>}
+                    {les.duration && <span className="text-xs text-[#686f7e]">{les.duration}</span>}
+                  </div>
+                ))}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (aiMode === 'quiz') {
+      const questions = data.questions || data;
+      if (!Array.isArray(questions)) return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+      return (
+        <div className="space-y-3">
+          {questions.map((q: any, qi: number) => (
+            <div key={qi} className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-sm font-medium text-white mb-2">Q{qi + 1}: {q.question}</div>
+              <div className="grid grid-cols-1 gap-1 mb-2">
+                {Array.isArray(q.options) && q.options.map((opt: string, oi: number) => (
+                  <div key={oi} className={`text-sm px-2 py-1 rounded ${oi === q.correctAnswer ? 'bg-[#C8FF2E]/10 text-[#C8FF2E]' : 'text-[#878e9a]'}`}>
+                    {String.fromCharCode(65 + oi)}) {opt}
+                  </div>
+                ))}
+              </div>
+              {q.explanation && <div className="text-xs text-[#878e9a] italic">Explanation: {q.explanation}</div>}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+  };
+
   const aiModes = [
     { id: 'description' as const, label: 'Generate Description', icon: <FileText className="w-5 h-5" />, desc: 'Create course descriptions, summaries, objectives, and outcomes from a title.' },
     { id: 'structure' as const, label: 'Generate Structure', icon: <Layers className="w-5 h-5" />, desc: 'Create a full chapter and lesson outline from a course concept.' },
@@ -1743,7 +1947,7 @@ function AIGenerateTab({
         {aiModes.map(mode => (
           <button
             key={mode.id}
-            onClick={() => { setAiMode(mode.id); setAiResult(''); setAiError(''); }}
+            onClick={() => { setAiMode(mode.id); setAiResult(''); setAiError(''); setParsedResult(null); setSaveSuccess(''); }}
             className={`p-4 rounded-lg border text-left transition-all ${
               aiMode === mode.id
                 ? 'bg-[#C8FF2E]/20 border-[#C8FF2E] text-[#C8FF2E]'
@@ -1931,17 +2135,72 @@ function AIGenerateTab({
           )}
           {aiResult ? (
             <div className="space-y-3">
-              <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">
-                {aiResult}
-              </pre>
-              <div className="flex gap-2">
+              {renderStructuredResult()}
+              <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => navigator.clipboard.writeText(aiResult)}
                   className="flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm hover:border-[#C8FF2E]/30 transition-colors"
                 >
-                  Copy Result
+                  Copy JSON
                 </button>
               </div>
+              {/* Save to Course Section */}
+              {aiMode !== 'enhance' && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={selectedCourseId}
+                      onChange={(e) => setSelectedCourseId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50"
+                    >
+                      <option value="">Select course to save to...</option>
+                      {courses.map(c => (
+                        <option key={c.id} value={c.id}>{c.title}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleSaveResult}
+                      disabled={!selectedCourseId || isSaving}
+                      className="px-4 py-2 bg-[#C8FF2E] hover:bg-[#d4ff5c] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                    >
+                      {isSaving ? <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : <><Save className="w-4 h-4" />Save to Course</>}
+                    </button>
+                  </div>
+                  {saveSuccess && (
+                    <div className="mt-2 flex items-center gap-2 text-[#C8FF2E] text-sm">
+                      <CheckCircle2 className="w-4 h-4" />{saveSuccess}
+                    </div>
+                  )}
+                </div>
+              )}
+              {aiMode === 'enhance' && courses.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={selectedCourseId}
+                      onChange={(e) => setSelectedCourseId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50"
+                    >
+                      <option value="">Select course to save enhanced content...</option>
+                      {courses.map(c => (
+                        <option key={c.id} value={c.id}>{c.title}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleSaveResult}
+                      disabled={!selectedCourseId || isSaving}
+                      className="px-4 py-2 bg-[#C8FF2E] hover:bg-[#d4ff5c] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                    >
+                      {isSaving ? <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : <><Save className="w-4 h-4" />Save to Course</>}
+                    </button>
+                  </div>
+                  {saveSuccess && (
+                    <div className="mt-2 flex items-center gap-2 text-[#C8FF2E] text-sm">
+                      <CheckCircle2 className="w-4 h-4" />{saveSuccess}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">

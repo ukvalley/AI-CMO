@@ -12,7 +12,7 @@ import {
   Calendar, FolderOpen, Layers, FileText, Plus, Edit3,
   Trash2, Search, ChevronRight, X, Sparkles, Clock, MapPin,
   Users, Video, CheckCircle2, AlertCircle, Globe, Lock,
-  ArrowUpDown, Star, Tag, Loader2,
+  ArrowUpDown, Star, Tag, Loader2, Save,
 } from 'lucide-react';
 import { useAuthStore, useCompanyStore } from '@/stores';
 import { useDataStore } from '@/stores/dataStore';
@@ -1400,6 +1400,10 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiResult, setAiResult] = useState<string>('');
   const [aiError, setAiError] = useState<string>('');
+  const [parsedResult, setParsedResult] = useState<any>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string>('');
 
   // Description generation state
   const [descTitle, setDescTitle] = useState('');
@@ -1432,6 +1436,8 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
     setIsGenerating(true);
     setAiError('');
     setAiResult('');
+    setParsedResult(null);
+    setSaveSuccess('');
 
     try {
       let result = '';
@@ -1443,7 +1449,7 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1455,7 +1461,7 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 3000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1466,7 +1472,7 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1477,7 +1483,7 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
           ];
           result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
           const parsed = parseJsonFromAI(result);
-          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          if (parsed) { setParsedResult(parsed); setAiResult(JSON.stringify(parsed, null, 2)); }
           else setAiResult(result);
           break;
         }
@@ -1505,6 +1511,265 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Save AI result to event data
+  const handleSaveResult = async () => {
+    if (!parsedResult && aiMode !== 'enhance') return;
+    setIsSaving(true);
+    setSaveSuccess('');
+
+    try {
+      const store = useDataStore.getState();
+      switch (aiMode) {
+        case 'description': {
+          if (!selectedEventId) { setIsSaving(false); return; }
+          const updates: Partial<EventType> = {};
+          if (parsedResult.shortDescription) updates.shortDescription = parsedResult.shortDescription;
+          if (parsedResult.detailedDescription) updates.detailedDescription = parsedResult.detailedDescription;
+          if (parsedResult.summary) updates.summary = parsedResult.summary;
+          if (Array.isArray(parsedResult.objectives)) updates.objectives = parsedResult.objectives;
+          if (Array.isArray(parsedResult.expectedOutcomes)) updates.expectedOutcomes = parsedResult.expectedOutcomes;
+          updates.aiGenerated = true;
+          await eventApi.update(selectedEventId, updates);
+          store.updateItem('events', selectedEventId, updates);
+          setSaveSuccess('Description saved to event!');
+          onEventCreated();
+          break;
+        }
+        case 'agenda': {
+          if (!selectedEventId) { setIsSaving(false); return; }
+          const sessions = Array.isArray(parsedResult) ? parsedResult : (parsedResult.sessions || parsedResult.agenda || []);
+          if (!Array.isArray(sessions) || sessions.length === 0) { setSaveSuccess('No sessions found in result.'); setIsSaving(false); return; }
+          for (let i = 0; i < sessions.length; i++) {
+            const s = sessions[i];
+            const sessionData = { title: s.title || `Session ${i + 1}`, description: s.description || '', order: i, status: 'draft' as const, duration: s.duration || '', speakerInfo: s.speakerInfo || '', objectives: Array.isArray(s.objectives) ? s.objectives : [], attachments: [], checklistItems: Array.isArray(s.checklistItems) ? s.checklistItems.map((c: any, ci: number) => ({ id: `cl-${Date.now()}-${ci}`, text: c.text || '', done: false, order: c.order || ci + 1 })) : [], aiGenerated: true, eventId: selectedEventId, companyId };
+            const session = await eventSessionApi.create(sessionData);
+            store.addItem('eventSessions', (session.data || session) as any);
+          }
+          setSaveSuccess(`Created ${sessions.length} sessions!`);
+          onEventCreated();
+          break;
+        }
+        case 'checklist': {
+          if (!selectedEventId) { setIsSaving(false); return; }
+          const items = Array.isArray(parsedResult) ? parsedResult : (parsedResult.checklistItems || parsedResult.items || []);
+          if (!Array.isArray(items) || items.length === 0) { setSaveSuccess('No checklist items found.'); setIsSaving(false); return; }
+          const checklistItems = items.map((item: any, i: number) => ({ id: `cl-${Date.now()}-${i}`, text: item.text || '', done: false, order: item.order || i + 1 }));
+          const existingSessions = store.getItems('eventSessions') as EventSession[];
+          const session = existingSessions.find(s => s.eventId === selectedEventId);
+          if (session) {
+            const updated = [...(session.checklistItems || []), ...checklistItems];
+            await eventSessionApi.update(session.id, { checklistItems: updated });
+            store.updateItem('eventSessions', session.id, { checklistItems: updated });
+            setSaveSuccess(`Added ${checklistItems.length} checklist items to session!`);
+          } else {
+            const sessionData = { title: 'Event Checklist', description: 'Pre-event planning checklist', order: 0, status: 'draft' as const, objectives: [], attachments: [], checklistItems, aiGenerated: true, eventId: selectedEventId, companyId };
+            const newSession = await eventSessionApi.create(sessionData);
+            store.addItem('eventSessions', (newSession.data || newSession) as any);
+            setSaveSuccess(`Created session with ${checklistItems.length} checklist items!`);
+          }
+          onEventCreated();
+          break;
+        }
+        case 'mom': {
+          if (!selectedEventId) { setIsSaving(false); return; }
+          const momNotes = `## Meeting Summary\n${parsedResult.summary || ''}\n\n## Key Decisions\n${Array.isArray(parsedResult.keyDecisions) ? parsedResult.keyDecisions.map((d: string) => `- ${d}`).join('\n') : ''}\n\n## Action Items\n${Array.isArray(parsedResult.actionItems) ? parsedResult.actionItems.map((a: any) => `- ${a.task || ''}${a.assignee ? ` (${a.assignee})` : ''}${a.deadline ? ` — Due: ${a.deadline}` : ''}`).join('\n') : ''}\n\n## Follow-ups\n${Array.isArray(parsedResult.followUps) ? parsedResult.followUps.map((f: string) => `- ${f}`).join('\n') : ''}\n\n## Next Steps\n${Array.isArray(parsedResult.nextSteps) ? parsedResult.nextSteps.map((n: string) => `- ${n}`).join('\n') : ''}`;
+          const existingSessions = store.getItems('eventSessions') as EventSession[];
+          const session = existingSessions.find(s => s.eventId === selectedEventId);
+          if (session) {
+            await eventSessionApi.update(session.id, { aiNotes: momNotes, aiSummary: parsedResult.summary || '', aiGenerated: true });
+            store.updateItem('eventSessions', session.id, { aiNotes: momNotes, aiSummary: parsedResult.summary || '', aiGenerated: true });
+            setSaveSuccess('MoM saved to session!');
+          } else {
+            const sessionData = { title: `MoM: ${momTitle || 'Meeting'}`, description: parsedResult.summary || '', order: 0, status: 'draft' as const, objectives: [], attachments: [], checklistItems: [], aiNotes: momNotes, aiSummary: parsedResult.summary || '', aiGenerated: true, eventId: selectedEventId, companyId };
+            const newSession = await eventSessionApi.create(sessionData);
+            store.addItem('eventSessions', (newSession.data || newSession) as any);
+            setSaveSuccess('MoM saved as new session!');
+          }
+          onEventCreated();
+          break;
+        }
+        case 'enhance': {
+          if (!selectedEventId) { setIsSaving(false); return; }
+          await eventApi.update(selectedEventId, { detailedDescription: aiResult, aiGenerated: true });
+          store.updateItem('events', selectedEventId, { detailedDescription: aiResult, aiGenerated: true });
+          setSaveSuccess('Enhanced content saved to event!');
+          onEventCreated();
+          break;
+        }
+      }
+    } catch (error: any) {
+      setAiError(error.message || 'Failed to save. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Render structured AI result based on mode
+  const renderStructuredResult = () => {
+    if (!parsedResult && aiMode !== 'enhance') {
+      if (aiResult) {
+        return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+      }
+      return null;
+    }
+
+    if (aiMode === 'enhance') {
+      return (
+        <div className="space-y-4">
+          <div className="text-sm text-[#878e9a] mb-1">Enhanced Content</div>
+          <div className="text-[#afb6c4] whitespace-pre-wrap leading-relaxed bg-[#0d1117] rounded-lg p-4 max-h-[400px] overflow-y-auto">{aiResult}</div>
+        </div>
+      );
+    }
+
+    const data = parsedResult;
+
+    if (aiMode === 'description') {
+      return (
+        <div className="space-y-4">
+          {data.shortDescription && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Short Description</div>
+              <div className="text-sm text-[#afb6c4]">{data.shortDescription}</div>
+            </div>
+          )}
+          {data.detailedDescription && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Detailed Description</div>
+              <div className="text-sm text-[#afb6c4] whitespace-pre-wrap leading-relaxed">{data.detailedDescription}</div>
+            </div>
+          )}
+          {data.summary && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Summary</div>
+              <div className="text-sm text-[#afb6c4]">{data.summary}</div>
+            </div>
+          )}
+          {Array.isArray(data.objectives) && data.objectives.length > 0 && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Objectives</div>
+              <ul className="space-y-1">{data.objectives.map((obj: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{obj}</li>
+              ))}</ul>
+            </div>
+          )}
+          {Array.isArray(data.expectedOutcomes) && data.expectedOutcomes.length > 0 && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Expected Outcomes</div>
+              <ul className="space-y-1">{data.expectedOutcomes.map((out: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{out}</li>
+              ))}</ul>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (aiMode === 'agenda') {
+      const sessions = Array.isArray(data) ? data : (data.sessions || data.agenda || []);
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+      }
+      return (
+        <div className="space-y-3">
+          {sessions.map((s: any, i: number) => (
+            <div key={i} className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-[#C8FF2E]/20 text-[#C8FF2E] text-xs font-bold px-2 py-0.5 rounded">S{i + 1}</span>
+                <span className="text-white font-medium text-sm">{s.title}</span>
+                {s.duration && <span className="text-xs text-[#686f7e] ml-auto">{s.duration}</span>}
+              </div>
+              {s.description && <p className="text-sm text-[#878e9a] mb-2">{s.description}</p>}
+              {s.speakerInfo && <div className="text-xs text-[#878e9a] mb-1">Speaker: <span className="text-[#afb6c4]">{s.speakerInfo}</span></div>}
+              {Array.isArray(s.objectives) && s.objectives.length > 0 && (
+                <div className="text-xs text-[#878e9a] mb-1">Objectives: {s.objectives.join(', ')}</div>
+              )}
+              {Array.isArray(s.checklistItems) && s.checklistItems.length > 0 && (
+                <div className="mt-2 space-y-1">{s.checklistItems.map((c: any, ci: number) => (
+                  <div key={ci} className="flex items-center gap-2 text-xs text-[#878e9a]">
+                    <span className="text-[#C8FF2E]">☐</span>{c.text || c}
+                  </div>
+                ))}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (aiMode === 'checklist') {
+      const items = Array.isArray(data) ? data : (data.checklistItems || data.items || []);
+      if (!Array.isArray(items) || items.length === 0) {
+        return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
+      }
+      return (
+        <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+          <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-3">Pre-Event Checklist</div>
+          <div className="space-y-2">{items.map((item: any, i: number) => (
+            <div key={i} className="flex items-center gap-3 text-sm">
+              <span className="text-[#C8FF2E]">{typeof item === 'object' ? item.order || i + 1 : i + 1}.</span>
+              <span className="text-[#afb6c4]">{typeof item === 'object' ? item.text : item}</span>
+            </div>
+          ))}</div>
+        </div>
+      );
+    }
+
+    if (aiMode === 'mom') {
+      return (
+        <div className="space-y-4">
+          {data.summary && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Summary</div>
+              <div className="text-sm text-[#afb6c4]">{data.summary}</div>
+            </div>
+          )}
+          {Array.isArray(data.keyDecisions) && data.keyDecisions.length > 0 && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Key Decisions</div>
+              <ul className="space-y-1">{data.keyDecisions.map((d: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{d}</li>
+              ))}</ul>
+            </div>
+          )}
+          {Array.isArray(data.actionItems) && data.actionItems.length > 0 && (
+            <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+              <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Action Items</div>
+              <div className="space-y-2">{data.actionItems.map((a: any, i: number) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span className="text-[#C8FF2E]">→</span>
+                  <span className="text-[#afb6c4]">{a.task || a}</span>
+                  {a.assignee && <span className="text-xs text-[#878e9a]">({a.assignee})</span>}
+                  {a.deadline && <span className="text-xs text-[#686f7e]">— Due: {a.deadline}</span>}
+                </div>
+              ))}</div>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            {Array.isArray(data.followUps) && data.followUps.length > 0 && (
+              <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+                <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Follow-ups</div>
+                <ul className="space-y-1">{data.followUps.map((f: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{f}</li>
+                ))}</ul>
+              </div>
+            )}
+            {Array.isArray(data.nextSteps) && data.nextSteps.length > 0 && (
+              <div className="bg-[#0d1117] rounded-lg p-4 border border-white/5">
+                <div className="text-xs font-medium text-[#C8FF2E] uppercase tracking-wider mb-2">Next Steps</div>
+                <ul className="space-y-1">{data.nextSteps.map((n: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]"><span className="text-[#C8FF2E] mt-1">•</span>{n}</li>
+                ))}</ul>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>;
   };
 
   const aiModes = [
@@ -1696,11 +1961,70 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
           )}
           {aiResult ? (
             <div className="space-y-3">
-              <pre className="whitespace-pre-wrap text-sm text-[#afb6c4] bg-[#0d1117] rounded-lg p-4 max-h-[500px] overflow-y-auto font-mono">{aiResult}</pre>
-              <button
-                onClick={() => navigator.clipboard.writeText(aiResult)}
-                className="flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm hover:border-[#C8FF2E]/30 transition-colors"
-              >Copy Result</button>
+              {renderStructuredResult()}
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => navigator.clipboard.writeText(aiResult)}
+                  className="flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm hover:border-[#C8FF2E]/30 transition-colors"
+                >Copy JSON</button>
+              </div>
+              {/* Save to Event Section */}
+              {aiMode !== 'enhance' && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={selectedEventId}
+                      onChange={(e) => setSelectedEventId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50"
+                    >
+                      <option value="">Select event to save to...</option>
+                      {events.map(e => (
+                        <option key={e.id} value={e.id}>{e.title}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleSaveResult}
+                      disabled={!selectedEventId || isSaving}
+                      className="px-4 py-2 bg-[#C8FF2E] hover:bg-[#d4ff5c] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                    >
+                      {isSaving ? <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : <><Save className="w-4 h-4" />Save to Event</>}
+                    </button>
+                  </div>
+                  {saveSuccess && (
+                    <div className="mt-2 flex items-center gap-2 text-[#C8FF2E] text-sm">
+                      <CheckCircle2 className="w-4 h-4" />{saveSuccess}
+                    </div>
+                  )}
+                </div>
+              )}
+              {aiMode === 'enhance' && events.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={selectedEventId}
+                      onChange={(e) => setSelectedEventId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-[#0d1117] border border-white/10 rounded-lg text-[#afb6c4] text-sm focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50"
+                    >
+                      <option value="">Select event to save enhanced content...</option>
+                      {events.map(e => (
+                        <option key={e.id} value={e.id}>{e.title}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleSaveResult}
+                      disabled={!selectedEventId || isSaving}
+                      className="px-4 py-2 bg-[#C8FF2E] hover:bg-[#d4ff5c] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                    >
+                      {isSaving ? <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : <><Save className="w-4 h-4" />Save to Event</>}
+                    </button>
+                  </div>
+                  {saveSuccess && (
+                    <div className="mt-2 flex items-center gap-2 text-[#C8FF2E] text-sm">
+                      <CheckCircle2 className="w-4 h-4" />{saveSuccess}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">
