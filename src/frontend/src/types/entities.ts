@@ -1773,17 +1773,158 @@ export interface Book extends BaseEntity {
 // COURSES
 // ============================================
 
-export type CourseFormat = 'video' | 'text' | 'live' | 'hybrid' | 'workshop';
-export type CourseStatus = 'outline' | 'approved' | 'writing' | 'review' | 'published';
+// --- Course Category (hierarchical) ---
+export type CourseCategoryStatus = 'active' | 'archived';
 
-export interface Course extends BaseEntity {
+export interface CourseCategory extends BaseEntity {
   name: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  icon?: string;
+  colour?: string;
+  order: number;
+  courseCount: number;
+  status: CourseCategoryStatus;
+}
+
+// --- Course Status & Enums ---
+export type CourseStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
+export type CourseVisibility = 'private' | 'internal' | 'public';
+export type CourseDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+export type CourseFormat = 'video' | 'text' | 'live' | 'hybrid' | 'workshop';
+export type CourseAudienceType = 'public' | 'internal' | 'team-specific' | 'department-specific' | 'admin-only';
+
+// --- Course ---
+export interface Course extends BaseEntity {
+  // A. Core
+  title: string;
+  slug: string;
+  shortDescription?: string;
+  detailedDescription?: string;
+  summary?: string;
+
+  // B. Classification
+  categoryId?: string;
+  tags: string[];
   format: CourseFormat;
-  modulesCount: number;
-  price?: number;
-  curriculum?: string;
-  content?: string;
   status: CourseStatus;
+  visibility: CourseVisibility;
+  difficulty: CourseDifficulty;
+  language: string;
+
+  // C. Duration & Effort
+  duration?: string;
+  estimatedCompletionTime?: string;
+  lessonCount: number;
+
+  // D. Media
+  thumbnail?: string;
+  banner?: string;
+  videoUrls: string[];
+
+  // E. Instructor / Creator
+  instructor?: string;
+  creatorId?: string;
+
+  // F. Enterprise Mapping
+  department?: string;
+  productId?: string;
+  serviceId?: string;
+  sopId?: string;
+  audienceType: CourseAudienceType;
+
+  // G. Learning Design
+  learningObjectives: string[];
+  outcomes: string[];
+  skillLevel?: string;
+  prerequisites: string[];
+  relatedCourseIds: string[];
+  relatedFaqIds: string[];
+  relatedSopIds: string[];
+
+  // H. Internal
+  internalNotes?: string;
+
+  // I. SEO
+  metaTitle?: string;
+  metaDescription?: string;
+  seoKeywords: string[];
+
+  // J. Versioning & Approval
+  version: number;
+  approvedBy?: string;
+  approvedAt?: string;
+  reviewNotes?: string;
+
+  // K. Stats
+  viewCount: number;
+  enrolmentCount: number;
+  completionCount: number;
+
+  // L. Flags
+  aiGenerated: boolean;
+  isFeatured: boolean;
+}
+
+// --- Chapter ---
+export type ChapterStatus = 'draft' | 'review' | 'approved' | 'published';
+
+export interface CourseChapter extends BaseEntity {
+  courseId: string;
+  title: string;
+  slug: string;
+  description?: string;
+  order: number;
+  status: ChapterStatus;
+  thumbnail?: string;
+  duration?: string;
+  lessonCount: number;
+  learningObjectives: string[];
+  internalNotes?: string;
+  aiGenerated: boolean;
+}
+
+// --- Lesson ---
+export type LessonFormat = 'video' | 'text' | 'audio' | 'pdf' | 'presentation' | 'interactive' | 'quiz';
+export type LessonStatus = 'draft' | 'review' | 'approved' | 'published';
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation?: string;
+}
+
+export interface LessonAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size?: number;
+}
+
+export interface CourseLesson extends BaseEntity {
+  chapterId: string;
+  courseId: string;
+  title: string;
+  slug: string;
+  description?: string;
+  content?: string;
+  format: LessonFormat;
+  order: number;
+  status: LessonStatus;
+  duration?: string;
+  videoUrls: string[];
+  documentUrls: string[];
+  thumbnail?: string;
+  learningObjectives: string[];
+  keyTakeaways: string[];
+  quizQuestions: QuizQuestion[];
+  attachments: LessonAttachment[];
+  isFree: boolean;
+  aiGenerated: boolean;
+  internalNotes?: string;
 }
 
 // ============================================

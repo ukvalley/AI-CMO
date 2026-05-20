@@ -375,7 +375,7 @@ function useFoundationalContext(website: WebsitePlanner | null): FoundationalCon
       setIsLoading(true);
       setError(null);
       try {
-        const baseUrl = process.env.BACKEND_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
         const token = typeof window !== 'undefined'
           ? (await import('@/stores')).useAuthStore.getState().token : '';
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };

@@ -969,6 +969,106 @@ export const salesScriptApi = {
     }),
 };
 
+// ============== COURSE CATEGORY API ==============
+
+export const courseCategoryApi = {
+  getAll: (companyId: string) =>
+    apiRequest(`/courses/categories/${companyId}`),
+
+  getById: (id: string) =>
+    apiRequest(`/courses/categories/detail/${id}`),
+
+  create: (data: Record<string, unknown>) =>
+    apiRequest('/courses/categories', { method: 'POST', body: data }),
+
+  update: (id: string, data: Record<string, unknown>) =>
+    apiRequest(`/courses/categories/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) =>
+    apiRequest(`/courses/categories/${id}`, { method: 'DELETE' }),
+};
+
+// ============== COURSE API ==============
+
+export const courseApi = {
+  getAll: (companyId: string, params?: Record<string, string>) => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest(`/courses/courses/${companyId}${query}`);
+  },
+
+  getById: (id: string) =>
+    apiRequest(`/courses/courses/detail/${id}`),
+
+  create: (data: Record<string, unknown>) =>
+    apiRequest('/courses/courses', { method: 'POST', body: data }),
+
+  update: (id: string, data: Record<string, unknown>) =>
+    apiRequest(`/courses/courses/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) =>
+    apiRequest(`/courses/courses/${id}`, { method: 'DELETE' }),
+};
+
+// ============== COURSE CHAPTER API ==============
+
+export const courseChapterApi = {
+  getAll: (courseId: string) =>
+    apiRequest(`/courses/chapters/${courseId}`),
+
+  getById: (id: string) =>
+    apiRequest(`/courses/chapters/detail/${id}`),
+
+  create: (data: Record<string, unknown>) =>
+    apiRequest('/courses/chapters', { method: 'POST', body: data }),
+
+  update: (id: string, data: Record<string, unknown>) =>
+    apiRequest(`/courses/chapters/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) =>
+    apiRequest(`/courses/chapters/${id}`, { method: 'DELETE' }),
+
+  reorder: (courseId: string, orders: { id: string; order: number }[]) =>
+    apiRequest(`/courses/chapters/reorder/${courseId}`, { method: 'PUT', body: { orders } }),
+};
+
+// ============== COURSE LESSON API ==============
+
+export const courseLessonApi = {
+  getAll: (chapterId: string) =>
+    apiRequest(`/courses/lessons/${chapterId}`),
+
+  getById: (id: string) =>
+    apiRequest(`/courses/lessons/detail/${id}`),
+
+  create: (data: Record<string, unknown>) =>
+    apiRequest('/courses/lessons', { method: 'POST', body: data }),
+
+  update: (id: string, data: Record<string, unknown>) =>
+    apiRequest(`/courses/lessons/${id}`, { method: 'PUT', body: data }),
+
+  delete: (id: string) =>
+    apiRequest(`/courses/lessons/${id}`, { method: 'DELETE' }),
+
+  reorder: (chapterId: string, orders: { id: string; order: number }[]) =>
+    apiRequest(`/courses/lessons/reorder/${chapterId}`, { method: 'PUT', body: { orders } }),
+};
+
+// ============== COURSE AI API ==============
+
+export const courseAiApi = {
+  generateDescription: (data: Record<string, unknown>) =>
+    apiRequest('/courses/ai/generate-description', { method: 'POST', body: data }),
+
+  generateStructure: (data: Record<string, unknown>) =>
+    apiRequest('/courses/ai/generate-structure', { method: 'POST', body: data }),
+
+  generateQuiz: (data: Record<string, unknown>) =>
+    apiRequest('/courses/ai/generate-quiz', { method: 'POST', body: data }),
+
+  enhanceContent: (data: Record<string, unknown>) =>
+    apiRequest('/courses/ai/enhance-content', { method: 'POST', body: data }),
+};
+
 // ============== FILE UPLOAD API ==============
 
 export const uploadApi = {

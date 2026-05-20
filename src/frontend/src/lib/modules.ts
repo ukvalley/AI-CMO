@@ -465,18 +465,6 @@ export const MODULES: ModuleDefinition[] = [
     hasBulkGeneration: true,
   },
   {
-    id: 'courses',
-    name: 'Courses',
-    description: 'Online course content and curriculum',
-    group: 'marketing',
-    icon: 'GraduationCap',
-    path: '/courses',
-    status: 'active',
-    permissions: ['admin', 'editor'],
-    hasAI: true,
-    hasBulkGeneration: false,
-  },
-  {
     id: 'events',
     name: 'Events',
     description: 'Event planning and promotion',
@@ -552,6 +540,19 @@ export const MODULES: ModuleDefinition[] = [
     permissions: ['admin', 'editor'],
     hasAI: true,
     hasBulkGeneration: false,
+  },
+  {
+    id: 'courses',
+    name: 'Courses',
+    description: 'Centralised course content management with chapters, lessons, categories, and AI generation',
+    group: 'programs',
+    icon: 'GraduationCap',
+    path: '/courses',
+    status: 'active',
+    permissions: ['admin', 'editor'],
+    hasAI: true,
+    hasBulkGeneration: true,
+    badge: 'AI',
   },
 
   // ==========================================
