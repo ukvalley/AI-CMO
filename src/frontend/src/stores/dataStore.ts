@@ -84,6 +84,14 @@ import type {
   SocialHashtagBank,
   SocialCreative,
   SocialExport,
+  // SEO Operating System
+  SeoStrategy,
+  SeoRecord,
+  SeoKeyword,
+  SeoKeywordBank,
+  SeoAudit,
+  SeoCalendar,
+  SeoCalendarItem,
 } from '@/types/entities';
 
 // ============================================
@@ -162,6 +170,15 @@ interface ModuleData {
   emailTemplates: EmailTemplate[];
   courses: Course[];
   events: Event[];
+
+  // SEO Operating System
+  seoStrategies: SeoStrategy[];
+  seoRecords: SeoRecord[];
+  seoKeywords: SeoKeyword[];
+  seoKeywordBanks: SeoKeywordBank[];
+  seoAudits: SeoAudit[];
+  seoCalendars: SeoCalendar[];
+  seoCalendarItems: SeoCalendarItem[];
 
   // Social Media Content OS
   socialMediaCalendar: SocialMediaCalendar | null;
@@ -261,6 +278,15 @@ const createEmptyModuleData = (): ModuleData => ({
   emailTemplates: [],
   courses: [],
   events: [],
+
+  // SEO Operating System
+  seoStrategies: [],
+  seoRecords: [],
+  seoKeywords: [],
+  seoKeywordBanks: [],
+  seoAudits: [],
+  seoCalendars: [],
+  seoCalendarItems: [],
 
   // Social Media Content OS
   socialMediaCalendar: null,

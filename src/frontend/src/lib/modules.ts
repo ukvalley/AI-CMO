@@ -419,14 +419,15 @@ export const MODULES: ModuleDefinition[] = [
   {
     id: 'seo',
     name: 'SEO',
-    description: 'SEO optimization and meta content',
+    description: 'Centralized SEO management across all modules with keyword strategy, audit, and auto-generation',
     group: 'marketing',
     icon: 'Search',
     path: '/seo',
     status: 'active',
     permissions: ['admin', 'editor'],
     hasAI: true,
-    hasBulkGeneration: false,
+    hasBulkGeneration: true,
+    badge: 'AI',
   },
   {
     id: 'ads',

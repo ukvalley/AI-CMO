@@ -1790,17 +1790,103 @@ export interface Course extends BaseEntity {
 // SEO
 // ============================================
 
-export type SEOStatus = 'draft' | 'optimized' | 'published';
+export type SEOStatus = 'draft' | 'in-progress' | 'review' | 'optimized' | 'published' | 'needs-update';
+
+export type SEOPageType =
+  | 'home'
+  | 'about'
+  | 'services'
+  | 'products'
+  | 'blog'
+  | 'blog-post'
+  | 'landing-page'
+  | 'contact'
+  | 'faq'
+  | 'pricing'
+  | 'case-study'
+  | 'portfolio'
+  | 'testimonial'
+  | 'career'
+  | 'legal'
+  | 'custom';
+
+export type SEOPriority = 'low' | 'medium' | 'high' | 'critical';
+
+export type SearchIntent = 'informational' | 'navigational' | 'transactional' | 'commercial';
+
+// ============================================
+// SEO PAGE
+// ============================================
 
 export interface SEOPage extends BaseEntity {
+  // A. Page Information
   pageName: string;
-  url?: string;
-  primaryKeyword?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  h1?: string;
-  checklist?: string;
+  pageUrl?: string;
+  pageType: SEOPageType;
+  targetPage?: string;           // Link to existing content (blog, landing page, etc.)
+  targetKeywords?: string[];
+
+  // B. Meta Data
+  metaTitle?: string;             // 50-60 chars
+  metaDescription?: string;       // 150-160 chars
+  focusKeyword?: string;          // Primary keyword
+  secondaryKeywords?: string[];   // Secondary/related keywords
+
+  // C. Open Graph & Social
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  twitterCardType?: 'summary' | 'summary_large_image' | 'app' | 'player';
+
+  // D. Technical SEO
+  canonicalUrl?: string;
+  robotsDirective?: 'index, follow' | 'noindex, follow' | 'index, nofollow' | 'noindex, nofollow';
+  schemaType?: 'Article' | 'Product' | 'Service' | 'FAQ' | 'HowTo' | 'LocalBusiness' | 'Organization' | 'Person' | 'Event' | 'Recipe' | 'Review' | 'Custom';
+  schemaMarkup?: string;         // Custom JSON-LD structured data
+
+  // E. Performance Tracking
+  currentRanking?: number;        // Position in search results
+  searchVolume?: number;          // Monthly search volume
+  difficultyScore?: number;       // SEO difficulty (0-100)
+  trafficEstimate?: number;       // Projected organic traffic
+  clickThroughRate?: number;      // CTR percentage
+
+  // F. Content Optimization
+  wordCount?: number;
+  targetWordCount?: number;
+  readabilityScore?: number;      // Flesch-Kincaid
+  keywordDensity?: number;        // Percentage
+  internalLinks?: number;
+  externalLinks?: number;
+  images?: number;
+  altTextsComplete?: boolean;     // All images have alt text
+
+  // G. Status & Assignment
   status: SEOStatus;
+  priority?: SEOPriority;
+  assignedTo?: string;            // Team member responsible
+  lastAuditDate?: string;
+  nextReviewDate?: string;
+  publishDate?: string;
+
+  // H. Content Analysis
+  h1Tag?: string;
+  h2Tags?: string[];
+  metaRobots?: string;
+  xmlSitemap?: boolean;           // Included in XML sitemap
+  https?: boolean;                // HTTPS enabled
+  mobileFriendly?: boolean;
+  pageSpeedScore?: number;        // 0-100
+
+  // I. Notes & Issues
+  notes?: string;
+  issues?: string[];              // SEO issues to fix
+  recommendations?: string[];      // Optimization recommendations
+
+  // J. Linked Data
+  linkedBlogId?: string;
+  linkedLandingPageId?: string;
+  linkedProductId?: string;
 }
 
 // ============================================
@@ -3880,4 +3966,659 @@ export interface BlogContentSection extends BaseEntity {
   aiGenerated: boolean;
   manuallyEdited: boolean;
   lastGeneratedAt?: string;
+}
+
+// ============================================
+// SEO OPERATING SYSTEM
+// ============================================
+
+// SEO Source Modules - All modules that can have SEO records
+export type SeoSourceModule =
+  | 'products'
+  | 'blogs'
+  | 'landing-pages'
+  | 'website-pages'
+  | 'faqs'
+  | 'business-profile'
+  | 'founders'
+  | 'employees'
+  | 'testimonials'
+  | 'courses'
+  | 'events'
+  | 'newsletters'
+  | 'sales-collateral'
+  | 'videos';
+
+// SEO Record Status
+export type SeoRecordStatus =
+  | 'pending'
+  | 'generating'
+  | 'draft'
+  | 'review'
+  | 'optimized'
+  | 'published'
+  | 'needs-update'
+  | 'failed';
+
+// SEO Priority
+export type SeoPriority = 'low' | 'medium' | 'high' | 'critical';
+
+// SEO Schema Types
+export type SeoSchemaType =
+  | 'Article'
+  | 'Product'
+  | 'Service'
+  | 'FAQ'
+  | 'HowTo'
+  | 'LocalBusiness'
+  | 'Organization'
+  | 'Person'
+  | 'Event'
+  | 'Course'
+  | 'Review'
+  | 'VideoObject'
+  | 'NewsArticle'
+  | 'Recipe'
+  | 'Custom';
+
+// Robots Directive
+export type RobotsDirective =
+  | 'index, follow'
+  | 'noindex, follow'
+  | 'index, nofollow'
+  | 'noindex, nofollow';
+
+// Twitter Card Types
+export type TwitterCardType = 'summary' | 'summary_large_image' | 'app' | 'player';
+
+// Search Intent
+export type SeoSearchIntent = 'informational' | 'navigational' | 'transactional' | 'commercial';
+
+// ============================================
+// SEO STRATEGY
+// ============================================
+
+export interface SeoStrategy extends BaseEntity {
+  name: string;
+  description?: string;
+
+  // Target Configuration
+  targetRegion: string;
+  language: string;
+  primaryMarket?: string;
+  targetAudience?: string;
+
+  // SEO Goals
+  primaryGoals: string[]; // traffic, rankings, leads, authority, conversions
+  secondaryGoals: string[];
+
+  // Keyword Strategy
+  primaryKeywords: string[];
+  secondaryKeywords: string[];
+  longTailKeywords: string[];
+  brandedKeywords: string[];
+  competitorKeywords: string[];
+  negativeKeywords: string[];
+
+  // Content Strategy
+  contentPillars: string[];
+  funnelFocus: ('tofu' | 'mofu' | 'bofu')[];
+  contentTypeMix: Record<string, number>; // blog: 40, product: 30, etc.
+
+  // Technical SEO Settings
+  technicalSettings: {
+    defaultRobotsDirective: RobotsDirective;
+    generateSitemap: boolean;
+    enableStructuredData: boolean;
+    httpsEnforced: boolean;
+    mobileFirst: boolean;
+    canonicalDomain: string;
+  };
+
+  // Linking Strategy
+  internalLinking: {
+    enabled: boolean;
+    maxLinksPerPage: number;
+    pillarPages: string[];
+    clusterStrategy: 'topic-clusters' | 'silo' | 'hub-spoke';
+  };
+
+  // AI Generation Settings
+  aiSettings: {
+    autoGenerateMetaTitle: boolean;
+    autoGenerateMetaDescription: boolean;
+    autoGenerateKeywords: boolean;
+    autoGenerateSchema: boolean;
+    autoGenerateAltText: boolean;
+    metaTitleTemplate: string;
+    metaDescriptionTemplate: string;
+  };
+
+  // Competitor Analysis
+  competitorAnalysis: {
+    competitors: string[]; // domains
+    trackingKeywords: string[];
+    contentGaps: string[];
+  };
+
+  // Linked Data Sources
+  linkedData: {
+    businessProfileId?: string;
+    brandId?: string;
+    productIds?: string[];
+    blogStrategyId?: string;
+    icpIds?: string[];
+    personaIds?: string[];
+    competitorIds?: string[];
+  };
+
+  // Performance Targets
+  performanceTargets: {
+    targetTraffic?: number;
+    targetRankings?: Record<string, number>; // keyword -> target position
+    targetClickThroughRate?: number;
+    targetConversionRate?: number;
+  };
+
+  isActive: boolean;
+}
+
+// ============================================
+// SEO RECORD (Per Item)
+// ============================================
+
+export interface SeoRecord extends BaseEntity {
+  // Source Reference
+  sourceModule: SeoSourceModule;
+  sourceItemId: string;
+  sourceItemName: string; // Denormalized for display
+
+  // Strategy Reference
+  strategyId?: string;
+
+  // A. Page Information
+  pageUrl?: string;
+  pageType: SEOPageType;
+  customPageType?: string;
+
+  // B. Meta Data
+  metaTitle: string;
+  metaDescription: string;
+  focusKeyword: string;
+  secondaryKeywords: string[];
+  targetKeywords: string[];
+
+  // C. Open Graph & Social
+  ogTitle: string;
+  ogDescription: string;
+  ogImage?: string;
+  ogImageAlt?: string;
+  twitterCardType: TwitterCardType;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImage?: string;
+
+  // D. Technical SEO
+  canonicalUrl?: string;
+  robotsDirective: RobotsDirective;
+  schemaType: SeoSchemaType;
+  schemaMarkup?: string; // Custom JSON-LD
+  customSchema?: string;
+
+  // E. Content Analysis
+  wordCount?: number;
+  targetWordCount?: number;
+  readabilityScore?: number;
+  keywordDensity?: number;
+  headingStructure?: {
+    h1?: string;
+    h2s: string[];
+    h3s: string[];
+  };
+
+  // F. Link Analysis
+  internalLinks: SeoLink[];
+  externalLinks: SeoLink[];
+  brokenLinks: string[];
+
+  // G. Image SEO
+  images: SeoImage[];
+  altTextsComplete: boolean;
+
+  // H. Performance Metrics
+  currentRanking?: number;
+  previousRanking?: number;
+  searchVolume?: number;
+  difficultyScore?: number;
+  trafficEstimate?: number;
+  clickThroughRate?: number;
+  impressions?: number;
+
+  // I. Status & Workflow
+  status: SeoRecordStatus;
+  priority: SeoPriority;
+  searchIntent: SeoSearchIntent;
+  assignedTo?: string;
+  lastAuditDate?: string;
+  nextReviewDate?: string;
+  publishedAt?: string;
+  lastModified?: string;
+
+  // J. Issues & Recommendations
+  issues: SeoIssue[];
+  recommendations: string[];
+  auditScore?: number; // 0-100
+
+  // K. AI Generation
+  aiGenerated: boolean;
+  aiGeneratedAt?: string;
+  aiModel?: string;
+  manualEdits: boolean;
+
+  // L. Version History
+  version: number;
+  versionHistory: SeoVersion[];
+
+  // M. Scheduling
+  scheduledPublishAt?: string;
+  scheduledReviewAt?: string;
+}
+
+// ============================================
+// SEO LINK
+// ============================================
+
+export interface SeoLink {
+  id: string;
+  url: string;
+  anchorText: string;
+  targetPage?: string;
+  isNofollow: boolean;
+  isBroken: boolean;
+  lastChecked?: string;
+}
+
+// ============================================
+// SEO IMAGE
+// ============================================
+
+export interface SeoImage {
+  id: string;
+  url: string;
+  altText?: string;
+  title?: string;
+  caption?: string;
+  isOptimized: boolean;
+  fileSize?: number;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+}
+
+// ============================================
+// SEO ISSUE
+// ============================================
+
+export type SeoIssueType =
+  | 'missing-meta-title'
+  | 'missing-meta-description'
+  | 'missing-focus-keyword'
+  | 'duplicate-meta-title'
+  | 'duplicate-meta-description'
+  | 'missing-h1'
+  | 'multiple-h1'
+  | 'missing-alt-text'
+  | 'broken-link'
+  | 'missing-canonical'
+  | 'missing-schema'
+  | 'keyword-stuffing'
+  | 'thin-content'
+  | 'slow-page-speed'
+  | 'not-mobile-friendly'
+  | 'missing-og-tags'
+  | 'long-url'
+  | 'missing-internal-links'
+  | 'missing-external-links'
+  | 'low-readability'
+  | 'custom';
+
+export type SeoIssueSeverity = 'critical' | 'high' | 'medium' | 'low';
+
+export interface SeoIssue {
+  id: string;
+  type: SeoIssueType;
+  severity: SeoIssueSeverity;
+  message: string;
+  field?: string;
+  suggestion?: string;
+  autoFixAvailable: boolean;
+  resolved: boolean;
+  resolvedAt?: string;
+}
+
+// ============================================
+// SEO VERSION
+// ============================================
+
+export interface SeoVersion {
+  version: number;
+  metaTitle: string;
+  metaDescription: string;
+  focusKeyword: string;
+  changedAt: string;
+  changedBy?: string;
+  changeSummary?: string;
+}
+
+// ============================================
+// SEO KEYWORD BANK
+// ============================================
+
+export type KeywordType =
+  | 'primary'
+  | 'secondary'
+  | 'long-tail'
+  | 'branded'
+  | 'competitor'
+  | 'informational'
+  | 'transactional'
+  | 'navigational'
+  | 'commercial';
+
+export type KeywordDifficulty = 'easy' | 'medium' | 'hard' | 'very-hard';
+
+export interface SeoKeyword extends BaseEntity {
+  keyword: string;
+  type: KeywordType;
+  category?: string;
+  tags: string[];
+
+  // Search Metrics
+  searchVolume: number;
+  difficulty: KeywordDifficulty;
+  cpc?: number; // Cost per click
+  competition?: number; // 0-1
+
+  // Ranking
+  currentRanking?: number;
+  previousRanking?: number;
+  rankingHistory?: {
+    date: string;
+    position: number;
+    url?: string;
+  }[];
+
+  // Intent
+  searchIntent: SeoSearchIntent;
+  funnelStage: 'tofu' | 'mofu' | 'bofu';
+
+  // Related
+  relatedKeywords: string[];
+  questions: string[]; // People also ask
+
+  // Usage
+  usedInRecords: string[]; // SeoRecord IDs
+  usageCount: number;
+
+  // Status
+  isActive: boolean;
+  lastUpdated?: string;
+}
+
+// ============================================
+// SEO KEYWORD BANK (Collection)
+// ============================================
+
+export interface SeoKeywordBank extends BaseEntity {
+  name: string;
+  description?: string;
+
+  // Keywords
+  keywords: SeoKeyword[];
+
+  // Grouping
+  categories: string[];
+  tags: string[];
+
+  // Stats
+  totalKeywords: number;
+  averageSearchVolume: number;
+  averageDifficulty: number;
+
+  // Source
+  source: 'manual' | 'ai-generated' | 'imported' | 'competitor-analysis';
+
+  isActive: boolean;
+}
+
+// ============================================
+// SEO AUDIT
+// ============================================
+
+export type AuditType =
+  | 'full-site'
+  | 'module-specific'
+  | 'page-specific'
+  | 'technical'
+  | 'content'
+  | 'backlinks'
+  | 'competitor';
+
+export type AuditStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface SeoAudit extends BaseEntity {
+  name: string;
+  type: AuditType;
+  status: AuditStatus;
+
+  // Scope
+  scope: {
+    modules: SeoSourceModule[];
+    itemIds?: string[];
+    includeSubfolders: boolean;
+  };
+
+  // Configuration
+  config: {
+    checkMetaTags: boolean;
+    checkSchemaMarkup: boolean;
+    checkInternalLinks: boolean;
+    checkExternalLinks: boolean;
+    checkImageAltText: boolean;
+    checkPageSpeed: boolean;
+    checkMobileFriendly: boolean;
+    checkCanonical: boolean;
+    checkRobotsTxt: boolean;
+    checkSitemap: boolean;
+  };
+
+  // Results
+  results: {
+    totalItems: number;
+    itemsAudited: number;
+    itemsWithIssues: number;
+    itemsPassed: number;
+    itemsSkipped: number;
+    totalIssues: number;
+    criticalIssues: number;
+    highIssues: number;
+    mediumIssues: number;
+    lowIssues: number;
+    averageScore: number;
+  };
+
+  // Issues by Module
+  issuesByModule: Record<SeoSourceModule, SeoIssue[]>;
+
+  // Recommendations
+  recommendations: SeoRecommendation[];
+
+  // Execution
+  startedAt?: string;
+  completedAt?: string;
+  duration?: number; // in seconds
+  error?: string;
+
+  // Scheduling
+  scheduledAt?: string;
+  isRecurring: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly';
+
+  // Report
+  reportUrl?: string;
+}
+
+// ============================================
+// SEO RECOMMENDATION
+// ============================================
+
+export interface SeoRecommendation {
+  id: string;
+  priority: SeoPriority;
+  category: 'technical' | 'content' | 'on-page' | 'off-page' | 'ux';
+  title: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  effort: 'low' | 'medium' | 'high';
+  affectedItems: string[];
+  autoFixAvailable: boolean;
+  status: 'pending' | 'in-progress' | 'resolved' | 'ignored';
+  resolvedAt?: string;
+}
+
+// ============================================
+// SEO CALENDAR ITEM
+// ============================================
+
+export type SeoCalendarItemType =
+  | 'content-publish'
+  | 'audit'
+  | 'keyword-update'
+  | 'optimization'
+  | 'review'
+  | 'report';
+
+export interface SeoCalendarItem extends BaseEntity {
+  calendarId: string;
+  itemType: SeoCalendarItemType;
+  title: string;
+  description?: string;
+
+  // Scheduling
+  scheduledDate: string;
+  scheduledTime?: string;
+  timezone: string;
+  isRecurring: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly';
+
+  // References
+  strategyId?: string;
+  recordIds?: string[];
+  keywordIds?: string[];
+
+  // Status
+  status: 'planned' | 'in-progress' | 'completed' | 'cancelled';
+
+  // Notes
+  notes?: string;
+  reminders: string[];
+}
+
+// ============================================
+// SEO CALENDAR
+// ============================================
+
+export interface SeoCalendar extends BaseEntity {
+  name: string;
+  strategyId: string;
+  description?: string;
+
+  // Settings
+  settings: {
+    timezone: string;
+    workingDays: string[];
+    publishFrequency: 'daily' | 'weekly' | 'bi-weekly' | 'monthly';
+    autoScheduleAudits: boolean;
+    auditFrequency: 'weekly' | 'bi-weekly' | 'monthly';
+    reminderDays: number;
+  };
+
+  // Items
+  items: SeoCalendarItem[];
+
+  isActive: boolean;
+}
+
+// ============================================
+// SEO SYSTEM (Main Settings)
+// ============================================
+
+export interface SeoSystem extends BaseEntity {
+  name: string;
+
+  // Active Strategy
+  activeStrategyId?: string;
+  activeCalendarId?: string;
+
+  // Global Settings
+  settings: {
+    defaultLanguage: string;
+    defaultRegion: string;
+    defaultTimezone: string;
+    aiModel: string;
+
+    // Auto-generation
+    autoGenerateOnCreate: boolean;
+    autoGenerateMetaTitle: boolean;
+    autoGenerateMetaDescription: boolean;
+    autoGenerateKeywords: boolean;
+    autoGenerateSchema: boolean;
+    autoGenerateAltText: boolean;
+
+    // Templates
+    metaTitleTemplate: string;
+    metaDescriptionTemplate: string;
+    ogTitleTemplate: string;
+    ogDescriptionTemplate: string;
+
+    // Limits
+    metaTitleMaxLength: number;
+    metaDescriptionMaxLength: number;
+    maxKeywords: number;
+    targetWordCountRange: { min: number; max: number };
+
+    // Scoring
+    scoringWeights: {
+      metaTags: number;
+      content: number;
+      links: number;
+      images: number;
+      technical: number;
+    };
+
+    // Notifications
+    notifyOnIssues: boolean;
+    notifyOnRankingChanges: boolean;
+    notifyOnAuditComplete: boolean;
+  };
+
+  // Source Modules Configuration
+  sourceConfig: Record<SeoSourceModule, {
+    enabled: boolean;
+    autoGenerate: boolean;
+    defaultPageType: SEOPageType;
+    defaultSchemaType: SeoSchemaType;
+    priority: SeoPriority;
+  }>;
+
+  // Stats (computed/cached)
+  stats?: {
+    totalRecords: number;
+    recordsByModule: Record<SeoSourceModule, number>;
+    totalKeywords: number;
+    averageAuditScore: number;
+    issuesCount: number;
+    lastAuditDate?: string;
+  };
 }
