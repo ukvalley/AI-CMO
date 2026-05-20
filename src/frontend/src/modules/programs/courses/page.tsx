@@ -22,7 +22,7 @@ import type {
   Course, CourseCategory, CourseChapter, CourseLesson,
   CourseStatus, CourseVisibility, CourseDifficulty, CourseFormat,
   CourseAudienceType, ChapterStatus, LessonFormat, LessonStatus,
-  CourseCategoryStatus,
+  CourseCategoryStatus, QuizQuestion,
 } from '@/types/entities';
 
 // ============================================
@@ -83,6 +83,79 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
     }
   }
   throw lastError;
+}
+
+// ============================================
+// INLINE AI GENERATE BUTTON
+// ============================================
+
+const FIELD_AI_PROMPTS: Record<string, { system: string; promptFn: (ctx: string) => string; maxTokens: number }> = {
+  shortDescription: { system: 'You are a course content creator. Write concise course descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a concise course short description (max 200 characters) for: ${ctx}`, maxTokens: 300 },
+  detailedDescription: { system: 'You are a course content creator. Write detailed course descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a detailed course description (2-3 paragraphs) for: ${ctx}`, maxTokens: 1500 },
+  summary: { system: 'You are a course content creator. Write concise summaries. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a 1-2 sentence course summary for: ${ctx}`, maxTokens: 300 },
+  learningObjectives: { system: 'You are a course content creator. Generate learning objectives. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate 5 learning objectives for the course: ${ctx}`, maxTokens: 800, },
+  outcomes: { system: 'You are a course content creator. Generate expected outcomes. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate 5 expected outcomes for the course: ${ctx}`, maxTokens: 800 },
+  internalNotes: { system: 'You are a course planner. Write internal planning notes. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write internal planning notes for the course: ${ctx}`, maxTokens: 600 },
+  metaDescription: { system: 'You are an SEO expert. Write SEO meta descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write an SEO meta description (max 160 characters) for: ${ctx}`, maxTokens: 300 },
+  chapterDescription: { system: 'You are a course content creator. Write chapter descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a chapter description for: ${ctx}`, maxTokens: 800 },
+  chapterObjectives: { system: 'You are a course content creator. Generate learning objectives. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate learning objectives for chapter: ${ctx}`, maxTokens: 600 },
+  lessonDescription: { system: 'You are a course content creator. Write lesson descriptions. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write a lesson description for: ${ctx}`, maxTokens: 800 },
+  lessonContent: { system: 'You are a course content creator. Write comprehensive lesson content. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write comprehensive lesson content for: ${ctx}`, maxTokens: 2000 },
+  lessonObjectives: { system: 'You are a course content creator. Generate learning objectives. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate learning objectives for lesson: ${ctx}`, maxTokens: 600 },
+  keyTakeaways: { system: 'You are a course content creator. Generate key takeaways. Use British English. Respond with a JSON array of strings only.', promptFn: (ctx) => `Generate key takeaways for lesson: ${ctx}`, maxTokens: 600 },
+  lessonNotes: { system: 'You are a course content creator. Write internal teaching notes. Use British English. Respond with plain text only, no JSON.', promptFn: (ctx) => `Write internal teaching notes for lesson: ${ctx}`, maxTokens: 600 },
+};
+
+function InlineAIGenerate({
+  fieldType, context, onGenerated, isGeneratingField, setIsGeneratingField,
+}: {
+  fieldType: string;
+  context: string;
+  onGenerated: (text: string) => void;
+  isGeneratingField: boolean;
+  setIsGeneratingField: (v: boolean) => void;
+}) {
+  const config = FIELD_AI_PROMPTS[fieldType];
+  if (!config) return null;
+
+  const handleGenerate = async () => {
+    setIsGeneratingField(true);
+    try {
+      const title = context || 'Untitled';
+      const prompt = config.promptFn(title);
+      const result = await withRetry(() => callGLM(
+        [{ role: 'system', content: config.system }, { role: 'user', content: prompt }],
+        { temperature: 0.7, maxTokens: config.maxTokens }
+      ));
+      if (['learningObjectives', 'outcomes', 'chapterObjectives', 'lessonObjectives', 'keyTakeaways'].includes(fieldType)) {
+        const parsed = parseJsonFromAI(result);
+        if (Array.isArray(parsed)) {
+          onGenerated(parsed.join(', '));
+        } else {
+          onGenerated(result);
+        }
+      } else {
+        onGenerated(result.trim());
+      }
+    } catch (err: any) {
+      console.error('Inline AI generation failed:', err);
+    } finally {
+      setIsGeneratingField(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleGenerate}
+      disabled={isGeneratingField || !context}
+      title={`AI Generate ${fieldType.replace(/([A-Z])/g, ' $1').toLowerCase()}`}
+      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-[#C8FF2E]/10 text-[#C8FF2E] hover:bg-[#C8FF2E]/20 rounded border border-[#C8FF2E]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+    >
+      {isGeneratingField ? <div className="w-3 h-3 border-2 border-[#C8FF2E]/30 border-t-[#C8FF2E] rounded-full animate-spin" /> : <Sparkles className="w-3 h-3" />}
+      AI
+    </button>
+  );
 }
 
 // ============================================
@@ -230,6 +303,11 @@ export default function CoursesPage() {
   // Context selectors
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [selectedChapterId, setSelectedChapterId] = useState<string>('');
+
+  // Detail view state
+  const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
+  const [viewingChapter, setViewingChapter] = useState<CourseChapter | null>(null);
+  const [viewingLesson, setViewingLesson] = useState<CourseLesson | null>(null);
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -617,6 +695,7 @@ export default function CoursesPage() {
           onEdit={(course) => { setEditingCourse(course); setShowCourseForm(true); }}
           onDelete={handleDeleteCourse}
           onSelectCourse={(id) => { setSelectedCourseId(id); setActiveTab('chapters'); }}
+          onViewCourse={(course) => setViewingCourse(course)}
         />
       )}
 
@@ -639,6 +718,7 @@ export default function CoursesPage() {
           onEdit={(chapter) => { setEditingChapter(chapter); setShowChapterForm(true); }}
           onDelete={handleDeleteChapter}
           onSelectChapter={(id) => { setSelectedChapterId(id); setActiveTab('lessons'); }}
+          onViewChapter={(chapter) => setViewingChapter(chapter)}
         />
       )}
 
@@ -654,6 +734,7 @@ export default function CoursesPage() {
           onCreate={() => { if (!selectedChapterId) return alert('Select a chapter first'); setEditingLesson(null); setShowLessonForm(true); }}
           onEdit={(lesson) => { setEditingLesson(lesson); setShowLessonForm(true); }}
           onDelete={handleDeleteLesson}
+          onViewLesson={(lesson) => setViewingLesson(lesson)}
         />
       )}
 
@@ -702,7 +783,397 @@ export default function CoursesPage() {
           onCancel={() => { setShowLessonForm(false); setEditingLesson(null); }}
         />
       )}
+
+      {/* Detail View Panels */}
+      {viewingCourse && (
+        <CourseDetailView
+          course={viewingCourse}
+          categories={categories}
+          chapters={chapters}
+          lessons={lessons}
+          onClose={() => setViewingCourse(null)}
+          onEdit={() => { setEditingCourse(viewingCourse); setShowCourseForm(true); setViewingCourse(null); }}
+        />
+      )}
+      {viewingChapter && (
+        <ChapterDetailView
+          chapter={viewingChapter}
+          lessons={lessons}
+          onClose={() => setViewingChapter(null)}
+          onEdit={() => { setEditingChapter(viewingChapter); setShowChapterForm(true); setViewingChapter(null); }}
+        />
+      )}
+      {viewingLesson && (
+        <LessonDetailView
+          lesson={viewingLesson}
+          onClose={() => setViewingLesson(null)}
+          onEdit={() => { setEditingLesson(viewingLesson); setShowLessonForm(true); setViewingLesson(null); }}
+        />
+      )}
     </div>
+  );
+}
+
+// ============================================
+// DETAIL VIEW PANELS
+// ============================================
+
+function DetailPanel({ title, onClose, onEdit, children }: {
+  title: string;
+  onClose: () => void;
+  onEdit?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-[#0d1117] border-l border-white/10 overflow-y-auto">
+        <div className="sticky top-0 z-10 bg-[#0d1117] border-b border-white/10 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white">{title}</h2>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[#C8FF2E]/10 text-[#C8FF2E] hover:bg-[#C8FF2E]/20 rounded border border-[#C8FF2E]/30 transition-colors">
+                <Edit3 className="w-3.5 h-3.5" /> Edit
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 text-[#686f7e] hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        <div className="p-6 space-y-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function CourseDetailView({
+  course, categories, chapters, lessons, onClose, onEdit,
+}: {
+  course: Course;
+  categories: CourseCategory[];
+  chapters: CourseChapter[];
+  lessons: CourseLesson[];
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
+  const category = course.categoryId ? categories.find(c => (c.id || (c as any)._id) === course.categoryId) : null;
+  const courseChapters = chapters
+    .filter(c => c.courseId === (course.id || (course as any)._id))
+    .sort((a, b) => a.order - b.order);
+
+  return (
+    <DetailPanel title={course.title} onClose={onClose} onEdit={onEdit}>
+      {/* Badges */}
+      <div className="flex flex-wrap gap-2">
+        {getStatusBadge(course.status, COURSE_STATUSES)}
+        <span className="px-2 py-0.5 rounded text-xs bg-[#C8FF2E]/10 text-[#C8FF2E] capitalize">{course.format}</span>
+        <span className="px-2 py-0.5 rounded text-xs bg-[#525662] text-[#afb6c4] capitalize">{course.difficulty}</span>
+        {course.isFeatured && <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">Featured</span>}
+        <span className="px-2 py-0.5 rounded text-xs bg-[#525662] text-[#afb6c4] capitalize">{course.visibility}</span>
+      </div>
+
+      {/* Core Info */}
+      {course.shortDescription && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Short Description</label>
+          <p className="text-white text-sm mt-1">{course.shortDescription}</p>
+        </div>
+      )}
+      {course.detailedDescription && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Detailed Description</label>
+          <p className="text-[#afb6c4] text-sm mt-1 whitespace-pre-wrap">{course.detailedDescription}</p>
+        </div>
+      )}
+      {course.summary && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Summary</label>
+          <p className="text-[#afb6c4] text-sm mt-1">{course.summary}</p>
+        </div>
+      )}
+
+      {/* Meta Info Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {category && (
+          <div className="bg-[#151920] rounded-lg p-3">
+            <label className="text-xs text-[#878e9a]">Category</label>
+            <p className="text-white text-sm">{category.name}</p>
+          </div>
+        )}
+        {course.duration && (
+          <div className="bg-[#151920] rounded-lg p-3">
+            <label className="text-xs text-[#878e9a]">Duration</label>
+            <p className="text-white text-sm">{course.duration}</p>
+          </div>
+        )}
+        {course.instructor && (
+          <div className="bg-[#151920] rounded-lg p-3">
+            <label className="text-xs text-[#878e9a]">Instructor</label>
+            <p className="text-white text-sm">{course.instructor}</p>
+          </div>
+        )}
+        <div className="bg-[#151920] rounded-lg p-3">
+          <label className="text-xs text-[#878e9a]">Lessons</label>
+          <p className="text-white text-sm">{course.lessonCount ?? 0}</p>
+        </div>
+        <div className="bg-[#151920] rounded-lg p-3">
+          <label className="text-xs text-[#878e9a]">Enrolments</label>
+          <p className="text-white text-sm">{course.enrolmentCount ?? 0}</p>
+        </div>
+        <div className="bg-[#151920] rounded-lg p-3">
+          <label className="text-xs text-[#878e9a]">Version</label>
+          <p className="text-white text-sm">v{course.version ?? 1}</p>
+        </div>
+      </div>
+
+      {/* Learning Objectives */}
+      {course.learningObjectives?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Learning Objectives</label>
+          <ul className="mt-1 space-y-1">
+            {course.learningObjectives.map((obj, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]">
+                <Check className="w-4 h-4 text-[#C8FF2E] mt-0.5 flex-shrink-0" />
+                {obj}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Outcomes */}
+      {course.outcomes?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Outcomes</label>
+          <ul className="mt-1 space-y-1">
+            {course.outcomes.map((outcome, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]">
+                <Star className="w-4 h-4 text-[#C8FF2E] mt-0.5 flex-shrink-0" />
+                {outcome}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Course Structure */}
+      <div>
+        <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Course Structure</label>
+        {courseChapters.length === 0 ? (
+          <p className="text-[#686f7e] text-sm mt-1">No chapters yet.</p>
+        ) : (
+          <div className="mt-2 space-y-2">
+            {courseChapters.map(ch => {
+              const chLessons = lessons.filter(l => l.chapterId === (ch.id || (ch as any)._id)).sort((a, b) => a.order - b.order);
+              const isExpanded = expandedChapter === (ch.id || (ch as any)._id);
+              return (
+                <div key={ch.id || (ch as any)._id} className="bg-[#151920] rounded-lg border border-white/5">
+                  <div
+                    className="flex items-center gap-2 p-3 cursor-pointer hover:bg-[#1a1d21] transition-colors"
+                    onClick={() => setExpandedChapter(isExpanded ? null : (ch.id || (ch as any)._id))}
+                  >
+                    {isExpanded ? <ChevronDown className="w-4 h-4 text-[#878e9a]" /> : <ChevronRight className="w-4 h-4 text-[#878e9a]" />}
+                    <span className="text-white text-sm font-medium flex-1">Ch {ch.order + 1}: {ch.title}</span>
+                    {getStatusBadge(ch.status, CHAPTER_STATUSES)}
+                    <span className="text-xs text-[#686f7e]">{ch.lessonCount ?? 0} lessons</span>
+                  </div>
+                  {isExpanded && chLessons.length > 0 && (
+                    <div className="px-3 pb-3 space-y-1">
+                      {chLessons.map(les => {
+                        const quizCount = les.quizQuestions?.length || 0;
+                        return (
+                          <div key={les.id || (les as any)._id} className="flex items-center gap-2 text-sm text-[#878e9a] py-1 px-2 rounded hover:bg-[#1a1d21]">
+                            {getFormatIcon(les.format)}
+                            <span className="flex-1">{les.title}</span>
+                            {quizCount > 0 && <span className="text-[#C8FF2E] text-xs">{quizCount} Qs</span>}
+                            {getStatusBadge(les.status, LESSON_STATUSES)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </DetailPanel>
+  );
+}
+
+function ChapterDetailView({
+  chapter, lessons, onClose, onEdit,
+}: {
+  chapter: CourseChapter;
+  lessons: CourseLesson[];
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const chapterLessons = lessons
+    .filter(l => l.chapterId === (chapter.id || (chapter as any)._id))
+    .sort((a, b) => a.order - b.order);
+
+  return (
+    <DetailPanel title={chapter.title} onClose={onClose} onEdit={onEdit}>
+      {/* Badges */}
+      <div className="flex flex-wrap gap-2">
+        {getStatusBadge(chapter.status, CHAPTER_STATUSES)}
+        <span className="px-2 py-0.5 rounded text-xs bg-[#525662] text-[#afb6c4]">Order: {chapter.order + 1}</span>
+        {chapter.duration && <span className="px-2 py-0.5 rounded text-xs bg-[#525662] text-[#afb6c4]">{chapter.duration}</span>}
+      </div>
+
+      {chapter.description && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Description</label>
+          <p className="text-[#afb6c4] text-sm mt-1 whitespace-pre-wrap">{chapter.description}</p>
+        </div>
+      )}
+
+      {chapter.learningObjectives?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Learning Objectives</label>
+          <ul className="mt-1 space-y-1">
+            {chapter.learningObjectives.map((obj, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]">
+                <Check className="w-4 h-4 text-[#C8FF2E] mt-0.5 flex-shrink-0" />
+                {obj}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Lessons List */}
+      <div>
+        <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Lessons ({chapterLessons.length})</label>
+        {chapterLessons.length === 0 ? (
+          <p className="text-[#686f7e] text-sm mt-1">No lessons yet.</p>
+        ) : (
+          <div className="mt-2 space-y-2">
+            {chapterLessons.map(les => {
+              const quizCount = les.quizQuestions?.length || 0;
+              return (
+                <div key={les.id || (les as any)._id} className="bg-[#151920] rounded-lg border border-white/5 p-3">
+                  <div className="flex items-center gap-2">
+                    {getFormatIcon(les.format)}
+                    <span className="text-white text-sm font-medium flex-1">{les.title}</span>
+                    {getStatusBadge(les.status, LESSON_STATUSES)}
+                  </div>
+                  {les.description && <p className="text-[#686f7e] text-xs mt-1">{les.description}</p>}
+                  <div className="flex items-center gap-3 mt-1 text-xs text-[#686f7e]">
+                    <span className="capitalize">{les.format}</span>
+                    {les.duration && <span>{les.duration}</span>}
+                    {les.isFree && <span className="text-green-400">Free</span>}
+                    {quizCount > 0 && <span className="text-[#C8FF2E]">{quizCount} quiz questions</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </DetailPanel>
+  );
+}
+
+function LessonDetailView({
+  lesson, onClose, onEdit,
+}: {
+  lesson: CourseLesson;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  return (
+    <DetailPanel title={lesson.title} onClose={onClose} onEdit={onEdit}>
+      {/* Badges */}
+      <div className="flex flex-wrap gap-2">
+        {getFormatIcon(lesson.format)}
+        {getStatusBadge(lesson.status, LESSON_STATUSES)}
+        <span className="px-2 py-0.5 rounded text-xs bg-[#525662] text-[#afb6c4] capitalize">{lesson.format}</span>
+        {lesson.duration && <span className="px-2 py-0.5 rounded text-xs bg-[#525662] text-[#afb6c4]">{lesson.duration}</span>}
+        {lesson.isFree && <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400">Free Preview</span>}
+      </div>
+
+      {lesson.description && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Description</label>
+          <p className="text-[#afb6c4] text-sm mt-1 whitespace-pre-wrap">{lesson.description}</p>
+        </div>
+      )}
+
+      {lesson.content && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Content</label>
+          <div className="text-[#afb6c4] text-sm mt-1 whitespace-pre-wrap bg-[#151920] rounded-lg p-4 border border-white/5 max-h-[400px] overflow-y-auto">{lesson.content}</div>
+        </div>
+      )}
+
+      {lesson.learningObjectives?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Learning Objectives</label>
+          <ul className="mt-1 space-y-1">
+            {lesson.learningObjectives.map((obj, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]">
+                <Check className="w-4 h-4 text-[#C8FF2E] mt-0.5 flex-shrink-0" />
+                {obj}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {lesson.keyTakeaways?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Key Takeaways</label>
+          <ul className="mt-1 space-y-1">
+            {lesson.keyTakeaways.map((tk, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-[#afb6c4]">
+                <Star className="w-4 h-4 text-[#C8FF2E] mt-0.5 flex-shrink-0" />
+                {tk}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Quiz Questions */}
+      {lesson.quizQuestions?.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Quiz Questions ({lesson.quizQuestions?.length || 0})</label>
+          <div className="mt-2 space-y-3">
+            {lesson.quizQuestions.map((q, qi) => (
+              <div key={q.id || qi} className="bg-[#151920] rounded-lg border border-white/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[#C8FF2E] text-xs font-medium">Q{qi + 1}</span>
+                  <span className="text-white text-sm">{q.question}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {q.options.map((opt, oi) => (
+                    <div
+                      key={oi}
+                      className={`px-2 py-1.5 rounded text-xs ${oi === q.correctAnswer ? 'bg-[#C8FF2E]/15 text-[#C8FF2E] border border-[#C8FF2E]/30' : 'bg-[#0d1117] text-[#878e9a] border border-white/5'}`}
+                    >
+                      <span className="font-medium mr-1">{String.fromCharCode(65 + oi)}.</span>{opt}
+                    </div>
+                  ))}
+                </div>
+                {q.explanation && <p className="text-[#686f7e] text-xs mt-2 italic">Explanation: {q.explanation}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {lesson.internalNotes && (
+        <div>
+          <label className="text-xs font-medium text-[#878e9a] uppercase tracking-wider">Internal Notes</label>
+          <p className="text-[#686f7e] text-sm mt-1 whitespace-pre-wrap bg-[#151920] rounded-lg p-3 border border-white/5">{lesson.internalNotes}</p>
+        </div>
+      )}
+    </DetailPanel>
   );
 }
 
@@ -713,7 +1184,7 @@ export default function CoursesPage() {
 function CoursesTab({
   courses, categories, categoryMap, searchQuery, setSearchQuery,
   statusFilter, setStatusFilter, difficultyFilter, setDifficultyFilter,
-  onCreate, onEdit, onDelete, onSelectCourse,
+  onCreate, onEdit, onDelete, onSelectCourse, onViewCourse,
 }: {
   courses: Course[];
   categories: CourseCategory[];
@@ -728,6 +1199,7 @@ function CoursesTab({
   onEdit: (course: Course) => void;
   onDelete: (course: Course) => void;
   onSelectCourse: (id: string) => void;
+  onViewCourse: (course: Course) => void;
 }) {
   return (
     <div>
@@ -823,6 +1295,13 @@ function CoursesTab({
                     <td className="px-4 py-3 text-sm text-[#afb6c4]">{course.lessonCount ?? 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => onViewCourse(course)}
+                          className="p-1.5 text-[#878e9a] hover:text-blue-400 transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => onEdit(course)}
                           className="p-1.5 text-[#878e9a] hover:text-[#C8FF2E] transition-colors"
@@ -950,7 +1429,7 @@ function CategoriesTab({
 
 function ChaptersTab({
   chapters, courses, selectedCourseId, setSelectedCourseId,
-  onCreate, onEdit, onDelete, onSelectChapter,
+  onCreate, onEdit, onDelete, onSelectChapter, onViewChapter,
 }: {
   chapters: CourseChapter[];
   courses: Course[];
@@ -960,6 +1439,7 @@ function ChaptersTab({
   onEdit: (chapter: CourseChapter) => void;
   onDelete: (chapter: CourseChapter) => void;
   onSelectChapter: (id: string) => void;
+  onViewChapter: (chapter: CourseChapter) => void;
 }) {
   return (
     <div>
@@ -1022,6 +1502,9 @@ function ChaptersTab({
                     {chapter.duration && <span className="text-xs text-[#686f7e]">{chapter.duration}</span>}
                     {getStatusBadge(chapter.status, CHAPTER_STATUSES)}
                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => onViewChapter(chapter)} className="p-1 text-[#878e9a] hover:text-blue-400">
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button onClick={() => onEdit(chapter)} className="p-1 text-[#878e9a] hover:text-[#C8FF2E]">
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -1046,7 +1529,7 @@ function ChaptersTab({
 
 function LessonsTab({
   lessons, chapters, courses, selectedCourseId, selectedChapterId,
-  setSelectedCourseId, setSelectedChapterId, onCreate, onEdit, onDelete,
+  setSelectedCourseId, setSelectedChapterId, onCreate, onEdit, onDelete, onViewLesson,
 }: {
   lessons: CourseLesson[];
   chapters: CourseChapter[];
@@ -1058,6 +1541,7 @@ function LessonsTab({
   onCreate: () => void;
   onEdit: (lesson: CourseLesson) => void;
   onDelete: (lesson: CourseLesson) => void;
+  onViewLesson: (lesson: CourseLesson) => void;
 }) {
   const filteredChapters = chapters.filter(c => {
     const cid = c.courseId;
@@ -1140,6 +1624,9 @@ function LessonsTab({
                     {getStatusBadge(lesson.status, LESSON_STATUSES)}
                     {lesson.isFree && <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400">Free</span>}
                     <div className="flex items-center gap-1">
+                      <button onClick={() => onViewLesson(lesson)} className="p-1 text-[#878e9a] hover:text-blue-400">
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button onClick={() => onEdit(lesson)} className="p-1 text-[#878e9a] hover:text-[#C8FF2E]">
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -1179,6 +1666,8 @@ function CourseForm({
     viewCount: 0, enrolmentCount: 0, completionCount: 0,
     aiGenerated: false, isFeatured: false,
   });
+  const [aiField, setAiField] = useState<string>('');
+  const aiContext = form.title || '';
 
   const categoryOptions = categories.map(c => ({
     value: c.id || (c as any)._id || '',
@@ -1221,12 +1710,18 @@ function CourseForm({
                   className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white placeholder-[#686f7e] focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-[#878e9a] mb-1">Short Description</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm text-[#878e9a]">Short Description</label>
+                  <InlineAIGenerate fieldType="shortDescription" context={aiContext} onGenerated={(v) => updateField('shortDescription', v)} isGeneratingField={aiField === 'shortDescription'} setIsGeneratingField={(v) => setAiField(v ? 'shortDescription' : '')} />
+                </div>
                 <textarea value={form.shortDescription || ''} onChange={(e) => updateField('shortDescription', e.target.value)} rows={2}
                   className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-[#878e9a] mb-1">Detailed Description</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm text-[#878e9a]">Detailed Description</label>
+                  <InlineAIGenerate fieldType="detailedDescription" context={aiContext} onGenerated={(v) => updateField('detailedDescription', v)} isGeneratingField={aiField === 'detailedDescription'} setIsGeneratingField={(v) => setAiField(v ? 'detailedDescription' : '')} />
+                </div>
                 <textarea value={form.detailedDescription || ''} onChange={(e) => updateField('detailedDescription', e.target.value)} rows={4}
                   className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
               </div>
@@ -1318,12 +1813,18 @@ function CourseForm({
             <h3 className="text-[#C8FF2E] font-semibold mb-4">Learning Design</h3>
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm text-[#878e9a] mb-1">Learning Objectives (comma-separated)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm text-[#878e9a]">Learning Objectives (comma-separated)</label>
+                  <InlineAIGenerate fieldType="learningObjectives" context={aiContext} onGenerated={(v) => updateField('learningObjectives', v.split(',').map((t: string) => t.trim()).filter(Boolean))} isGeneratingField={aiField === 'learningObjectives'} setIsGeneratingField={(v) => setAiField(v ? 'learningObjectives' : '')} />
+                </div>
                 <textarea value={(form.learningObjectives || []).join(', ')} onChange={(e) => updateField('learningObjectives', e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean))} rows={2}
                   className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
               </div>
               <div>
-                <label className="block text-sm text-[#878e9a] mb-1">Outcomes (comma-separated)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm text-[#878e9a]">Outcomes (comma-separated)</label>
+                  <InlineAIGenerate fieldType="outcomes" context={aiContext} onGenerated={(v) => updateField('outcomes', v.split(',').map((t: string) => t.trim()).filter(Boolean))} isGeneratingField={aiField === 'outcomes'} setIsGeneratingField={(v) => setAiField(v ? 'outcomes' : '')} />
+                </div>
                 <textarea value={(form.outcomes || []).join(', ')} onChange={(e) => updateField('outcomes', e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean))} rows={2}
                   className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
               </div>
@@ -1559,6 +2060,7 @@ function ChapterForm({
     title: '', status: 'draft', order: 0, lessonCount: 0,
     learningObjectives: [], aiGenerated: false,
   });
+  const [chAiField, setChAiField] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1579,7 +2081,10 @@ function ChapterForm({
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50" required />
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Description</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Description</label>
+              <InlineAIGenerate fieldType="chapterDescription" context={form.title || ''} onGenerated={(v) => setForm(prev => ({ ...prev, description: v }))} isGeneratingField={chAiField === 'description'} setIsGeneratingField={(v) => setChAiField(v ? 'description' : '')} />
+            </div>
             <textarea value={form.description || ''} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} rows={2}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
@@ -1596,7 +2101,10 @@ function ChapterForm({
             </div>
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Learning Objectives (comma-separated)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Learning Objectives (comma-separated)</label>
+              <InlineAIGenerate fieldType="chapterObjectives" context={form.title || ''} onGenerated={(v) => setForm(prev => ({ ...prev, learningObjectives: v.split(',').map((t: string) => t.trim()).filter(Boolean) }))} isGeneratingField={chAiField === 'objectives'} setIsGeneratingField={(v) => setChAiField(v ? 'objectives' : '')} />
+            </div>
             <textarea value={(form.learningObjectives || []).join(', ')} onChange={(e) => setForm(prev => ({ ...prev, learningObjectives: e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean) }))} rows={2}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
@@ -2231,6 +2739,64 @@ function LessonForm({
     documentUrls: [], quizQuestions: [], attachments: [],
     isFree: false, aiGenerated: false,
   });
+  const [lsAiField, setLsAiField] = useState<string>('');
+  const [showQuizEditor, setShowQuizEditor] = useState((form.quizQuestions?.length ?? 0) > 0);
+
+  const handleAddQuestion = () => {
+    const currentQuestions = form.quizQuestions || [];
+    setForm(prev => ({ ...prev, quizQuestions: [...currentQuestions, { id: `q-${Date.now()}`, question: '', options: ['', '', '', ''], correctAnswer: 0, explanation: '' }] }));
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    setForm(prev => ({ ...prev, quizQuestions: (prev.quizQuestions || []).filter((_, i) => i !== index) }));
+  };
+
+  const handleUpdateQuestion = (index: number, field: string, value: string | number) => {
+    setForm(prev => {
+      const questions = [...(prev.quizQuestions || [])];
+      questions[index] = { ...questions[index], [field]: value };
+      return { ...prev, quizQuestions: questions };
+    });
+  };
+
+  const handleUpdateOption = (qIndex: number, oIndex: number, value: string) => {
+    setForm(prev => {
+      const questions = [...(prev.quizQuestions || [])];
+      const options = [...questions[qIndex].options];
+      options[oIndex] = value;
+      questions[qIndex] = { ...questions[qIndex], options };
+      return { ...prev, quizQuestions: questions };
+    });
+  };
+
+  const handleGenerateQuiz = async () => {
+    const title = form.title || 'Untitled Lesson';
+    const context = form.content ? form.content.substring(0, 2000) : '';
+    setLsAiField('quiz');
+    try {
+      const messages: GLMMessage[] = [
+        { role: 'system', content: 'You are an expert assessment creator. Generate multiple-choice quiz questions. Always respond with valid JSON. Use British English.' },
+        { role: 'user', content: `Generate 3 quiz questions for the lesson: ${title}${context ? `\n\nContent: ${context}` : ''}\n\nGenerate a JSON object with a "questions" array, each having: question (string), options (array of 4 strings), correctAnswer (index 0-3), explanation (string).` },
+      ];
+      const result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
+      const parsed = parseJsonFromAI(result);
+      if (parsed?.questions && Array.isArray(parsed.questions)) {
+        const newQuestions: QuizQuestion[] = parsed.questions.map((q: any, i: number) => ({
+          id: `q-${Date.now()}-${i}`,
+          question: q.question || '',
+          options: Array.isArray(q.options) ? q.options.slice(0, 4).concat(Array(4).fill('')).slice(0, 4) : ['', '', '', ''],
+          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+          explanation: q.explanation || '',
+        }));
+        setForm(prev => ({ ...prev, quizQuestions: [...(prev.quizQuestions || []), ...newQuestions] }));
+        setShowQuizEditor(true);
+      }
+    } catch (err) {
+      console.error('Quiz generation failed:', err);
+    } finally {
+      setLsAiField('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2251,12 +2817,18 @@ function LessonForm({
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#C8FF2E]/20 focus:border-[#C8FF2E]/50" required />
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Description</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Description</label>
+              <InlineAIGenerate fieldType="lessonDescription" context={form.title || ''} onGenerated={(v) => setForm(prev => ({ ...prev, description: v }))} isGeneratingField={lsAiField === 'description'} setIsGeneratingField={(v) => setLsAiField(v ? 'description' : '')} />
+            </div>
             <textarea value={form.description || ''} onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))} rows={2}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Content</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Content</label>
+              <InlineAIGenerate fieldType="lessonContent" context={`${form.title || ''}${form.learningObjectives?.length ? ' — Objectives: ' + form.learningObjectives.join(', ') : ''}`} onGenerated={(v) => setForm(prev => ({ ...prev, content: v }))} isGeneratingField={lsAiField === 'content'} setIsGeneratingField={(v) => setLsAiField(v ? 'content' : '')} />
+            </div>
             <textarea value={form.content || ''} onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))} rows={6}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
@@ -2287,12 +2859,18 @@ function LessonForm({
             </div>
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Learning Objectives (comma-separated)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Learning Objectives (comma-separated)</label>
+              <InlineAIGenerate fieldType="lessonObjectives" context={form.title || ''} onGenerated={(v) => setForm(prev => ({ ...prev, learningObjectives: v.split(',').map((t: string) => t.trim()).filter(Boolean) }))} isGeneratingField={lsAiField === 'objectives'} setIsGeneratingField={(v) => setLsAiField(v ? 'objectives' : '')} />
+            </div>
             <textarea value={(form.learningObjectives || []).join(', ')} onChange={(e) => setForm(prev => ({ ...prev, learningObjectives: e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean) }))} rows={2}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Key Takeaways (comma-separated)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Key Takeaways (comma-separated)</label>
+              <InlineAIGenerate fieldType="keyTakeaways" context={form.title || ''} onGenerated={(v) => setForm(prev => ({ ...prev, keyTakeaways: v.split(',').map((t: string) => t.trim()).filter(Boolean) }))} isGeneratingField={lsAiField === 'takeaways'} setIsGeneratingField={(v) => setLsAiField(v ? 'takeaways' : '')} />
+            </div>
             <textarea value={(form.keyTakeaways || []).join(', ')} onChange={(e) => setForm(prev => ({ ...prev, keyTakeaways: e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean) }))} rows={2}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
@@ -2302,10 +2880,59 @@ function LessonForm({
             <label htmlFor="isFree" className="text-sm text-[#afb6c4]">Free Preview Lesson</label>
           </div>
           <div>
-            <label className="block text-sm text-[#878e9a] mb-1">Internal Notes</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm text-[#878e9a]">Internal Notes</label>
+              <InlineAIGenerate fieldType="lessonNotes" context={form.title || ''} onGenerated={(v) => setForm(prev => ({ ...prev, internalNotes: v }))} isGeneratingField={lsAiField === 'notes'} setIsGeneratingField={(v) => setLsAiField(v ? 'notes' : '')} />
+            </div>
             <textarea value={form.internalNotes || ''} onChange={(e) => setForm(prev => ({ ...prev, internalNotes: e.target.value }))} rows={2}
               className="w-full px-3 py-2 bg-[#151920] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
           </div>
+
+          {/* Quiz Questions Section */}
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <button type="button" onClick={() => setShowQuizEditor(!showQuizEditor)} className="flex items-center gap-2 text-white font-medium">
+                {showQuizEditor ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                Quiz Questions ({(form.quizQuestions || []).length})
+              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleGenerateQuiz} disabled={lsAiField === 'quiz'} className="flex items-center gap-1 px-2 py-1 text-xs bg-[#C8FF2E]/10 text-[#C8FF2E] hover:bg-[#C8FF2E]/20 rounded border border-[#C8FF2E]/30 disabled:opacity-40 transition-colors">
+                  {lsAiField === 'quiz' ? <div className="w-3 h-3 border-2 border-[#C8FF2E]/30 border-t-[#C8FF2E] rounded-full animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  Generate Quiz
+                </button>
+                {showQuizEditor && <button type="button" onClick={handleAddQuestion} className="flex items-center gap-1 px-2 py-1 text-xs bg-[#151920] border border-white/10 rounded text-[#afb6c4] hover:border-[#C8FF2E]/30 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Question
+                </button>}
+              </div>
+            </div>
+            {showQuizEditor && (form.quizQuestions || []).length === 0 && (
+              <p className="text-sm text-[#686f7e] text-center py-4">No quiz questions yet. Click "Add Question" or "Generate Quiz" to add some.</p>
+            )}
+            {showQuizEditor && (form.quizQuestions || []).map((q, qi) => (
+              <div key={q.id || qi} className="bg-[#0d1117] rounded-lg p-3 border border-white/5 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-[#C8FF2E] font-medium">Q{qi + 1}</span>
+                  <button type="button" onClick={() => handleRemoveQuestion(qi)} className="text-[#686f7e] hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
+                </div>
+                <input type="text" value={q.question} onChange={(e) => handleUpdateQuestion(qi, 'question', e.target.value)} placeholder="Question text..."
+                  className="w-full px-2 py-1.5 bg-[#151920] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#C8FF2E]/50 mb-2" />
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {q.options.map((opt, oi) => (
+                    <div key={oi} className="flex items-center gap-1">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer ${oi === q.correctAnswer ? 'bg-[#C8FF2E]/20 text-[#C8FF2E]' : 'bg-[#151920] text-[#686f7e]'}`} onClick={() => handleUpdateQuestion(qi, 'correctAnswer', oi)}>
+                        {String.fromCharCode(65 + oi)}
+                      </span>
+                      <input type="text" value={opt} onChange={(e) => handleUpdateOption(qi, oi, e.target.value)} placeholder={`Option ${oi + 1}`}
+                        className="flex-1 px-2 py-1 bg-[#151920] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#C8FF2E]/50" />
+                    </div>
+                  ))}
+                </div>
+                <textarea value={q.explanation || ''} onChange={(e) => handleUpdateQuestion(qi, 'explanation', e.target.value)} placeholder="Explanation (optional)" rows={1}
+                  className="w-full px-2 py-1 bg-[#151920] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#C8FF2E]/50 resize-none" />
+              </div>
+            ))}
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
             <button type="button" onClick={onCancel} className="px-4 py-2 text-[#878e9a] hover:text-white transition-colors">Cancel</button>
             <button type="submit" className="px-6 py-2 bg-[#C8FF2E] hover:bg-[#d4ff5c] text-white rounded-lg font-medium transition-colors">
