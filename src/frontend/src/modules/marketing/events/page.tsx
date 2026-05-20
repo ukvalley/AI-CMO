@@ -16,13 +16,73 @@ import {
 } from 'lucide-react';
 import { useAuthStore, useCompanyStore } from '@/stores';
 import { useDataStore } from '@/stores/dataStore';
-import { eventApi, eventCategoryApi, eventSessionApi, eventResourceApi, eventAiApi } from '@/services/api';
+import { eventApi, eventCategoryApi, eventSessionApi, eventResourceApi } from '@/services/api';
 import type {
   Event as EventType, EventCategory, EventSession, EventResource,
   EventStatus, EventVisibility, EventPriority, EventMode,
   EventType as EventTypeEnum, EventAudienceType, EventCategoryStatus,
   SessionStatus, ResourceType, ResourceStatus, ApprovalStatus,
 } from '@/types/entities';
+
+// ============================================
+// AI HELPER FUNCTIONS (direct Ollama GLM call)
+// ============================================
+
+const OLLAMA_API_URL = 'http://localhost:11434/v1/chat/completions';
+const OLLAMA_MODEL = 'glm-5:cloud';
+
+interface GLMMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+async function callGLM(
+  messages: GLMMessage[],
+  options?: { temperature?: number; maxTokens?: number; responseFormat?: 'text' | 'json_object' }
+): Promise<string> {
+  const response = await fetch(OLLAMA_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      messages,
+      temperature: options?.temperature ?? 0.7,
+      max_tokens: options?.maxTokens ?? 2000,
+      stream: false,
+      ...(options?.responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`AI API error (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+function parseJsonFromAI(text: string): any {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  } catch { /* fall through */ }
+  try { return JSON.parse(text); } catch { /* fall through */ }
+  return null;
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
+  let lastError: any;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i < maxRetries) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
 
 // ============================================
 // CONSTANTS
@@ -1374,26 +1434,72 @@ function AIGenerateTab({ events, companyId, onEventCreated }: {
     setAiResult('');
 
     try {
-      let res: any;
+      let result = '';
       switch (aiMode) {
-        case 'description':
-          res = await eventAiApi.generateDescription({ title: descTitle, brief: descBrief, eventType: descEventType, eventMode: descEventMode, companyId });
+        case 'description': {
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert event planner and business coordinator. Generate professional event content for enterprise use. Always respond with valid JSON when structured data is requested. Use British English spelling. Be concise and professional.' },
+            { role: 'user', content: `Generate a professional event description for a business event with the following details:\n\nTitle: ${descTitle}\n${descBrief ? `Brief: ${descBrief}` : ''}\n${descEventType ? `Event Type: ${descEventType}` : ''}\n${descEventMode ? `Event Mode: ${descEventMode}` : ''}\n\nGenerate a JSON object with these fields:\n- shortDescription (max 200 characters)\n- detailedDescription (2-3 paragraphs)\n- summary (1-2 sentences)\n- objectives (array of 3-5 business objectives)\n- expectedOutcomes (array of 3-5 expected outcomes)` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'agenda':
-          res = await eventAiApi.generateAgenda({ title: agendaTitle, description: agendaDesc, objectives: agendaObjectives.split(',').map((s: string) => s.trim()).filter(Boolean), companyId });
+        }
+        case 'agenda': {
+          const objectives = agendaObjectives.split(',').map((s: string) => s.trim()).filter(Boolean);
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert event agenda designer for business events. Create structured, professional agendas. Always respond with valid JSON. Use British English spelling.' },
+            { role: 'user', content: `Generate an event agenda with sessions for:\n\nTitle: ${agendaTitle}\n${agendaDesc ? `Description: ${agendaDesc}` : ''}\n${objectives.length ? `Objectives: ${objectives.join(', ')}` : ''}\n\nGenerate a JSON array of sessions, each with:\n- title\n- description\n- duration (e.g. "30 minutes")\n- speakerInfo (speaker name and role, or "TBD")\n- objectives (array of session objectives)\n- checklistItems (array of {text, order} items for this session)` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 3000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'checklist':
-          res = await eventAiApi.generateChecklist({ title: checkTitle, eventType: checkEventType, eventMode: checkEventMode, companyId });
+        }
+        case 'checklist': {
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert event coordinator. Create practical pre-event planning checklists. Always respond with valid JSON. Use British English spelling.' },
+            { role: 'user', content: `Generate a pre-event planning checklist for:\n\nTitle: ${checkTitle}\n${checkEventType ? `Event Type: ${checkEventType}` : ''}\n${checkEventMode ? `Event Mode: ${checkEventMode}` : ''}\n\nGenerate a JSON array of checklist items, each with:\n- text (clear action item)\n- order (chronological number starting from 1)\n\nInclude 10-15 items covering venue, logistics, communications, technology, and follow-up.` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'mom':
-          res = await eventAiApi.generateMom({ title: momTitle, eventDate: momDate, attendees: momAttendees, notes: momNotes, companyId });
+        }
+        case 'mom': {
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert meeting secretary. Generate professional Minutes of Meeting documents. Always respond with valid JSON. Use British English spelling.' },
+            { role: 'user', content: `Generate Minutes of Meeting for:\n\nTitle: ${momTitle}\n${momDate ? `Date: ${momDate}` : ''}\n${momAttendees ? `Attendees: ${momAttendees}` : ''}\n${momNotes ? `Notes: ${momNotes}` : ''}\n\nGenerate a JSON object with:\n- summary (2-3 sentence meeting summary)\n- keyDecisions (array of key decisions made)\n- actionItems (array of {task, assignee, deadline})\n- followUps (array of follow-up items)\n- nextSteps (array of next steps)` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'enhance':
-          res = await eventAiApi.enhanceContent({ content: enhanceContent, enhancementType: enhanceType, title: enhanceTitle, companyId });
+        }
+        case 'enhance': {
+          const enhanceInstructions: Record<string, string> = {
+            grammar: 'Fix grammar, spelling, and punctuation errors.',
+            tone: 'Adjust the tone to be more professional and engaging.',
+            expand: 'Expand the content with more detail and examples.',
+            simplify: 'Simplify the content to be clearer and more concise.',
+            format: 'Improve the formatting and structure of the content.',
+            keypoints: 'Extract and summarise the key points from the content.',
+            mom: 'Convert the content into structured Minutes of Meeting format.',
+          };
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert content editor for business events. Enhance and improve content professionally. Use British English spelling.' },
+            { role: 'user', content: `${enhanceInstructions[enhanceType] || 'Improve the following content.'}\n\n${enhanceTitle ? `Title: ${enhanceTitle}\n\n` : ''}Content:\n${enhanceContent}` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 3000 }));
+          setAiResult(result);
           break;
+        }
       }
-      const content = res?.data || res?.content || (typeof res === 'string' ? res : JSON.stringify(res, null, 2));
-      setAiResult(typeof content === 'string' ? content : JSON.stringify(content, null, 2));
     } catch (error: any) {
       setAiError(error.message || 'AI generation failed. Please try again.');
     } finally {

@@ -17,13 +17,73 @@ import {
 } from 'lucide-react';
 import { useAuthStore, useCompanyStore } from '@/stores';
 import { useDataStore } from '@/stores/dataStore';
-import { courseApi, courseCategoryApi, courseChapterApi, courseLessonApi, courseAiApi } from '@/services/api';
+import { courseApi, courseCategoryApi, courseChapterApi, courseLessonApi } from '@/services/api';
 import type {
   Course, CourseCategory, CourseChapter, CourseLesson,
   CourseStatus, CourseVisibility, CourseDifficulty, CourseFormat,
   CourseAudienceType, ChapterStatus, LessonFormat, LessonStatus,
   CourseCategoryStatus,
 } from '@/types/entities';
+
+// ============================================
+// AI HELPER FUNCTIONS (direct Ollama GLM call)
+// ============================================
+
+const OLLAMA_API_URL = 'http://localhost:11434/v1/chat/completions';
+const OLLAMA_MODEL = 'glm-5:cloud';
+
+interface GLMMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+async function callGLM(
+  messages: GLMMessage[],
+  options?: { temperature?: number; maxTokens?: number; responseFormat?: 'text' | 'json_object' }
+): Promise<string> {
+  const response = await fetch(OLLAMA_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      messages,
+      temperature: options?.temperature ?? 0.7,
+      max_tokens: options?.maxTokens ?? 2000,
+      stream: false,
+      ...(options?.responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`AI API error (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+function parseJsonFromAI(text: string): any {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  } catch { /* fall through */ }
+  try { return JSON.parse(text); } catch { /* fall through */ }
+  return null;
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
+  let lastError: any;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i < maxRetries) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
 
 // ============================================
 // CONSTANTS
@@ -1605,49 +1665,60 @@ function AIGenerateTab({
     setAiResult('');
 
     try {
-      let res: any;
+      let result = '';
       switch (aiMode) {
-        case 'description':
-          res = await courseAiApi.generateDescription({
-            title: descTitle,
-            shortDescription: descBrief,
-            format: descFormat,
-            difficulty: descDifficulty,
-            companyId,
-          });
+        case 'description': {
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert course content creator for businesses. Generate professional, SEO-optimised course content. Always respond with valid JSON matching the requested structure. Use British English spelling.' },
+            { role: 'user', content: `Generate course marketing content for:\n\nTitle: ${descTitle}\n${descBrief ? `Brief: ${descBrief}` : ''}\n${descFormat ? `Format: ${descFormat}` : ''}\n${descDifficulty ? `Difficulty: ${descDifficulty}` : ''}\n\nGenerate a JSON object with these fields:\n- shortDescription (max 200 characters)\n- detailedDescription (2-3 paragraphs)\n- summary (1-2 sentences)\n- learningObjectives (array of 3-5 learning objectives)\n- outcomes (array of 3-5 expected outcomes)` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 2000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'structure':
-          res = await courseAiApi.generateStructure({
-            title: structTitle,
-            description: structDesc,
-            learningObjectives: structObjectives.split(',').map((s: string) => s.trim()).filter(Boolean),
-            format: descFormat,
-            difficulty: descDifficulty,
-            companyId,
-          });
+        }
+        case 'structure': {
+          const objectives = structObjectives.split(',').map((s: string) => s.trim()).filter(Boolean);
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert instructional designer for business courses. Generate comprehensive course structures. Always respond with valid JSON matching the requested structure. Use British English spelling.' },
+            { role: 'user', content: `Generate a complete course structure for:\n\nTitle: ${structTitle}\n${structDesc ? `Description: ${structDesc}` : ''}\n${objectives.length ? `Learning Objectives: ${objectives.join(', ')}` : ''}\n${descFormat ? `Format: ${descFormat}` : ''}\n${descDifficulty ? `Difficulty: ${descDifficulty}` : ''}\n\nGenerate a JSON object with a "chapters" array (4-8 chapters), each containing:\n- title\n- description\n- learningObjectives (array)\n- lessons (array of 2-4 lessons each with title, description, format, duration)` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 4000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'quiz':
-          res = await courseAiApi.generateQuiz({
-            lessonTitle: quizLessonTitle,
-            lessonContent: quizLessonContent,
-            chapterTitle: quizChapterTitle,
-            courseTitle: quizCourseTitle,
-            difficulty: quizDifficulty,
-            count: quizCount,
-            companyId,
-          });
+        }
+        case 'quiz': {
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert assessment creator for business courses. Generate multiple-choice quiz questions. Always respond with valid JSON matching the requested structure. Use British English spelling.' },
+            { role: 'user', content: `Generate quiz questions for:\n\nLesson: ${quizLessonTitle}\n${quizLessonContent ? `Content: ${quizLessonContent.substring(0, 2000)}` : ''}\n${quizChapterTitle ? `Chapter: ${quizChapterTitle}` : ''}\n${quizCourseTitle ? `Course: ${quizCourseTitle}` : ''}\nDifficulty: ${quizDifficulty}\nNumber of questions: ${quizCount}\n\nGenerate a JSON object with a "questions" array, each question having:\n- question (string)\n- options (array of 4 options)\n- correctAnswer (index 0-3)\n- explanation (string)` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 3000, responseFormat: 'json_object' }));
+          const parsed = parseJsonFromAI(result);
+          if (parsed) setAiResult(JSON.stringify(parsed, null, 2));
+          else setAiResult(result);
           break;
-        case 'enhance':
-          res = await courseAiApi.enhanceContent({
-            content: enhanceContent,
-            enhancementType: enhanceType,
-            title: enhanceTitle,
-            companyId,
-          });
+        }
+        case 'enhance': {
+          const enhanceInstructions: Record<string, string> = {
+            grammar: 'Fix grammar, spelling, and punctuation errors.',
+            tone: 'Adjust the tone to be more professional and engaging.',
+            expand: 'Expand the content with more detail and examples.',
+            simplify: 'Simplify the content to be clearer and more concise.',
+            format: 'Improve the formatting and structure of the content.',
+            keypoints: 'Extract and summarise the key points from the content.',
+          };
+          const messages: GLMMessage[] = [
+            { role: 'system', content: 'You are an expert content editor for business courses. Enhance and improve content professionally. Use British English spelling.' },
+            { role: 'user', content: `${enhanceInstructions[enhanceType] || 'Improve the following content.'}\n\n${enhanceTitle ? `Title: ${enhanceTitle}\n\n` : ''}Content:\n${enhanceContent}` },
+          ];
+          result = await withRetry(() => callGLM(messages, { temperature: 0.7, maxTokens: 3000 }));
+          setAiResult(result);
           break;
+        }
       }
-      const content = res?.data || res?.content || (typeof res === 'string' ? res : JSON.stringify(res, null, 2));
-      setAiResult(typeof content === 'string' ? content : JSON.stringify(content, null, 2));
     } catch (error: any) {
       setAiError(error.message || 'AI generation failed. Please try again.');
     } finally {
