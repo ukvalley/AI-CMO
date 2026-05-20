@@ -87,7 +87,7 @@ export const apiRequest = async <T>(
     const controller = new AbortController();
     // Use a longer timeout for AI generation endpoints
     const isAIEndpoint = endpoint.startsWith('/ai/');
-    const timeoutMs = isAIEndpoint ? 180000 : 30000;
+    const timeoutMs = isAIEndpoint ? 240000 : 30000;
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     const response = await fetch(url, {
@@ -763,18 +763,45 @@ export const taskApi = {
 
 // ============== AI API ==============
 
+/**
+ * Retry wrapper for AI generation calls.
+ * Retries up to `maxRetries` times with exponential backoff on transient failures.
+ */
+async function aiRequestWithRetry<T>(
+  endpoint: string,
+  options: ApiOptions,
+  maxRetries: number = 3
+): Promise<ApiResponse<T>> {
+  let lastError: string = '';
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const result = await apiRequest<T>(endpoint, options);
+    if (!result.error) return result;
+
+    lastError = result.error;
+    // Only retry on transient errors (timeout, network, 5xx)
+    const isTransient = result.status === 0 || result.status === 429 || result.status >= 500;
+    if (!isTransient || attempt >= maxRetries) break;
+
+    const delay = 2000 * attempt; // 2s, 4s, 6s
+    console.log(`[AI] Attempt ${attempt}/${maxRetries} failed (${result.error}), retrying in ${delay}ms...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  // Return the last error result
+  return { error: `AI generation failed after ${maxRetries} attempts: ${lastError}`, status: 0 };
+}
+
 export const aiApi = {
   generate: (data: { prompt: string; context?: any; maxTokens?: number }) =>
-    apiRequest('/ai/generate', { method: 'POST', body: data }),
+    aiRequestWithRetry('/ai/generate', { method: 'POST', body: data }),
 
   generateBulk: (data: { items: any[]; template: string; context?: any }) =>
-    apiRequest('/ai/generate-bulk', { method: 'POST', body: data }),
+    aiRequestWithRetry('/ai/generate-bulk', { method: 'POST', body: data }),
 
   suggest: (data: { moduleId: string; fieldName: string; currentValue?: string; context?: any }) =>
-    apiRequest('/ai/suggest', { method: 'POST', body: data }),
+    aiRequestWithRetry('/ai/suggest', { method: 'POST', body: data }),
 
   analyze: (data: { data: any; analysisType: string }) =>
-    apiRequest('/ai/analyze', { method: 'POST', body: data }),
+    aiRequestWithRetry('/ai/analyze', { method: 'POST', body: data }),
 };
 
 // ============== TESTIMONIALS API ==============

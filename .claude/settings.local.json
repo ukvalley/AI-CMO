@@ -16,7 +16,8 @@
       "Bash(Select-Object -First 15)",
       "Bash(findstr \"newsletter-content-os\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\SANTOSH\\\\Desktop\\\\Mengo\\\\AI-CMO\\\\src\\\\frontend\\\\src\\\\app\" -Recurse -Filter \"page.tsx\")",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Recurse -Filter \"page.tsx\" \"C:\\\\Users\\\\SANTOSH\\\\Desktop\\\\Mengo\\\\AI-CMO\\\\src\\\\frontend\\\\src\\\\app\")"
     ]
   }
 }
