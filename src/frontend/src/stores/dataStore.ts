@@ -39,6 +39,9 @@ import type {
   CollateralCategoryInfo,
   Book,
   Course,
+  CourseCategory,
+  CourseChapter,
+  CourseLesson,
   SEOPage,
   Ad,
   PRItem,
@@ -160,7 +163,6 @@ interface ModuleData {
   ads: Ad[];
   prItems: PRItem[];
   emailTemplates: EmailTemplate[];
-  courses: Course[];
   events: Event[];
 
   // Social Media Content OS
@@ -174,6 +176,10 @@ interface ModuleData {
   socialExports: SocialExport[];
 
   // Programs
+  courses: Course[];
+  courseCategories: CourseCategory[];
+  courseChapters: CourseChapter[];
+  courseLessons: CourseLesson[];
   loyaltyProgrammes: LoyaltyProgramme[];
   membershipPlans: MembershipPlan[];
   referralProgrammes: ReferralProgramme[];
@@ -259,7 +265,6 @@ const createEmptyModuleData = (): ModuleData => ({
   ads: [],
   prItems: [],
   emailTemplates: [],
-  courses: [],
   events: [],
 
   // Social Media Content OS
@@ -271,6 +276,10 @@ const createEmptyModuleData = (): ModuleData => ({
   socialCreatives: [],
   socialCampaigns: [],
   socialExports: [],
+  courses: [],
+  courseCategories: [],
+  courseChapters: [],
+  courseLessons: [],
   loyaltyProgrammes: [],
   membershipPlans: [],
   referralProgrammes: [],

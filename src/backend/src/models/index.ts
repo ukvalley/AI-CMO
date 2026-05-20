@@ -140,6 +140,10 @@ export const loadModels = () => {
       FAQCategory: createMockModel('faqCategories'),
       Testimonial: createMockModel('testimonials'),
       SalesScript: createMockModel('salesScripts'),
+      CourseCategory: createMockModel('courseCategories'),
+      Course: createMockModel('courses'),
+      CourseChapter: createMockModel('courseChapters'),
+      CourseLesson: createMockModel('courseLessons'),
     };
   } else {
     // Import and return real models
@@ -165,6 +169,7 @@ export const loadModels = () => {
     const { FAQ: RealFAQ, FAQCategory: RealFAQCategory } = require('./FAQ');
     const { Testimonial: RealTestimonial } = require('./Testimonial');
     const { SalesScript: RealSalesScript } = require('./SalesScript');
+    const { CourseCategory: RealCourseCategory, Course: RealCourse, CourseChapter: RealCourseChapter, CourseLesson: RealCourseLesson } = require('./Course');
 
     models = {
       User: RealUser,
@@ -191,6 +196,10 @@ export const loadModels = () => {
       FAQCategory: RealFAQCategory,
       Testimonial: RealTestimonial,
       SalesScript: RealSalesScript,
+      CourseCategory: RealCourseCategory,
+      Course: RealCourse,
+      CourseChapter: RealCourseChapter,
+      CourseLesson: RealCourseLesson,
     };
   }
 
@@ -223,3 +232,4 @@ export type { ILandingPageContentOS } from './LandingPageContentOS';
 export type { IFAQ, IFAQCategory } from './FAQ';
 export type { ITestimonial, TestimonialType, TestimonialStatus, CollectionMethod, AuthorityLevel, DetailDepth } from './Testimonial';
 export type { ISalesScript, ScriptType, ScriptStatus, FunnelStage, AudienceType, CommunicationChannel, ScriptPriority } from './SalesScript';
+export type { ICourseCategory, CourseCategoryStatus, ICourse, CourseStatus, CourseVisibility, CourseDifficulty, CourseFormat, CourseAudienceType, ICourseChapter, ChapterStatus, ICourseLesson, LessonFormat, LessonStatus } from './Course';

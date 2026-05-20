@@ -20,7 +20,7 @@ export * from './sales';
 export * from './marketing';
 
 // Programs
-// export * from './programs';
+export * from './programs';
 
 // Ops
 // export * from './ops';
