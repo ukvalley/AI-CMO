@@ -3147,10 +3147,16 @@ export interface NewsletterStrategy extends BaseEntity {
   linkedData: {
     brandId?: string;
     businessProfileId?: string;
+    founderIds?: string[];
     icpIds?: string[];
     personaIds?: string[];
     productIds?: string[];
+    productCategoryIds?: string[];
     competitorIds?: string[];
+    brandAssetIds?: string[];
+    brandStrategyId?: string;
+    visualIdentityId?: string;
+    salesCollateralIds?: string[];
   };
 }
 

@@ -50,6 +50,7 @@
     ]
   },
   "dependencies": {
+    "dns": "^0.2.2",
     "zhipuai": "^2.0.0"
   }
 }

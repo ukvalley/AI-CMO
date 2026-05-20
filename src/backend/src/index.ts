@@ -19,6 +19,11 @@ import { rateLimiter } from './middleware/rateLimiter';
 
 // Load environment variables — check multiple possible locations
 import path from 'path';
+
+const dns = require('dns');
+
+
+dns.setServers(["8.8.8.8","8.8.4.4"]);
 const envPaths = [
   path.resolve(process.cwd(), '.env'),
   path.resolve(__dirname, '../.env'),

@@ -85,7 +85,10 @@ export const apiRequest = async <T>(
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    // Use a longer timeout for AI generation endpoints
+    const isAIEndpoint = endpoint.startsWith('/ai/');
+    const timeoutMs = isAIEndpoint ? 180000 : 30000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     const response = await fetch(url, {
       method,
