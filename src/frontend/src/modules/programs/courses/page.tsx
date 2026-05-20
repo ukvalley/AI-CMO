@@ -634,7 +634,7 @@ export default function CoursesPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <GraduationCap className="w-8 h-8 text-[#8B5CF6]" />
+            <GraduationCap className="w-8 h-8 text-[#C8FF2E]" />
             <h1 className="text-3xl font-bold text-white">Courses</h1>
           </div>
           {/* Save Status Indicator */}
