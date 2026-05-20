@@ -3214,11 +3214,38 @@ export interface NewsletterTitle extends BaseEntity {
   aiModel?: string;
 }
 
+export type NewsletterImageType = 'hero' | 'feature' | 'product' | 'team' | 'event' | 'banner';
+export type NewsletterImageLayout = 'full-width' | 'card' | 'inline';
+export type NewsletterImagePosition = 'top' | 'middle' | 'bottom';
+export type NewsletterImagePriority = 'high' | 'medium' | 'low';
+
+export type BacklinkType = 'internal' | 'external';
+
+export interface NewsletterBacklink {
+  label: string;
+  url: string;
+  type: BacklinkType;
+  icon?: string;
+}
+
 export interface NewsletterSection {
   id: string;
   type: 'heading' | 'subheading' | 'paragraph' | 'list' | 'quote' | 'cta' | 'image';
   content: string;
   order: number;
+  /** Image fields — only used when type is 'image'. All optional for backward compat. */
+  imageType?: NewsletterImageType;
+  src?: string;
+  alt?: string;
+  caption?: string;
+  imageLayout?: NewsletterImageLayout;
+  imagePosition?: NewsletterImagePosition;
+  imagePriority?: NewsletterImagePriority;
+  /** Backlinks — optional navigation links for sections. */
+  backlinks?: NewsletterBacklink[];
+  /** Edit metadata — enables inline editing UI and versioning. Defaults to false. */
+  editable?: boolean;
+  version?: number;
 }
 
 export interface NewsletterAssetSuggestion {
@@ -3245,6 +3272,7 @@ export interface NewsletterPost extends BaseEntity {
   suggestedAssets: NewsletterAssetSuggestion[];
   publishedAt?: string;
   scheduledPublishAt?: string;
+  logoUrl?: string;
 }
 
 export interface NewsletterExport extends BaseEntity {

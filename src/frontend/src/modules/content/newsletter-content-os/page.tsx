@@ -40,6 +40,9 @@ import {
   UserCircle,
   MessageSquare,
   Copy,
+  ExternalLink,
+  Pencil,
+  Link2,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useDataStore, useCompanyStore, useTaskStore, useAuthStore } from '@/stores';
@@ -94,6 +97,19 @@ const NEWSLETTER_GOALS: { value: NewsletterGoal; label: string; description: str
   { value: 'thought-leadership', label: 'Thought Leadership', description: 'Establish expertise and authority' },
 ];
 
+// Maps newsletter objective (from Strategy) to content types used for generation
+const OBJECTIVE_TO_CONTENT_TYPES: Record<NewsletterGoal, string[]> = {
+  'education': ['educational', 'case-study', 'weekly-insight'],
+  'product-awareness': ['product-update', 'sales', 'problem-solution'],
+  'community-building': ['community', 'high-engagement', 'carousel'],
+  'brand-awareness': ['promotional', 'personal-branding', 'storytelling'],
+  'customer-engagement': ['community', 'carousel', 'high-engagement'],
+  'retention': ['sales', 'weekly-insight', 'problem-solution'],
+  'updates': ['product-update', 'industry-news', 'founder-letter'],
+  'founder-communication': ['founder-letter', 'founder-story', 'storytelling'],
+  'thought-leadership': ['authority', 'storytelling', 'educational'],
+};
+
 const FUNNEL_STAGES: { value: FunnelStage; label: string; description: string }[] = [
   { value: 'tofu', label: 'TOFU', description: 'Top of Funnel - Awareness stage' },
   { value: 'mofu', label: 'MOFU', description: 'Middle of Funnel - Consideration stage' },
@@ -117,6 +133,15 @@ const DEFAULT_CONTENT_TYPES: Array<Partial<NewsletterContentTypeConfig>> = [
   { name: 'Industry News', type: 'industry-news', enabled: true, percentageAllocation: 8, priority: 7, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Share opinion', conversionGoal: 'Social engagement' },
   { name: 'Promotional', type: 'promotional', enabled: true, percentageAllocation: 7, priority: 8, recommendedLength: 350, funnelPosition: 'bofu', ctaStrategy: 'Claim offer', conversionGoal: 'Direct sale' },
   { name: 'AI Newsletter', type: 'ai', enabled: true, percentageAllocation: 5, priority: 9, recommendedLength: 500, funnelPosition: 'tofu', ctaStrategy: 'Explore AI tools', conversionGoal: 'Engagement' },
+  { name: 'Founder Story', type: 'founder-story', enabled: true, percentageAllocation: 5, priority: 10, recommendedLength: 700, funnelPosition: 'mofu', ctaStrategy: 'Read our story', conversionGoal: 'Relationship building' },
+  { name: 'Sales Newsletter', type: 'sales', enabled: true, percentageAllocation: 5, priority: 11, recommendedLength: 500, funnelPosition: 'bofu', ctaStrategy: 'Start free trial', conversionGoal: 'Direct sale' },
+  { name: 'Weekly Insight', type: 'weekly-insight', enabled: true, percentageAllocation: 5, priority: 12, recommendedLength: 600, funnelPosition: 'tofu', ctaStrategy: 'Read full analysis', conversionGoal: 'Engagement' },
+  { name: 'Carousel', type: 'carousel', enabled: true, percentageAllocation: 3, priority: 13, recommendedLength: 400, funnelPosition: 'tofu', ctaStrategy: 'Swipe through', conversionGoal: 'Engagement' },
+  { name: 'Problem-Solution', type: 'problem-solution', enabled: true, percentageAllocation: 5, priority: 14, recommendedLength: 500, funnelPosition: 'mofu', ctaStrategy: 'See the solution', conversionGoal: 'Lead capture' },
+  { name: 'Authority Building', type: 'authority', enabled: true, percentageAllocation: 5, priority: 15, recommendedLength: 800, funnelPosition: 'tofu', ctaStrategy: 'Read the research', conversionGoal: 'Thought leadership' },
+  { name: 'Storytelling', type: 'storytelling', enabled: true, percentageAllocation: 5, priority: 16, recommendedLength: 700, funnelPosition: 'mofu', ctaStrategy: 'Continue reading', conversionGoal: 'Relationship building' },
+  { name: 'Personal Branding', type: 'personal-branding', enabled: true, percentageAllocation: 3, priority: 17, recommendedLength: 600, funnelPosition: 'tofu', ctaStrategy: 'Follow for more', conversionGoal: 'Audience growth' },
+  { name: 'High Engagement', type: 'high-engagement', enabled: true, percentageAllocation: 5, priority: 18, recommendedLength: 400, funnelPosition: 'tofu', ctaStrategy: 'Share your take', conversionGoal: 'Community growth' },
 ];
 
 const SUBJECT_LINE_STYLES: { value: SubjectLineStyle; label: string; description: string }[] = [
@@ -522,6 +547,7 @@ export default function NewsletterContentOSModule() {
   const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'data' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
   const [showCreateStrategyModal, setShowCreateStrategyModal] = useState(false);
   const [autoMapEnabled, setAutoMapEnabled] = useState(true);
+  const [titleFallbackNotice, setTitleFallbackNotice] = useState<string | null>(null);
 
   const activeStrategy = useMemo(() => strategies.find((s) => s.id === activeStrategyId), [strategies, activeStrategyId]);
 
@@ -643,10 +669,10 @@ export default function NewsletterContentOSModule() {
     // Build template guidance for each enabled content type
     const templateGuidanceParts = enabledTypes.map((t) => {
       const template = getTemplateForContentType(t.type);
-      return `- "${t.type}" → Use "${template.name}" template. Subject patterns: "${template.subjectPatterns.slice(0, 2).join('" or "')}"`;
+      return `- "${t.type}" → Use "${template.name}" template. Tone: ${template.design.tone}. Style: ${template.design.visualStyle}. Subject patterns: "${template.subjectPatterns.slice(0, 2).join('" or "')}"`;
     });
     const templateGuidance = templateGuidanceParts.length > 0
-      ? `\n\nTemplate Structure Guidance:\nEach contentType must follow its corresponding newsletter template:\n${templateGuidanceParts.join('\n')}\nEnsure titles and subject lines match the template's tone and structure.`
+      ? `\n\nTemplate Structure Guidance:\nEach contentType must follow its corresponding newsletter template:\n${templateGuidanceParts.join('\n')}\nEnsure titles and subject lines match the template's tone, style, and structure.`
       : '';
 
     const objectiveLabel = activeStrategy.objective || 'education';
@@ -654,44 +680,30 @@ export default function NewsletterContentOSModule() {
     const toneLabel = activeStrategy.communicationTone || 'professional';
     const depthLabel = activeStrategy.contentDepth || 'standard';
 
-    const prompt = `You are an expert newsletter strategist. Generate exactly ${count} newsletter titles for a business newsletter.
+    const prompt = `Generate ${count} newsletter titles as JSON.
 
-Strategy context:
-- Objective: ${objectiveLabel}
-- Target audience: ${activeStrategy.audience || 'general professionals'}
-- Funnel stage: ${funnelLabel}
-- Communication tone: ${toneLabel}
-- Content depth: ${depthLabel}
-${brandContext ? '- ' + brandContext : ''}
-${businessContext ? '- ' + businessContext : ''}
+Strategy: Objective=${objectiveLabel}, Audience=${activeStrategy.audience || 'general professionals'}, Funnel=${funnelLabel}, Tone=${toneLabel}, Depth=${depthLabel}
+${brandContext ? brandContext : ''}
+${businessContext ? businessContext : ''}
 ${linkedContextStr}
 ${templateGuidance}
 
-Content types to cover: ${typeNames}
-
+Content types: ${typeNames}
 Subject line style: ${style}
-${style === 'educational' ? 'Use informative, value-driven subject lines that promise knowledge.' : ''}
-${style === 'conversational' ? 'Use casual, friendly subject lines that feel like a message from a friend.' : ''}
-${style === 'founder-style' ? 'Use personal, authentic subject lines in a founder voice.' : ''}
-${style === 'authority' ? 'Use expert, data-backed subject lines that convey authority.' : ''}
-${style === 'emotional' ? 'Use feeling-driven, relatable subject lines that tap into emotions.' : ''}
-${style === 'insight' ? 'Use curiosity-driven, teaser subject lines that hint at a revelation.' : ''}
-${style === 'minimal' ? 'Use very short subject lines, under 5 words, punchy and direct.' : ''}
 
-You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element must be an object with exactly these fields:
-- "title": string — the newsletter title
-- "subjectLine": string — the email subject line
-- "previewText": string — short preview text shown after the subject line in email clients (under 100 characters)
-- "contentType": string — one of: ${targetTypes.length > 0 ? targetTypes.map((t) => t.type).join(', ') : 'educational, product-update, curated, community, founder-letter, case-study, industry-news, promotional, ai'}
-- "funnelStage": string — one of: tofu, mofu, bofu
-- "engagementScore": number — estimated engagement score from 70-99
-- "suggestedCTA": string — a call-to-action phrase
-- "suggestedKeywords": array of 5 relevant keyword strings
+RESPOND WITH ONLY a valid JSON array. No markdown, no explanation. Each element:
+- "title": newsletter title (max 10 words)
+- "subjectLine": email subject line (max 60 chars)
+- "previewText": short preview (under 100 chars)
+- "contentType": one of: ${targetTypes.length > 0 ? targetTypes.map((t) => t.type).join(', ') : 'educational, product-update, curated, community, founder-letter, case-study, industry-news, promotional, ai'}
+- "funnelStage": one of: tofu, mofu, bofu
+- "engagementScore": number 70-99
+- "suggestedCTA": call-to-action phrase (max 8 words)
+- "suggestedKeywords": array of 5 relevant keywords
 
-Example of one item:
-{"title": "The Complete Guide to SEO Strategy", "subjectLine": "Your guide to seo strategy is here", "previewText": "Discover actionable insights about SEO strategy in this week's newsletter.", "contentType": "educational", "funnelStage": "tofu", "engagementScore": 85, "suggestedCTA": "Read full guide", "suggestedKeywords": ["guide", "tutorial", "learn", "explained", "basics"]}
+Example: {"title":"The Complete Guide to SEO Strategy","subjectLine":"Your SEO strategy guide is here","previewText":"Discover actionable insights about SEO this week.","contentType":"educational","funnelStage":"tofu","engagementScore":85,"suggestedCTA":"Read full guide","suggestedKeywords":["guide","tutorial","learn","explained","basics"]}
 
-Generate ${count} diverse, creative titles now:`;
+Generate ${count} diverse titles now:`;
 
     try {
       console.log('[NewsletterContentOS] Calling AI generate API...');
@@ -788,10 +800,10 @@ Generate ${count} diverse, creative titles now:`;
       await Promise.all(titlesToCreate.map((t) => newsletterTitleApi.create(t).catch(() => {})));
       taskStore.completeBatch(taskId, 0, Array(Math.min(parsed.length, count)).fill('title'));
       console.log('[NewsletterContentOS] SUCCESS — AI generated', titlesToCreate.length, 'titles via', aiResult.provider, '/', aiResult.model);
+      setTitleFallbackNotice(null);
     } catch (error) {
       console.error('[NewsletterContentOS] AI title generation FAILED — falling back to templates. Error:', error);
-
-      // Fallback to sample titles if AI fails
+      setTitleFallbackNotice('AI generation unavailable. Titles generated from built-in templates — try regenerating later.');
       const fallbackType = { type: selectedContentType || 'educational', funnelPosition: 'tofu', ctaStrategy: 'Learn more' };
       const titlesToCreate: any[] = [];
       for (let i = 0; i < count; i++) {
@@ -904,9 +916,10 @@ Generate ${count} diverse, creative titles now:`;
             { id: 'strategy', label: 'Strategy', icon: Target },
             // { id: 'types', label: 'Content Types', icon: Layout },
             { id: 'data', label: 'Data Sources', icon: Database },
+            { id: 'calendar', label: 'Calendar', icon: Calendar },
             { id: 'titles', label: 'Titles', icon: Type },
             { id: 'content', label: 'Content', icon: FileText },
-            { id: 'calendar', label: 'Calendar', icon: Calendar },
+    
             { id: 'assets', label: 'Assets', icon: Image },
             { id: 'review', label: 'Review', icon: CheckCircle },
             { id: 'export', label: 'Export', icon: Download },
@@ -989,6 +1002,7 @@ Generate ${count} diverse, creative titles now:`;
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
                 titles={titles.filter((t) => t.strategyId === activeStrategy.id)}
                 onGenerate={handleGenerateTitles}
+                titleFallbackNotice={titleFallbackNotice}
                 onUpdate={async (id, updates) => {
                   updateItem('newsletterTitles', id, updates);
                   await newsletterTitleApi.update(id, updates);
@@ -1056,6 +1070,7 @@ Generate ${count} diverse, creative titles now:`;
               <ReviewTab
                 strategy={activeStrategy}
                 posts={posts.filter((p) => p.strategyId === activeStrategy.id)}
+                foundationalContext={foundationalContext}
                 onUpdatePost={async (id, updates) => {
                   updateItem('newsletterPosts', id, updates);
                   await newsletterPostApi.update(id, updates);
@@ -1067,6 +1082,7 @@ Generate ${count} diverse, creative titles now:`;
               <ExportTab
                 strategy={activeStrategy}
                 posts={posts.filter((p) => p.strategyId === activeStrategy.id && ['approved', 'published'].includes(p.status))}
+                foundationalContext={foundationalContext}
               />
             )}
           </div>
@@ -2058,6 +2074,7 @@ function TitlesTab({
   onDelete,
   onClearGenerated,
   onClearSelected,
+  titleFallbackNotice,
 }: {
   strategy: NewsletterStrategy;
   contentTypes: NewsletterContentTypeConfig[];
@@ -2067,9 +2084,11 @@ function TitlesTab({
   onDelete: (id: string) => void;
   onClearGenerated: () => void;
   onClearSelected: () => void;
+  titleFallbackNotice?: string | null;
 }) {
   const [selectedStyles, setSelectedStyles] = useState<SubjectLineStyle[]>([]);
-  const [selectedContentType, setSelectedContentType] = useState<string>('');
+  // Content types are now derived from strategy objective, not a manual dropdown
+  const objectiveContentTypes = OBJECTIVE_TO_CONTENT_TYPES[strategy.objective || 'education'] || ['educational'];
   const [styleCounts, setStyleCounts] = useState<Record<SubjectLineStyle, number>>({
     educational: 3,
     conversational: 3,
@@ -2098,8 +2117,16 @@ function TitlesTab({
     console.log("Button Hit");
     if (selectedStyles.length === 0) return;
     setIsGenerating(true);
+    // Distribute titles across objective-based content types
     for (const style of selectedStyles) {
-      await onGenerate(styleCounts[style], style, selectedContentType || undefined);
+      const total = styleCounts[style];
+      // Round-robin distribute total count across content types
+      let remaining = total;
+      for (let i = 0; i < objectiveContentTypes.length && remaining > 0; i++) {
+        const perType = Math.ceil(remaining / (objectiveContentTypes.length - i));
+        await onGenerate(perType, style, objectiveContentTypes[i]);
+        remaining -= perType;
+      }
     }
     setIsGenerating(false);
   };
@@ -2122,6 +2149,18 @@ function TitlesTab({
 
   return (
     <div className="space-y-6">
+      {titleFallbackNotice && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <div className="font-medium text-amber-400">AI Unavailable</div>
+            <div className="text-sm text-slate-400 mt-1">{titleFallbackNotice}</div>
+          </div>
+          <button onClick={() => onGenerate(10, 'educational')} className="text-xs px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-amber-400 transition-colors">
+            Retry with AI
+          </button>
+        </div>
+      )}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary-400" />
@@ -2171,22 +2210,18 @@ function TitlesTab({
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-400 mb-2">Newsletter Type</label>
-          <select
-            value={selectedContentType}
-            onChange={(e) => setSelectedContentType(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 transition-colors"
-          >
-            <option value="">All Types (auto-distribute)</option>
-            {(contentTypes.length > 0 ? contentTypes : DEFAULT_CONTENT_TYPES).filter((t) => t.enabled).map((ct) => (
-              <option key={ct.type} value={ct.type}>{ct.name}</option>
-            ))}
-          </select>
-          {selectedContentType && (
-            <p className="text-xs text-primary-400 mt-1.5">
-              Generating only: <span className="font-medium">{contentTypes.find((t) => t.type === selectedContentType)?.name || selectedContentType}</span>
-            </p>
-          )}
+          <label className="block text-sm font-medium text-slate-400 mb-2">Newsletter Formats <span className="text-slate-500 text-xs">(from Strategy Objective)</span></label>
+          <div className="flex flex-wrap gap-2">
+            {objectiveContentTypes.map((ct) => {
+              const ctInfo = DEFAULT_CONTENT_TYPES.find(t => t.type === ct);
+              return (
+                <span key={ct} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20">
+                  {ctInfo?.name || ct}
+                </span>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500 mt-1.5">Formats are automatically selected based on your Strategy Objective: <span className="text-slate-400">{NEWSLETTER_GOALS.find(g => g.value === strategy.objective)?.label || 'Education'}</span></p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -2963,6 +2998,101 @@ function CreateStrategyModal({
 }
 
 // ============================================
+// BACKLINK EDITOR
+// ============================================
+
+function BacklinkEditor({
+  backlinks,
+  onSave,
+  onCancel,
+}: {
+  backlinks: NewsletterSection['backlinks'];
+  onSave: (backlinks: NewsletterSection['backlinks']) => void;
+  onCancel: () => void;
+}) {
+  const [items, setItems] = useState<Array<{ label: string; url: string; type: 'internal' | 'external' }>>(
+    backlinks && backlinks.length > 0
+      ? backlinks.map(bl => ({ label: bl.label, url: bl.url, type: bl.type }))
+      : [{ label: '', url: '', type: 'external' as const }]
+  );
+
+  const updateItem = (index: number, field: 'label' | 'url' | 'type', value: string) => {
+    setItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  };
+
+  const addItem = () => {
+    setItems(prev => [...prev, { label: '', url: '', type: 'external' as const }]);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="mt-2 p-3 bg-slate-900/80 border border-slate-600/50 rounded-lg space-y-2">
+      <div className="text-xs font-medium text-slate-300 mb-1">Edit Links</div>
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={item.label}
+            onChange={(e) => updateItem(i, 'label', e.target.value)}
+            placeholder="Link label"
+            className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-primary-500"
+          />
+          <input
+            type="url"
+            value={item.url}
+            onChange={(e) => updateItem(i, 'url', e.target.value)}
+            placeholder="https://..."
+            className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-primary-500"
+          />
+          <select
+            value={item.type}
+            onChange={(e) => updateItem(i, 'type', e.target.value)}
+            className="px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:outline-none focus:border-primary-500"
+          >
+            <option value="internal">Internal</option>
+            <option value="external">External</option>
+          </select>
+          <button
+            onClick={() => removeItem(i)}
+            className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+            title="Remove link"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={addItem}
+          className="flex items-center gap-1 text-xs px-2 py-1 bg-slate-700/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+        >
+          <Plus className="w-3 h-3" /> Add link
+        </button>
+        <div className="flex-1" />
+        <button
+          onClick={onCancel}
+          className="text-xs px-3 py-1 text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            const cleaned = items.filter(it => it.label.trim() && it.url.trim());
+            onSave(cleaned);
+          }}
+          className="text-xs px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
+        >
+          Save links
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // CONTENT TAB
 // ============================================
 
@@ -2996,14 +3126,27 @@ function ContentTab({
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [generatingPostId, setGeneratingPostId] = useState<string | null>(null);
   const [schedulingPostId, setSchedulingPostId] = useState<string | null>(null);
+  const [aiFallbackNotice, setAiFallbackNotice] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ title: string; subjectLine: string; previewText: string; content: string }>({ title: '', subjectLine: '', previewText: '', content: '' });
+  const [editingBacklinks, setEditingBacklinks] = useState<string | null>(null); // section ID being backlink-edited
+  const [editingLogo, setEditingLogo] = useState<string | null>(null); // post ID being logo-edited
+  const [logoInput, setLogoInput] = useState('');
   const selectedPost = posts.find((p) => p.id === selectedPostId);
   const activeCalendar = calendars[0];
 
   const handleCopyContent = async (post: NewsletterPost) => {
-    const text = post.content || post.sections?.map((s) => s.content).join('\n\n') || '';
+    const text = post.sections && post.sections.length > 0
+      ? post.sections.map((s) => {
+          const prefix = s.type === 'heading' ? '## ' : s.type === 'subheading' ? '### ' : s.type === 'quote' ? '> ' : s.type === 'cta' ? '➤ ' : s.type === 'image' ? '🖼 ' : s.type === 'list' ? '' : '';
+          const ctaUrl = s.type === 'cta' && s.backlinks && s.backlinks.length > 0 ? ` (${s.backlinks[0].url})` : '';
+          const backlinks = s.backlinks && s.backlinks.length > 0 && s.type !== 'cta'
+            ? '\n' + s.backlinks.map(b => `  → ${b.label}: ${b.url}`).join('\n')
+            : '';
+          return `${prefix}${s.content}${ctaUrl}${backlinks}`;
+        }).join('\n\n')
+      : post.content || '';
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -3020,6 +3163,16 @@ function ContentTab({
       setCopiedPostId(post.id);
       setTimeout(() => setCopiedPostId(null), 2000);
     }
+  };
+
+  // Update backlinks for a specific section within a post
+  const handleUpdateSectionBacklinks = (postId: string, sectionId: string, backlinks: NewsletterSection['backlinks']) => {
+    const post = posts.find(p => p.id === postId);
+    if (!post || !post.sections) return;
+    const updatedSections = post.sections.map(sec =>
+      sec.id === sectionId ? { ...sec, backlinks } : sec
+    );
+    onUpdatePost(postId, { sections: updatedSections });
   };
 
   const findPostCalendarSlot = (postId: string) => {
@@ -3118,6 +3271,7 @@ function ContentTab({
 
   const handleGenerateContent = async (post: NewsletterPost) => {
     setGeneratingPostId(post.id);
+    setAiFallbackNotice(null);
 
     const titleData = titles.find((t) => t.id === post.titleId);
     const contentTypeInfo = contentTypes.find((t) => t.type === post.contentType) || DEFAULT_CONTENT_TYPES.find((t) => t.type === post.contentType);
@@ -3178,57 +3332,53 @@ function ContentTab({
     const template = getTemplateForContentType(post.contentType || 'educational');
     const templatePromptGuidance = buildTemplatePromptGuidance(template);
 
-    const prompt = `You are an expert newsletter writer. Generate the full content for a newsletter with these details:
-
-Title: "${post.title}"
-Subject Line: "${post.subjectLine || ''}"
-Preview Text: "${post.previewText || ''}"
-Content Type: ${post.contentType || 'educational'}
-Funnel Stage: ${post.funnelStage || 'tofu'}
-CTA: ${cta}
-Strategy Objective: ${objectiveLabel}
-Communication Tone: ${toneLabel}
-Target Audience: ${audienceLabel}
-Content Depth: ${depthLabel} (${depthHint})
-
-${titleData ? `Suggested Keywords: ${titleData.suggestedKeywords?.join(', ') || 'N/A'}` : ''}
+    const prompt = `Generate a COMPLETE newsletter as JSON for: "${post.title}"
+Type: ${post.contentType || 'educational'} | CTA: "${cta}" | Tone: ${toneLabel}
 
 ${templatePromptGuidance}
 
+${titleData ? `Keywords: ${titleData.suggestedKeywords?.join(', ') || 'N/A'}` : ''}
+
 ${linkedContextStr}
 
-You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element represents a section of the newsletter and must have exactly these fields:
-- "type": one of "heading", "subheading", "paragraph", "list", "quote", "cta"
-- "content": the text content for this section. For "list" type, use newline-separated items. For "quote" type, include attribution. For "cta" type, write a compelling call-to-action.
-- "order": integer starting from 1
+OUTPUT: JSON array. Each element: {"type":"heading|subheading|paragraph|list|quote|cta|image","content":"...","order":1..N}
+For image sections, include: {"type":"image","content":"[description]","imageType":"hero|feature|product|team|event|banner","alt":"[alt text]","caption":"[optional caption]","imageLayout":"full-width|card|inline","order":N}
+For sections with links, include backlinks: {"type":"list","content":"...","order":N,"backlinks":[{"label":"Link text","url":"https://...","type":"internal|external"}]}
+Add 1-3 backlinks to CTA and list sections where relevant. Use "internal" for same-site links, "external" for outside links.
+NO markdown. NO explanation. ONLY the JSON array.
 
-Guidelines:
-- Follow the template structure described above precisely
-- Start with the first required section from the template
-- Include a warm, engaging opening paragraph
-- Add substantive content sections with real insights (not placeholders)
-- Include at least one list section with actionable takeaways
-- Include one relevant quote section
-- End with a CTA section using: "${cta}"
-- Match the tone: ${toneLabel}
-- Match the depth: ${depthHint}
-- Use data from the linked context above to make content specific and relevant
+CRITICAL RULES — VIOLATION = REJECTED:
+1. MINIMUM ${template.flowRules.minSections} sections. Generate ALL required sections. Output fewer = rejected.
+2. heading: MAX 6 words. One punchy line.
+3. subheading: MAX 8 words. One idea.
+4. paragraph: MAX ${template.flowRules.maxParagraphLength} words. ONE sentence per paragraph. No compound sentences.
+5. list: 2-4 bullet items. Each item MAX 10 words. Format: **Key** — Detail. Separate items with \\n.
+6. quote: MAX 20 words. Include attribution.
+7. cta: MAX 6 words. Action verb first.
+8. Use MORE list sections than paragraph sections. At least 3 list sections.
+9. NEVER write long paragraphs. If a thought exceeds ${template.flowRules.maxParagraphLength} words, split into a list.
+10. Each section must contain SUBSTANCE — never output bare questions or one-word sections.
+11. MUST include a heading as section 1 and a cta as the last or second-to-last section.
 
-Generate the sections now:`;
+FULL EXAMPLE (educational, 9 sections):
+[{"type":"heading","content":"AI Weekly — Issue 47","order":1},{"type":"paragraph","content":"This week: how small teams use AI to ship 3x faster, plus 5 tools you can try today.","order":2},{"type":"subheading","content":"Why AI Adoption Accelerated","order":3},{"type":"list","content":"**Copilot coding** — 40% faster pull requests\\n**Auto-testing** — Catches bugs before review\\n**Smart scheduling** — Reduces meeting time 60%","order":4},{"type":"paragraph","content":"Teams using these tools report shipping features in days, not weeks.","order":5},{"type":"quote","content":"\"We cut our sprint cycle from 2 weeks to 3 days.\" — Sarah Chen, CTO at Buildr","order":6},{"type":"list","content":"**LangChain** — Build AI agents visually\\n**Cursor** — AI-first code editor\\n**Replit** — Deploy AI apps in minutes","order":7},{"type":"cta","content":"Explore the Full Guide","order":8},{"type":"paragraph","content":"Next week: AI in design workflows. Stay tuned and keep building.","order":9}]
+
+Generate ${template.flowRules.minSections}+ sections now:`;
 
     try {
       console.log('[NewsletterContentOS] Calling AI for content generation...');
       const response = await aiApi.generate({
         prompt,
-        maxTokens: 4000,
+        maxTokens: 6000,
         context: {
-          systemPrompt: `You are an expert newsletter writer specializing in ${template.name}. Follow the ${template.name} template structure strictly. Generate newsletter content that matches the tone, depth, and section structure specified.`,
+          systemPrompt: `You write COMPLETE newsletters as JSON arrays for a ${template.name}. MINIMUM ${template.flowRules.minSections} sections — never fewer. Each section is a card: headings max 6 words, paragraphs max ${template.flowRules.maxParagraphLength} words and ONE sentence only, lists use **bold key** — detail format with 2-4 items, CTAs max 6 words. Prefer lists over paragraphs (at least 3 list sections). No walls of text. No compound sentences. No bare questions. Every section must have substance. Tone: ${template.design.tone}. Output ONLY valid JSON.`,
         },
       });
 
       console.log('[NewsletterContentOS] Content AI response:', { status: response.status, error: response.error, hasData: !!response.data });
 
       if (response.error || !response.data) {
+        console.error('[NewsletterContentOS] AI response error:', response.error, 'status:', response.status);
         throw new Error(response.error || 'AI content generation returned no data');
       }
 
@@ -3239,6 +3389,7 @@ Generate the sections now:`;
       }
 
       rawContent = rawContent.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      console.log('[NewsletterContentOS] Raw AI content length:', rawContent.length, 'first 200 chars:', rawContent.substring(0, 200));
 
       let parsed: any[];
       try {
@@ -3256,22 +3407,215 @@ Generate the sections now:`;
         throw new Error('AI response is not a valid sections array');
       }
 
-      const validTypes = ['heading', 'subheading', 'paragraph', 'list', 'quote', 'cta'];
-      const sections: NewsletterSection[] = parsed
+      const validTypes = ['heading', 'subheading', 'paragraph', 'list', 'quote', 'cta', 'image'];
+
+      // Strict word limit enforcement per section type
+      const maxWords: Record<string, number> = {
+        heading: 8,
+        subheading: 10,
+        paragraph: template.flowRules.maxParagraphLength,
+        list: 80, // total for all items
+        quote: 25,
+        cta: 8,
+      };
+
+      const truncateToWords = (text: string, maxWords: number): string => {
+        const words = text.split(/\s+/);
+        if (words.length <= maxWords) return text;
+        return words.slice(0, maxWords).join(' ').replace(/[.,;:!?]+$/, '') + '.';
+      };
+
+      // Split long paragraphs into separate sections for scannability
+      const splitLongParagraphs = (sections: any[]): any[] => {
+        const result: any[] = [];
+        let orderOffset = 0;
+        for (const s of sections) {
+          if (s.type === 'paragraph') {
+            const sentences = s.content.split(/(?<=[.!?])\s+/).filter((sent: string) => sent.trim().length > 0);
+            if (sentences.length > 1 && s.content.split(/\s+/).length > maxWords.paragraph) {
+              // First sentence stays as paragraph, rest become list items
+              result.push({ ...s, content: sentences[0], order: s.order + orderOffset });
+              orderOffset++;
+              const listItems = sentences.slice(1).map((sent: string) => `**${sent.split(/\s+/).slice(0, 2).join(' ')}** — ${sent.split(/\s+/).slice(2).join(' ')}`).join('\n');
+              result.push({ id: `${s.id}-list`, type: 'list', content: listItems, order: s.order + orderOffset });
+            } else {
+              result.push(s);
+            }
+          } else {
+            result.push(s);
+          }
+        }
+        return result;
+      };
+
+      let sections: NewsletterSection[] = parsed
         .filter((s: any) => s.type && s.content && validTypes.includes(s.type))
-        .map((s: any, i: number) => ({
-          id: `sec-${Date.now()}-${i + 1}`,
-          type: s.type as NewsletterSection['type'],
-          content: String(s.content),
-          order: s.order ?? (i + 1),
-        }))
-        .sort((a: NewsletterSection, b: NewsletterSection) => a.order - b.order);
+        .map((s: any, i: number) => {
+          let content = String(s.content).trim();
+          // Image sections don't have word limits on content (it's alt/caption text)
+          if (s.type !== 'image') {
+            const limit = maxWords[s.type] || template.flowRules.maxParagraphLength;
+            content = truncateToWords(content, limit);
+          }
+          const section: NewsletterSection = {
+            id: `sec-${Date.now()}-${i + 1}`,
+            type: s.type as NewsletterSection['type'],
+            content,
+            order: s.order ?? (i + 1),
+          };
+          // Pass through image fields if present
+          if (s.type === 'image') {
+            if (s.imageType) section.imageType = s.imageType;
+            if (s.src) section.src = s.src;
+            if (s.alt) section.alt = s.alt;
+            if (s.caption) section.caption = s.caption;
+            if (s.imageLayout) section.imageLayout = s.imageLayout;
+            if (s.imagePosition) section.imagePosition = s.imagePosition;
+            if (s.imagePriority) section.imagePriority = s.imagePriority;
+          }
+          // Pass through backlinks if present
+          if (s.backlinks && Array.isArray(s.backlinks) && s.backlinks.length > 0) {
+            section.backlinks = s.backlinks.map((bl: any) => ({
+              label: String(bl.label || ''),
+              url: String(bl.url || ''),
+              type: bl.type === 'external' ? 'external' : 'internal',
+            }));
+          }
+          return section;
+        });
+
+      // Split long paragraphs into shorter sections
+      sections = splitLongParagraphs(sections);
+
+      // Re-sort and re-number after potential splitting
+      sections = sections
+        .sort((a: NewsletterSection, b: NewsletterSection) => a.order - b.order)
+        .map((s, i) => ({ ...s, order: i + 1 }));
+
+      // ----- Post-generation validation & auto-expansion -----
+      // Ensure minimum section count and structural completeness
+      const minSections = template.flowRules.minSections;
+      const hasHeading = sections.some(s => s.type === 'heading');
+      const hasCta = sections.some(s => s.type === 'cta');
+      const hasList = sections.some(s => s.type === 'list');
+      const title = post.title || 'Newsletter';
+
+      // Auto-expand if below minimum sections
+      if (sections.length < minSections) {
+        const expansionSections: NewsletterSection[] = [];
+        let nextOrder = sections.length + 1;
+
+        // Add heading if missing
+        if (!hasHeading) {
+          expansionSections.push({
+            id: `expand-${Date.now()}-0`,
+            type: 'heading',
+            content: title,
+            order: 1,
+          });
+        }
+
+        // Add list if missing (newsletter without a list is too thin)
+        if (!hasList) {
+          expansionSections.push({
+            id: `expand-${Date.now()}-${nextOrder}`,
+            type: 'list',
+            content: `**${title}** — Key highlights this week\n**What changed** — Important updates you should know\n**Why it matters** — Impact on your workflow`,
+            order: nextOrder,
+          });
+          nextOrder++;
+        }
+
+        // Add supporting content to reach minimum
+        if (sections.length + expansionSections.length < minSections) {
+          expansionSections.push({
+            id: `expand-${Date.now()}-${nextOrder}`,
+            type: 'paragraph',
+            content: `Here's what makes ${title.toLowerCase()} worth your attention this week.`,
+            order: nextOrder,
+          });
+          nextOrder++;
+        }
+
+        if (sections.length + expansionSections.length < minSections) {
+          expansionSections.push({
+            id: `expand-${Date.now()}-${nextOrder}`,
+            type: 'quote',
+            content: `"This is transforming how teams work." — Industry Expert`,
+            order: nextOrder,
+          });
+          nextOrder++;
+        }
+
+        // Add CTA if missing
+        if (!hasCta) {
+          expansionSections.push({
+            id: `expand-${Date.now()}-${nextOrder}`,
+            type: 'cta',
+            content: post.suggestedCTA || 'Learn More',
+            order: nextOrder + 1,
+          });
+        }
+
+        sections = [...sections, ...expansionSections];
+        // Re-sort by order and re-number
+        sections = sections
+          .sort((a, b) => a.order - b.order)
+          .map((s, i) => ({ ...s, order: i + 1 }));
+      }
+
+      // Ensure heading exists at position 1
+      if (!sections.some(s => s.type === 'heading')) {
+        sections.unshift({
+          id: `expand-${Date.now()}-heading`,
+          type: 'heading',
+          content: title,
+          order: 1,
+        });
+        sections = sections.map((s, i) => ({ ...s, order: i + 1 }));
+      }
+
+      // Ensure CTA exists at the end
+      if (!sections.some(s => s.type === 'cta')) {
+        sections.push({
+          id: `expand-${Date.now()}-cta`,
+          type: 'cta',
+          content: post.suggestedCTA || 'Learn More',
+          order: sections.length + 1,
+        });
+        sections = sections.map((s, i) => ({ ...s, order: i + 1 }));
+      }
+
+      // Enforce minimum list count (at least 2 lists for scannability)
+      const listCount = sections.filter(s => s.type === 'list').length;
+      if (listCount < 2) {
+        const needed = 2 - listCount;
+        for (let i = 0; i < needed; i++) {
+          const ctaOrder = sections.find(s => s.type === 'cta')?.order || sections.length + 1;
+          const insertBefore = ctaOrder;
+          const newSection: NewsletterSection = {
+            id: `expand-${Date.now()}-list-${i}`,
+            type: 'list',
+            content: i === 0
+              ? `**${title}** — Why this matters now\n**Key benefit** — What you gain\n**Next step** — How to get started`
+              : `**Trend one** — Brief context and impact\n**Trend two** — What to watch for\n**Trend three** — How to prepare`,
+            order: insertBefore,
+          };
+          sections.push(newSection);
+        }
+        sections = sections
+          .sort((a, b) => a.order - b.order)
+          .map((s, i) => ({ ...s, order: i + 1 }));
+      }
 
       if (sections.length === 0) {
         throw new Error('AI generated no valid sections');
       }
 
-      const content = sections.map((s) => s.content).join('\n\n');
+      const content = sections.map((s) => {
+        const prefix = s.type === 'heading' ? '## ' : s.type === 'subheading' ? '### ' : s.type === 'quote' ? '> ' : s.type === 'cta' ? '➤ ' : s.type === 'image' ? '🖼 ' : '';
+        return `${prefix}${s.content}`;
+      }).join('\n\n');
 
       onUpdatePost(post.id, {
         status: 'draft',
@@ -3298,23 +3642,39 @@ Generate the sections now:`;
       }
     } catch (error) {
       console.error('[NewsletterContentOS] AI content generation FAILED — falling back to template. Error:', error);
+      setAiFallbackNotice('AI generation unavailable. Showing template-based content — edit it to customize.');
 
-      // Fallback to template-aware content
+      // Fallback to template-aware content with real placeholder content
       const fallbackTemplate = getTemplateForContentType(post.contentType || 'educational');
-      const sections: NewsletterSection[] = fallbackTemplate.sections.map((sec, i) => ({
-        id: `sec-${Date.now()}-${i + 1}`,
-        type: sec.type,
-        content: sec.type === 'heading' ? post.title
-          : sec.type === 'cta' ? (post.suggestedCTA || 'Check out our latest resources')
-          : sec.description,
-        order: sec.order,
-      }));
+      const fallbackTitle = post.title || 'Newsletter';
+      const fallbackContentMap: Record<string, string> = {
+        'heading': fallbackTitle,
+        'subheading': `${fallbackTitle} — Key Highlights`,
+        'paragraph': `Here's what you need to know about ${fallbackTitle.toLowerCase()} this week.`,
+        'list': `**Key insight** — Important update worth knowing\n**Why it matters** — Impact on your workflow\n**Next step** — How to get started`,
+        'quote': `"This is transforming how teams work." — Industry Expert`,
+        'cta': post.suggestedCTA || 'Learn More',
+        'image': '',
+      };
+      const fallbackSections: NewsletterSection[] = fallbackTemplate.sections
+        .filter(sec => sec.required || fallbackTemplate.sections.indexOf(sec) < fallbackTemplate.flowRules.minSections)
+        .map((sec, i) => ({
+          id: `sec-${Date.now()}-${i + 1}`,
+          type: sec.outputType,
+          content: sec.outputType === 'heading' ? fallbackTitle
+            : sec.outputType === 'cta' ? (post.suggestedCTA || 'Learn More')
+            : fallbackContentMap[sec.outputType] || sec.label,
+          order: i + 1,
+        }));
 
-      const content = sections.map((s) => s.content).join('\n\n');
+      const content = fallbackSections.map((s) => {
+        const prefix = s.type === 'heading' ? '## ' : s.type === 'subheading' ? '### ' : s.type === 'quote' ? '> ' : s.type === 'cta' ? '➤ ' : s.type === 'image' ? '🖼 ' : '';
+        return `${prefix}${s.content}`;
+      }).join('\n\n');
       onUpdatePost(post.id, {
         status: 'draft',
         content,
-        sections,
+        sections: fallbackSections,
       });
       setGeneratingPostId(null);
 
@@ -3337,6 +3697,18 @@ Generate the sections now:`;
 
   return (
     <div className="space-y-6">
+      {aiFallbackNotice && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <div className="font-medium text-amber-400">AI Unavailable</div>
+            <div className="text-sm text-slate-400 mt-1">{aiFallbackNotice} Click the generate button on any post to retry.</div>
+          </div>
+          <button onClick={() => setAiFallbackNotice(null)} className="text-slate-500 hover:text-slate-300 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -3546,6 +3918,7 @@ Generate the sections now:`;
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">Content</label>
+                        <p className="text-xs text-slate-500 mb-1">Use ## for headings, ### for subheadings, &gt; for quotes, ➤ for CTAs, 🖼 for images. Separate sections with blank lines.</p>
                         <textarea
                           value={editForm.content}
                           onChange={(e) => setEditForm((f) => ({ ...f, content: e.target.value }))}
@@ -3557,11 +3930,40 @@ Generate the sections now:`;
                       <div className="flex items-center gap-2 pt-1">
                         <button
                           onClick={() => {
+                            // Re-parse content into sections so the structured view stays in sync
+                            const editedContent = editForm.content;
+                            const editedSections: NewsletterSection[] = editedContent
+                              ? editedContent.split(/\n\n+/).filter(Boolean).map((block, i) => {
+                                  const trimmed = block.trim();
+                                  // Detect section type from prefix markers
+                                  if (trimmed.startsWith('## ')) {
+                                    return { id: `edit-${Date.now()}-${i}`, type: 'heading' as const, content: trimmed.replace(/^##\s*/, ''), order: i + 1 };
+                                  }
+                                  if (trimmed.startsWith('### ')) {
+                                    return { id: `edit-${Date.now()}-${i}`, type: 'subheading' as const, content: trimmed.replace(/^###\s*/, ''), order: i + 1 };
+                                  }
+                                  if (trimmed.startsWith('> ')) {
+                                    return { id: `edit-${Date.now()}-${i}`, type: 'quote' as const, content: trimmed.replace(/^>\s*/, ''), order: i + 1 };
+                                  }
+                                  if (trimmed.startsWith('➤ ')) {
+                                    return { id: `edit-${Date.now()}-${i}`, type: 'cta' as const, content: trimmed.replace(/^➤\s*/, ''), order: i + 1 };
+                                  }
+                                  if (trimmed.startsWith('🖼 ') || trimmed.startsWith('[Image:')) {
+                                    const imgContent = trimmed.startsWith('🖼 ') ? trimmed.replace(/^🖼\s*/, '') : trimmed.replace(/^\[Image:\s*/, '').replace(/\]$/, '');
+                                    return { id: `edit-${Date.now()}-${i}`, type: 'image' as const, content: imgContent, alt: imgContent, order: i + 1 };
+                                  }
+                                  if (trimmed.includes('\n') && trimmed.split('\n').every(line => line.startsWith('- ') || line.startsWith('• ') || line.startsWith('**') || /^[A-Z]/.test(line))) {
+                                    return { id: `edit-${Date.now()}-${i}`, type: 'list' as const, content: trimmed, order: i + 1 };
+                                  }
+                                  return { id: `edit-${Date.now()}-${i}`, type: 'paragraph' as const, content: trimmed, order: i + 1 };
+                                })
+                              : [];
                             onUpdatePost(post.id, {
                               title: editForm.title,
                               subjectLine: editForm.subjectLine,
                               previewText: editForm.previewText,
-                              content: editForm.content,
+                              content: editedContent,
+                              sections: editedSections.length > 0 ? editedSections : undefined,
                             });
                             setEditingPostId(null);
                           }}
@@ -3606,8 +4008,209 @@ Generate the sections now:`;
                               )}
                             </button>
                           </div>
-                          <div className="text-sm text-slate-400 whitespace-pre-wrap max-h-64 overflow-y-auto">
-                            {post.content}
+                          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                            {(() => {
+                              const logoAsset = foundationalContext?.allBrandAssets?.find((a: any) => a.type === 'logo' && (a.url || a.base64Data));
+                              const brandLogo = post.logoUrl || logoAsset?.url || logoAsset?.base64Data;
+                              return (
+                                <div className="flex items-center gap-3 mb-2 group">
+                                  {brandLogo ? (
+                                    <img src={brandLogo} alt="Logo" className="h-12 max-w-[200px] object-contain" />
+                                  ) : (
+                                    <div className="h-12 w-[200px] bg-slate-800/50 border border-dashed border-slate-600 rounded-lg flex items-center justify-center">
+                                      <span className="text-xs text-slate-500">No logo</span>
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => { setEditingLogo(editingLogo === post.id ? null : post.id); setLogoInput(post.logoUrl || ''); }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 bg-slate-700/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded border border-slate-600 flex items-center gap-1"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                    {brandLogo ? 'Change' : 'Add logo'}
+                                  </button>
+                                </div>
+                              );
+                            })()}
+                            {editingLogo === post.id && (
+                              <div className="flex items-center gap-2 mb-2 p-2 bg-slate-900/80 border border-slate-600/50 rounded-lg">
+                                <input
+                                  type="url"
+                                  value={logoInput}
+                                  onChange={(e) => setLogoInput(e.target.value)}
+                                  placeholder="Paste logo URL (https://...)"
+                                  className="flex-1 px-2 py-1.5 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-primary-500"
+                                />
+                                <button
+                                  onClick={() => { onUpdatePost(post.id, { logoUrl: logoInput || undefined }); setEditingLogo(null); }}
+                                  className="text-xs px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
+                                >
+                                  Save
+                                </button>
+                                {post.logoUrl && (
+                                  <button
+                                    onClick={() => { onUpdatePost(post.id, { logoUrl: undefined }); setLogoInput(''); setEditingLogo(null); }}
+                                    className="text-xs px-2 py-1.5 text-red-400 hover:text-red-300 transition-colors"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                                <button onClick={() => setEditingLogo(null)} className="text-xs px-2 py-1.5 text-slate-500 hover:text-slate-300 transition-colors">
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                            {(post.sections && post.sections.length > 0
+                              ? post.sections
+                              : post.content
+                                ? post.content.split('\n\n').map((p, i) => ({ id: `plain-${i}`, type: 'paragraph' as const, content: p, order: i }))
+                                : []
+                            ).map((section) => {
+                              const sec = section as NewsletterSection;
+                              if (sec.type === 'heading') return (
+                                <div key={sec.id} className="bg-slate-800/60 border-l-2 border-l-[#C8FF2E] rounded-r-lg px-4 py-3">
+                                  <h3 className="text-lg font-bold text-white leading-snug">{sec.content}</h3>
+                                </div>
+                              );
+                              if (sec.type === 'subheading') return (
+                                <div key={sec.id} className="bg-slate-800/40 rounded-lg px-4 py-2.5">
+                                  <p className="text-sm font-semibold text-slate-200">{sec.content}</p>
+                                </div>
+                              );
+                              if (sec.type === 'list') return (
+                                <div key={sec.id} className="bg-slate-800/30 rounded-lg px-4 py-3 border border-slate-700/50">
+                                  <ul className="space-y-1.5">
+                                    {sec.content.split(/\n/).filter(Boolean).map((item, j) => (
+                                      <li key={j} className="flex items-start gap-2 text-sm text-slate-300">
+                                        <span className="text-[#C8FF2E] mt-1.5 shrink-0">•</span>
+                                        <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white">$1</strong>') }} />
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-700/50">
+                                    {(sec.backlinks && sec.backlinks.length > 0) ? (
+                                      <>
+                                        {sec.backlinks.map((bl, bi) => (
+                                          <a key={bi} href={bl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20 hover:bg-primary-500/20 transition-colors">
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                            {bl.label}
+                                          </a>
+                                        ))}
+                                        <button onClick={() => setEditingBacklinks(editingBacklinks === sec.id ? null : sec.id)} className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors">
+                                          <Pencil className="w-2.5 h-2.5 inline -mt-0.5" /> Edit
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button onClick={() => setEditingBacklinks(editingBacklinks === sec.id ? null : sec.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 hover:text-primary-400 hover:bg-slate-700 transition-colors flex items-center gap-1">
+                                        <Link2 className="w-2.5 h-2.5" /> Add links
+                                      </button>
+                                    )}
+                                  </div>
+                                  {editingBacklinks === sec.id && (
+                                    <BacklinkEditor
+                                      backlinks={sec.backlinks || []}
+                                      onSave={(backlinks) => { handleUpdateSectionBacklinks(post.id, sec.id, backlinks); setEditingBacklinks(null); }}
+                                      onCancel={() => setEditingBacklinks(null)}
+                                    />
+                                  )}
+                                </div>
+                              );
+                              if (sec.type === 'quote') return (
+                                <div key={sec.id} className="bg-slate-800/30 rounded-lg px-4 py-3 border-l-2 border-slate-500 italic">
+                                  <p className="text-sm text-slate-300 leading-relaxed">{sec.content}</p>
+                                </div>
+                              );
+                              if (sec.type === 'cta') return (
+                                <div key={sec.id} className="bg-[#C8FF2E]/10 border border-[#C8FF2E]/30 rounded-lg px-4 py-3">
+                                  <div className="flex items-center justify-center">
+                                    {sec.backlinks && sec.backlinks.length > 0 ? (
+                                      <a href={sec.backlinks[0].url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-[#C8FF2E] tracking-wide hover:text-[#C8FF2E]/80 transition-colors">
+                                        {sec.content}
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                      </a>
+                                    ) : (
+                                      <span className="text-sm font-bold text-[#C8FF2E] tracking-wide">{sec.content}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t border-[#C8FF2E]/20">
+                                    {(sec.backlinks && sec.backlinks.length > 0) ? (
+                                      <>
+                                        {sec.backlinks.map((bl, bi) => (
+                                          <a key={bi} href={bl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#C8FF2E]/10 text-[#C8FF2E] border border-[#C8FF2E]/20 hover:bg-[#C8FF2E]/20 transition-colors">
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                            {bl.label}
+                                          </a>
+                                        ))}
+                                        <button onClick={() => setEditingBacklinks(editingBacklinks === sec.id ? null : sec.id)} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#C8FF2E]/5 text-[#C8FF2E]/60 hover:text-[#C8FF2E] hover:bg-[#C8FF2E]/15 transition-colors">
+                                          <Pencil className="w-2.5 h-2.5 inline -mt-0.5" /> Edit
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button onClick={() => setEditingBacklinks(editingBacklinks === sec.id ? null : sec.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-[#C8FF2E]/5 text-[#C8FF2E]/60 hover:text-[#C8FF2E] hover:bg-[#C8FF2E]/15 transition-colors flex items-center gap-1">
+                                        <Link2 className="w-2.5 h-2.5" /> Add links
+                                      </button>
+                                    )}
+                                  </div>
+                                  {editingBacklinks === sec.id && (
+                                    <BacklinkEditor
+                                      backlinks={sec.backlinks || []}
+                                      onSave={(backlinks) => { handleUpdateSectionBacklinks(post.id, sec.id, backlinks); setEditingBacklinks(null); }}
+                                      onCancel={() => setEditingBacklinks(null)}
+                                    />
+                                  )}
+                                </div>
+                              );
+                              if (sec.type === 'image') return (
+                                <div key={sec.id} className={`${sec.imageLayout === 'full-width' ? '' : 'max-w-xs mx-auto'} bg-slate-800/40 rounded-lg overflow-hidden border border-slate-700/50`}>
+                                  {sec.src ? (
+                                    <img src={sec.src} alt={sec.alt || sec.content || 'Newsletter image'} className={`w-full ${sec.imageLayout === 'card' ? 'h-32' : 'h-40'} object-cover`} />
+                                  ) : (
+                                    <div className={`w-full ${sec.imageLayout === 'card' ? 'h-32' : 'h-40'} bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center`}>
+                                      <Image className="w-8 h-8 text-slate-600" />
+                                    </div>
+                                  )}
+                                  {(sec.caption || sec.content) && (
+                                    <div className="px-3 py-2">
+                                      <p className="text-xs text-slate-500">{sec.caption || sec.content}</p>
+                                    </div>
+                                  )}
+                                  {sec.imageType && (
+                                    <span className="inline-block m-2 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700/50 text-slate-500 border border-slate-600/50">{sec.imageType}</span>
+                                  )}
+                                </div>
+                              );
+                              // paragraph (default)
+                              return (
+                                <div key={sec.id} className="bg-slate-800/30 rounded-lg px-4 py-3">
+                                  <p className="text-sm text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: sec.content.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-slate-200">$1</strong>') }} />
+                                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-700/50">
+                                    {(sec.backlinks && sec.backlinks.length > 0) ? (
+                                      <>
+                                        {sec.backlinks.map((bl, bi) => (
+                                          <a key={bi} href={bl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20 hover:bg-primary-500/20 transition-colors">
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                            {bl.label}
+                                          </a>
+                                        ))}
+                                        <button onClick={() => setEditingBacklinks(editingBacklinks === sec.id ? null : sec.id)} className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors">
+                                          <Pencil className="w-2.5 h-2.5 inline -mt-0.5" /> Edit
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button onClick={() => setEditingBacklinks(editingBacklinks === sec.id ? null : sec.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 hover:text-primary-400 hover:bg-slate-700 transition-colors flex items-center gap-1">
+                                        <Link2 className="w-2.5 h-2.5" /> Add links
+                                      </button>
+                                    )}
+                                  </div>
+                                  {editingBacklinks === sec.id && (
+                                    <BacklinkEditor
+                                      backlinks={sec.backlinks || []}
+                                      onSave={(backlinks) => { handleUpdateSectionBacklinks(post.id, sec.id, backlinks); setEditingBacklinks(null); }}
+                                      onCancel={() => setEditingBacklinks(null)}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -3644,7 +4247,12 @@ Generate the sections now:`;
                               title: post.title,
                               subjectLine: post.subjectLine || '',
                               previewText: post.previewText || '',
-                              content: post.content || '',
+                              content: post.sections && post.sections.length > 0
+                                ? post.sections.map((s) => {
+                                    const prefix = s.type === 'heading' ? '## ' : s.type === 'subheading' ? '### ' : s.type === 'quote' ? '> ' : s.type === 'cta' ? '➤ ' : s.type === 'image' ? '🖼 ' : '';
+                                    return `${prefix}${s.content}`;
+                                  }).join('\n\n')
+                                : post.content || '',
                             });
                             setEditingPostId(post.id);
                           }}
@@ -3867,15 +4475,26 @@ function ReviewTab({
   strategy,
   posts,
   onUpdatePost,
+  foundationalContext,
 }: {
   strategy: NewsletterStrategy;
   posts: NewsletterPost[];
   onUpdatePost: (id: string, updates: Partial<NewsletterPost>) => void;
+  foundationalContext?: FoundationalContext;
 }) {
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
   const handleCopyContent = async (post: NewsletterPost) => {
-    const text = post.sections?.map((s) => `[${s.type}] ${s.content}`).join('\n\n') || post.content || '';
+    const text = post.sections && post.sections.length > 0
+      ? post.sections.map((s) => {
+          const prefix = s.type === 'heading' ? '## ' : s.type === 'subheading' ? '### ' : s.type === 'quote' ? '> ' : s.type === 'cta' ? '➤ ' : s.type === 'image' ? '🖼 ' : s.type === 'list' ? '' : '';
+          const ctaUrl = s.type === 'cta' && s.backlinks && s.backlinks.length > 0 ? ` (${s.backlinks[0].url})` : '';
+          const backlinks = s.backlinks && s.backlinks.length > 0 && s.type !== 'cta'
+            ? '\n' + s.backlinks.map(b => `  → ${b.label}: ${b.url}`).join('\n')
+            : '';
+          return `${prefix}${s.content}${ctaUrl}${backlinks}`;
+        }).join('\n\n')
+      : post.content || '';
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -3957,7 +4576,114 @@ function ReviewTab({
                         )}
                       </button>
                     </div>
-                    <div className="text-sm text-slate-400 whitespace-pre-wrap">{post.content}</div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {(() => {
+                        const logoAsset = foundationalContext?.allBrandAssets?.find((a: any) => a.type === 'logo' && (a.url || a.base64Data));
+                        const brandLogo = post.logoUrl || logoAsset?.url || logoAsset?.base64Data;
+                        if (!brandLogo) return null;
+                        return (
+                          <div className="flex justify-start mb-1.5">
+                            <img src={brandLogo} alt="Logo" className="h-10 max-w-[160px] object-contain" />
+                          </div>
+                        );
+                      })()}
+                      {(post.sections && post.sections.length > 0
+                        ? post.sections
+                        : post.content
+                          ? post.content.split('\n\n').map((p, i) => ({ id: `plain-${i}`, type: 'paragraph' as const, content: p, order: i }))
+                          : []
+                      ).map((section) => {
+                        const sec = section as NewsletterSection;
+                        if (sec.type === 'heading') return (
+                          <div key={sec.id} className="bg-slate-800/60 border-l-2 border-l-[#C8FF2E] rounded-r-lg px-3 py-2">
+                            <h3 className="text-sm font-bold text-white leading-snug">{sec.content}</h3>
+                          </div>
+                        );
+                        if (sec.type === 'subheading') return (
+                          <div key={sec.id} className="bg-slate-800/40 rounded-lg px-3 py-1.5">
+                            <p className="text-xs font-semibold text-slate-200">{sec.content}</p>
+                          </div>
+                        );
+                        if (sec.type === 'list') return (
+                          <div key={sec.id} className="bg-slate-800/30 rounded-lg px-3 py-2 border border-slate-700/50">
+                            <ul className="space-y-1">
+                              {sec.content.split(/\n/).filter(Boolean).map((item, j) => (
+                                <li key={j} className="flex items-start gap-1.5 text-xs text-slate-300">
+                                  <span className="text-[#C8FF2E] mt-0.5 shrink-0">•</span>
+                                  <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white">$1</strong>') }} />
+                                </li>
+                              ))}
+                            </ul>
+                            {sec.backlinks && sec.backlinks.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5 pt-1.5 border-t border-slate-700/50">
+                                {sec.backlinks.map((bl, bi) => (
+                                  <a key={bi} href={bl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20 hover:bg-primary-500/20 transition-colors">
+                                    <ExternalLink className="w-2 h-2" />
+                                    {bl.label}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                        if (sec.type === 'quote') return (
+                          <div key={sec.id} className="bg-slate-800/30 rounded-lg px-3 py-2 border-l-2 border-slate-500 italic">
+                            <p className="text-xs text-slate-300 leading-relaxed">{sec.content}</p>
+                          </div>
+                        );
+                        if (sec.type === 'cta') return (
+                          <div key={sec.id} className="bg-[#C8FF2E]/10 border border-[#C8FF2E]/30 rounded-lg px-3 py-2">
+                            <div className="flex items-center justify-center">
+                              {sec.backlinks && sec.backlinks.length > 0 ? (
+                                <a href={sec.backlinks[0].url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#C8FF2E] tracking-wide hover:text-[#C8FF2E]/80 transition-colors">
+                                  {sec.content}
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-xs font-bold text-[#C8FF2E] tracking-wide">{sec.content}</span>
+                              )}
+                            </div>
+                            {sec.backlinks && sec.backlinks.length > 0 && (
+                              <div className="flex flex-wrap justify-center gap-1.5 mt-1.5 pt-1.5 border-t border-[#C8FF2E]/20">
+                                {sec.backlinks.map((bl, bi) => (
+                                  <a key={bi} href={bl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-[#C8FF2E]/10 text-[#C8FF2E] border border-[#C8FF2E]/20 hover:bg-[#C8FF2E]/20 transition-colors">
+                                    <ExternalLink className="w-2 h-2" />
+                                    {bl.label}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                        if (sec.type === 'image') return (
+                          <div key={sec.id} className={`${sec.imageLayout === 'full-width' ? '' : 'max-w-[200px]'} bg-slate-800/40 rounded-lg overflow-hidden border border-slate-700/50`}>
+                            {sec.src ? (
+                              <img src={sec.src} alt={sec.alt || sec.content || 'Image'} className={`w-full ${sec.imageLayout === 'card' ? 'h-20' : 'h-24'} object-cover`} />
+                            ) : (
+                              <div className={`w-full ${sec.imageLayout === 'card' ? 'h-20' : 'h-24'} bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center`}>
+                                <Image className="w-6 h-6 text-slate-600" />
+                              </div>
+                            )}
+                            {sec.caption && <p className="text-[10px] text-slate-500 px-2 py-1">{sec.caption}</p>}
+                          </div>
+                        );
+                        return (
+                          <div key={sec.id} className="bg-slate-800/30 rounded-lg px-3 py-2">
+                            <p className="text-xs text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: sec.content.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-slate-200">$1</strong>') }} />
+                            {sec.backlinks && sec.backlinks.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5 pt-1.5 border-t border-slate-700/50">
+                                {sec.backlinks.map((bl, bi) => (
+                                  <a key={bi} href={bl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-primary-500/10 text-primary-400 border border-primary-500/20 hover:bg-primary-500/20 transition-colors">
+                                    <ExternalLink className="w-2 h-2" />
+                                    {bl.label}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -4015,9 +4741,11 @@ function ReviewTab({
 function ExportTab({
   strategy,
   posts,
+  foundationalContext,
 }: {
   strategy: NewsletterStrategy;
   posts: NewsletterPost[];
+  foundationalContext?: FoundationalContext;
 }) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('markdown');
 
@@ -4032,18 +4760,104 @@ function ExportTab({
     let content = '';
     const fileName = `${post.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').substring(0, 60)}.${selectedFormat === 'markdown' ? 'md' : selectedFormat === 'html' ? 'html' : selectedFormat === 'docx' ? 'docx' : 'txt'}`;
 
+    const sections = post.sections && post.sections.length > 0 ? post.sections : [];
+    const template = getTemplateForContentType(post.contentType || 'educational');
+    // Get logo from post override, brand data, or template
+    const logoAsset = foundationalContext?.allBrandAssets?.find((a: any) => a.type === 'logo' && (a.url || a.base64Data));
+    const brandLogo = post.logoUrl || logoAsset?.url || logoAsset?.base64Data || template.logoUrl;
+    // Collect all backlinks from sections
+    const allBacklinks = sections.flatMap(s => s.backlinks || []);
+
+    const formatBacklinks = (fmt: string): string => {
+      if (allBacklinks.length === 0) return '';
+      if (fmt === 'markdown') {
+        return `\n\n---\n**Links:**\n${allBacklinks.map(b => `- [${b.label}](${b.url})${b.type === 'external' ? ' ↗' : ''}`).join('\n')}`;
+      }
+      if (fmt === 'html') {
+        return `\n<hr style="border-color:#334155;margin:2em 0 1em"/>\n<p style="font-size:0.85em;color:#64748b"><strong>Links:</strong></p>\n<ul style="margin:0.5em 0;padding-left:1.2em">${allBacklinks.map(b => `<li><a href="${b.url}" style="color:#C8FF2E;text-decoration:none">${b.label}</a>${b.type === 'external' ? ' ↗' : ''}</li>`).join('')}</ul>`;
+      }
+      if (fmt === 'wordpress') {
+        return `\n<!-- wp:separator -->\n<hr class="wp-block-separator"/>\n<!-- /wp:separator -->\n<!-- wp:list -->\n<ul>${allBacklinks.map(b => `<li><a href="${b.url}">${b.label}</a></li>`).join('')}</ul>\n<!-- /wp:list -->`;
+      }
+      // plain
+      return `\n\nLinks:\n${allBacklinks.map(b => `- ${b.label}: ${b.url}`).join('\n')}`;
+    };
+
+    const formatSection = (sec: NewsletterSection, fmt: string): string => {
+      const c = sec.content;
+      // Append backlinks if this section has them
+      const secBacklinksMd = sec.backlinks && sec.backlinks.length > 0
+        ? (fmt === 'markdown' ? '\n' + sec.backlinks.map(b => `  - [${b.label}](${b.url})`).join('\n')
+           : fmt === 'html' ? `<ul style="margin:0.3em 0 0;padding-left:1.2em;font-size:0.85em">${sec.backlinks.map(b => `<li><a href="${b.url}" style="color:#C8FF2E">${b.label}</a></li>`).join('')}</ul>`
+           : fmt === 'wordpress' ? `<ul>${sec.backlinks.map(b => `<li><a href="${b.url}">${b.label}</a></li>`).join('')}</ul>`
+           : '\n' + sec.backlinks.map(b => `  - ${b.label}: ${b.url}`).join('\n'))
+        : '';
+
+      if (fmt === 'markdown') {
+        if (sec.type === 'heading') return `## ${c}`;
+        if (sec.type === 'subheading') return `### ${c}`;
+        if (sec.type === 'list') return c.split(/\n/).map(i => `- ${i.replace(/\*\*/g, '**')}`).join('\n');
+        if (sec.type === 'quote') return `> ${c}`;
+        if (sec.type === 'cta') {
+          const ctaUrl = sec.backlinks && sec.backlinks.length > 0 ? sec.backlinks[0].url : '';
+          return ctaUrl ? `[**${c}**](${ctaUrl})` : `**[${c}]**`;
+        }
+        if (sec.type === 'image') return sec.src ? `![${sec.alt || c}](${sec.src})${sec.caption ? `\n*${sec.caption}*` : ''}` : `*[Image: ${c}]*`;
+        return c + secBacklinksMd;
+      }
+      if (fmt === 'html') {
+        if (sec.type === 'heading') return `<h2 style="color:#C8FF2E;font-size:1.5rem;font-weight:700;margin:1.5em 0 0.5em">${c}</h2>`;
+        if (sec.type === 'subheading') return `<h3 style="font-size:1.1rem;font-weight:600;color:#e2e8f0;margin:1em 0 0.5em">${c}</h3>`;
+        if (sec.type === 'list') return `<ul style="margin:0.5em 0;padding-left:1.2em">${c.split(/\n/).map(i => `<li>${i.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</li>`).join('')}</ul>`;
+        if (sec.type === 'quote') return `<blockquote style="border-left:3px solid #C8FF2E;padding-left:1em;margin:1em 0;font-style:italic;color:#94a3b8">${c}</blockquote>`;
+        if (sec.type === 'cta') {
+          const ctaUrl = sec.backlinks && sec.backlinks.length > 0 ? sec.backlinks[0].url : '';
+          return ctaUrl
+            ? `<div style="text-align:center;margin:1.5em 0"><a href="${ctaUrl}" style="background:#C8FF2E;color:#0d1117;padding:0.75em 2em;border-radius:8px;font-weight:700;text-decoration:none;display:inline-block" target="_blank" rel="noopener noreferrer">${c}</a></div>`
+            : `<div style="text-align:center;margin:1.5em 0"><a style="background:#C8FF2E;color:#0d1117;padding:0.75em 2em;border-radius:8px;font-weight:700;text-decoration:none;display:inline-block">${c}</a></div>`;
+        }
+        if (sec.type === 'image') return sec.src
+          ? `<figure style="margin:1em 0"><img src="${sec.src}" alt="${sec.alt || c}" style="width:100%;border-radius:8px;${sec.imageLayout === 'card' ? 'max-width:300px;margin:0 auto;' : ''}" />${sec.caption ? `<figcaption style="color:#64748b;font-size:0.85em;text-align:center;margin-top:0.5em">${sec.caption}</figcaption>` : ''}</figure>`
+          : `<div style="background:#1e293b;border-radius:8px;padding:2em;text-align:center;color:#64748b">[Image: ${c}]</div>`;
+        return `<p style="color:#94a3b8;line-height:1.6">${c.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#e2e8f0">$1</strong>')}</p>${secBacklinksMd}`;
+      }
+      // wordpress or plain
+      if (sec.type === 'heading') return `<!-- wp:heading -->\n<h2>${c}</h2>\n<!-- /wp:heading -->`;
+      if (sec.type === 'list') return `<!-- wp:list -->\n<ul>${c.split(/\n/).map(i => `<li>${i.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</li>`).join('')}</ul>\n<!-- /wp:list -->`;
+      if (sec.type === 'quote') return `<!-- wp:quote -->\n<blockquote><p>${c}</p></blockquote>\n<!-- /wp:quote -->`;
+      if (sec.type === 'cta') {
+        const ctaUrl = sec.backlinks && sec.backlinks.length > 0 ? sec.backlinks[0].url : '';
+        return ctaUrl
+          ? `<!-- wp:button -->\n<div class="wp-block-button"><a href="${ctaUrl}" class="wp-block-button__link">${c}</a></div>\n<!-- /wp:button -->`
+          : `<!-- wp:button -->\n<div class="wp-block-button"><a class="wp-block-button__link">${c}</a></div>\n<!-- /wp:button -->`;
+      }
+      if (sec.type === 'image') return sec.src
+        ? `<!-- wp:image -->\n<figure class="wp-block-image"><img src="${sec.src}" alt="${sec.alt || c}" />${sec.caption ? `<figcaption>${sec.caption}</figcaption>` : ''}</figure>\n<!-- /wp:image -->`
+        : `<!-- wp:paragraph -->\n<p><em>[Image: ${c}]</em></p>\n<!-- /wp:paragraph -->`;
+      return `<!-- wp:paragraph -->\n<p>${c.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</p>\n<!-- /wp:paragraph -->` + secBacklinksMd;
+    };
+
+    // Logo header for export (larger: 56px)
+    const logoMd = brandLogo ? `![Logo](${brandLogo})\n\n` : '';
+    const logoHtml = brandLogo
+      ? `<div style="text-align:center;margin-bottom:1.5em"><img src="${brandLogo}" alt="Logo" style="height:56px;object-fit:contain;opacity:0.9"/></div>\n`
+      : '';
+    const logoWp = brandLogo ? `<!-- wp:image -->\n<figure class="wp-block-image" style="text-align:center"><img src="${brandLogo}" alt="Logo" style="height:56px;object-fit:contain"/></figure>\n<!-- /wp:image -->\n` : '';
+
     switch (selectedFormat) {
       case 'markdown':
-        content = `# ${post.title}\n\n**Subject:** ${post.subjectLine}\n\n**Preview:** ${post.previewText}\n\n${post.content || ''}\n\n---\n*Generated by Mengo Newsletter Content OS*`;
+        content = `# ${post.title}\n\n**Subject:** ${post.subjectLine}\n\n${logoMd}${sections.length > 0 ? sections.map(s => formatSection(s, 'markdown')).join('\n\n') : post.content || ''}${formatBacklinks('markdown')}\n\n---\n*Generated by Mengo Newsletter Content OS*`;
         break;
       case 'html':
-        content = `<!DOCTYPE html>\n<html>\n<head><title>${post.title}</title></head>\n<body>\n<h1>${post.title}</h1>\n<p><strong>Subject:</strong> ${post.subjectLine}</p>\n<p><strong>Preview:</strong> ${post.previewText}</p>\n<hr/>\n${(post.content || '').replace(/\n/g, '<br/>')}\n</body>\n</html>`;
+        content = `<!DOCTYPE html>\n<html><head><title>${post.title}</title><style>body{background:#0d1117;color:#e2e8f0;font-family:Inter,sans-serif;max-width:600px;margin:0 auto;padding:2em}</style></head>\n<body>\n${logoHtml}<h1 style="color:#C8FF2E;font-size:2rem">${post.title}</h1>\n<p style="color:#94a3b8"><strong>Subject:</strong> ${post.subjectLine}</p>\n${sections.length > 0 ? sections.map(s => formatSection(s, 'html')).join('\n') : (post.content || '').replace(/\n/g, '<br/>')}${formatBacklinks('html')}\n</body></html>`;
         break;
       case 'wordpress':
-        content = `<!-- wp:heading -->\n<h1>${post.title}</h1>\n<!-- /wp:heading -->\n<!-- wp:paragraph -->\n<p><strong>Subject:</strong> ${post.subjectLine}</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p><strong>Preview:</strong> ${post.previewText}</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p>${(post.content || '').replace(/\n/g, '</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p>')}</p>\n<!-- /wp:paragraph -->`;
+        content = `<!-- wp:heading -->\n<h1>${post.title}</h1>\n<!-- /wp:heading -->\n<!-- wp:paragraph -->\n<p><strong>Subject:</strong> ${post.subjectLine}</p>\n<!-- /wp:paragraph -->\n${logoWp}${sections.length > 0 ? sections.map(s => formatSection(s, 'wordpress')).join('\n') : `<!-- wp:paragraph -->\n<p>${(post.content || '').replace(/\n/g, '</p>\n<!-- /wp:paragraph -->\n<!-- wp:paragraph -->\n<p>')}</p>\n<!-- /wp:paragraph -->`}${formatBacklinks('wordpress')}`;
         break;
       default:
-        content = post.content || '';
+        content = sections.length > 0 ? sections.map(s => s.content).join('\n\n') : post.content || '';
+        if (brandLogo) content = `[Logo: ${brandLogo}]\n\n` + content;
+        if (allBacklinks.length > 0) content += formatBacklinks('plain');
     }
 
     const blob = new Blob([content], { type: 'text/plain' });

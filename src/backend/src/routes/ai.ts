@@ -6,6 +6,7 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { authenticate, requireRole } from '../middleware/auth';
 import { cacheGet, cacheSet } from '../utils/redis';
 
@@ -24,6 +25,31 @@ const getAIConfig = () => ({
   AI_TIMEOUT: parseInt(process.env.AI_TIMEOUT || '60000', 10),
 });
 
+// Timeout for individual AI calls (ms)
+const AI_TIMEOUT = parseInt(process.env.AI_TIMEOUT || '90000', 10);
+// Retry settings for transient failures
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
+
+/** Sleep helper for retry backoff */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/** Check if an error is retryable (rate limit, server overload, timeout, network) */
+function isRetryableError(err: any): boolean {
+  const msg = (err.message || '').toLowerCase();
+  if (err.name === 'AbortError') return true; // timeout
+  if (msg.includes('429')) return true;       // rate limit
+  if (msg.includes('503')) return true;       // service overloaded
+  if (msg.includes('502')) return true;       // bad gateway
+  if (msg.includes('timeout')) return true;   // any timeout
+  if (msg.includes('econnrefused')) return true;
+  if (msg.includes('econnreset')) return true;
+  if (msg.includes('socket hang up')) return true;
+  if (msg.includes('fetch failed')) return true;
+  return false;
+}
 // Log configuration on startup for debugging
 console.log('[AI] Configuration loaded:', {
   AI_PROVIDER: process.env.AI_PROVIDER || 'auto',
@@ -136,6 +162,14 @@ async function callOllama(prompt: string, systemPrompt: string, maxTokens: numbe
     }
     if (!content) {
       throw new Error('Ollama returned empty content');
+    }
+    // Strip reasoning patterns that GLM models sometimes include in content
+    // Remove numbered reasoning steps like "1. **Analyze...:**" at the start
+    content = content.replace(/^(?:\d+\.\s+\*\*[^*]+\*\*:?[\s\S]*?(?=\n\n|\[))/gm, '').trim();
+    // If content starts with reasoning but contains JSON, extract the JSON part
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch && !content.trim().startsWith('[')) {
+      content = jsonMatch[0];
     }
     return {
       content,
@@ -312,28 +346,40 @@ async function generateWithAI(prompt: string, systemPrompt: string, maxTokens: n
   const errors: string[] = [];
 
   for (const provider of callOrder) {
-    try {
-      let result;
-      switch (provider) {
-        case 'ollama':
-          result = await callOllama(prompt, systemPrompt, maxTokens);
-          break;
-        case 'zhipu':
-          result = await callZhipu(prompt, systemPrompt, maxTokens);
-          break;
-        case 'claude':
-          result = await callClaude(prompt, systemPrompt, maxTokens);
-          break;
-        default:
-          continue;
+    // Retry logic: try each provider up to MAX_RETRIES times for transient errors
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        let result;
+        switch (provider) {
+          case 'ollama':
+            result = await callOllama(prompt, systemPrompt, maxTokens);
+            break;
+          case 'zhipu':
+            result = await callZhipu(prompt, systemPrompt, maxTokens);
+            break;
+          case 'claude':
+            result = await callClaude(prompt, systemPrompt, maxTokens);
+            break;
+          default:
+            continue;
+        }
+        console.log(`[AI] SUCCESS — provider: ${result.provider}, model: ${result.model}`);
+        return result;
+      } catch (err: any) {
+        const isRetryable = isRetryableError(err);
+        const errMsg = `${provider} (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`;
+        errors.push(errMsg);
+        console.log(`[AI] ${errMsg}${isRetryable ? ' — retryable' : ' — not retryable'}`);
+
+        if (isRetryable && attempt < MAX_RETRIES) {
+          const delay = RETRY_DELAY_MS * attempt; // linear backoff: 2s, 4s
+          console.log(`[AI] Retrying ${provider} in ${delay}ms...`);
+          await sleep(delay);
+          continue; // retry same provider
+        }
+        // Not retryable or out of retries — move to next provider
+        break;
       }
-      console.log(`[AI] SUCCESS — provider: ${result.provider}, model: ${result.model}`);
-      return result;
-    } catch (err: any) {
-      const errMsg = `${provider}: ${err.message}`;
-      errors.push(errMsg);
-      console.log(`[AI] ${provider} failed: ${err.message}`);
-      // Continue to next provider
     }
   }
 
@@ -356,6 +402,16 @@ router.post(
         return;
       }
 
+      const { prompt, context = {}, maxTokens = 4000 } = req.body;
+
+      // Check cache (skip if Redis unavailable)
+      let cached: string | null = null;
+      try {
+        const cacheKey = `ai:${crypto.createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
+        cached = await cacheGet(cacheKey);
+        if (cached) {
+          res.json({ content: cached, cached: true, provider: 'cache' });
+          return;
       const { prompt, context = {}, maxTokens = 4000, noCache = false } = req.body;
 
       // Check cache (skip if Redis unavailable or noCache is true)
@@ -379,6 +435,12 @@ router.post(
       const systemPrompt = context.systemPrompt || 'You are an expert marketing assistant helping create content for a business. Always respond with valid JSON when asked to.';
       const result = await generateWithAI(prompt, systemPrompt, maxTokens);
 
+      // Cache result (5 minutes)
+      try {
+        const cacheKey = `ai:${crypto.createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
+        await cacheSet(cacheKey, result.content, 300);
+      } catch {
+        // Cache unavailable, continue without it
       // Cache result (5 minutes) - only if noCache is not set
       if (!noCache) {
         try {
@@ -446,12 +508,10 @@ router.post('/suggest', requireRole('admin', 'editor', 'viewer'), async (req: Re
       provider: result.provider,
     });
   } catch (error: any) {
-    res.json({
-      suggestions: [
-        'Suggestion 1 based on context',
-        'Suggestion 2 based on context',
-        'Suggestion 3 based on context',
-      ],
+    console.error('[AI] Suggest error:', error.message);
+    res.status(500).json({
+      error: error.message || 'AI suggestion failed',
+      suggestions: [],
     });
   }
 });
