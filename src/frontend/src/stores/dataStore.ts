@@ -56,11 +56,14 @@ import type {
   BlogStrategy,
   BlogContentTypeConfig,
   BlogCalendar,
+  BlogSEOConfig,
   BlogTitle,
   BlogPost,
   BlogContentChunk,
   BlogExport,
   BlogContentSystem,
+  BlogStructure,
+  BlogContentSection,
   // Newsletter Content OS
   NewsletterStrategy,
   NewsletterContentTypeConfig,
@@ -119,10 +122,13 @@ interface ModuleData {
   blogStrategies: BlogStrategy[];
   blogContentTypes: BlogContentTypeConfig[];
   blogCalendars: BlogCalendar[];
+  blogSEOConfigs: BlogSEOConfig[];
   blogTitles: BlogTitle[];
   blogPosts: BlogPost[];
   blogContentChunks: BlogContentChunk[];
   blogExports: BlogExport[];
+  blogStructures: BlogStructure[];
+  blogContentSections: BlogContentSection[];
 
   // Newsletter Content OS
   newsletterContentSystem: any | null;
@@ -218,10 +224,13 @@ const createEmptyModuleData = (): ModuleData => ({
   blogStrategies: [],
   blogContentTypes: [],
   blogCalendars: [],
+  blogSEOConfigs: [],
   blogTitles: [],
   blogPosts: [],
   blogContentChunks: [],
   blogExports: [],
+  blogStructures: [],
+  blogContentSections: [],
 
   // Newsletter Content OS
   newsletterContentSystem: null,
