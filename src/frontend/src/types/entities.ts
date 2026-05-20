@@ -2726,6 +2726,86 @@ export interface BlogStrategy extends BaseEntity {
 }
 
 // ============================================
+// BLOG SEO CONFIGURATION
+// ============================================
+
+export type SearchIntentType = 'informational' | 'commercial' | 'transactional' | 'navigational';
+export type SEOGoalType = 'traffic' | 'rankings' | 'leads' | 'authority';
+export type SchemaType = 'article' | 'howto' | 'review' | 'faq' | 'product';
+
+export interface BlogSEOConfig extends BaseEntity {
+  strategyId: string;
+
+  // Basic SEO Info
+  seoName: string;
+  searchIntent: SearchIntentType;
+  targetAudience: string;
+  primaryGoal: SEOGoalType;
+
+  // Keywords
+  primaryKeywords: string[];
+  secondaryKeywords: string[];
+  longTailKeywords: string[];
+  negativeKeywords: string[];
+
+  // AI SEO Settings
+  aiSeoSettings: {
+    autoGenerateMetaTitle: boolean;
+    autoGenerateMetaDescription: boolean;
+    autoGenerateSlug: boolean;
+    autoGenerateTOC: boolean;
+    autoGenerateAltText: boolean;
+    autoGenerateInternalLinks: boolean;
+  };
+
+  // Meta Templates
+  metaSettings: {
+    metaTitleTemplate: string;
+    metaDescriptionTemplate: string;
+    titleMaxLength: number;
+    descriptionMaxLength: number;
+  };
+
+  // SEO Rules
+  seoRules: {
+    minWordCount: number;
+    maxWordCount: number;
+    keywordDensityTarget: number;
+    includeTOC: boolean;
+    includeConclusion: boolean;
+    includeCTA: boolean;
+  };
+
+  // Internal Linking
+  internalLinking: {
+    enabled: boolean;
+    maxLinksPerPost: number;
+    pillarPages: string[];
+  };
+
+  // Schema Settings
+  schemaSettings: {
+    enabled: boolean;
+    schemaTypes: SchemaType[];
+  };
+
+  // Competitor SEO
+  seoCompetitors: {
+    competitorDomains: string[];
+    competitorKeywords: string[];
+  };
+
+  // Analysis (computed/cached)
+  seoAnalysis?: {
+    seoScore: number;
+    readabilityScore: number;
+    keywordCoverage: number;
+    intentMatchScore: number;
+    lastAnalyzed: string;
+  };
+}
+
+// ============================================
 // BLOG CONTENT TYPE
 // ============================================
 
@@ -2800,10 +2880,17 @@ export interface BlogTitle extends BaseEntity {
   funnelStage: FunnelStage;
   suggestedKeywords: string[];
   suggestedCTA: string;
+  metaDescription?: string; // SEO meta description
+  trendingKeywords?: string[]; // Trending keywords from SEO analysis
+  // Image SEO
+  imagePrompt?: string; // AI-generated image prompt for featured image
+  imageAlt?: string; // Alt text for featured image
+  ogImageDescription?: string; // Open Graph image description
   status: 'generated' | 'selected' | 'rejected' | 'edited';
   order: number;
   aiPrompt?: string;
   aiModel?: string;
+  scheduledDate?: string;
 }
 
 // ============================================
@@ -2990,6 +3077,8 @@ export interface BlogPost extends BaseEntity {
   // Publishing
   publishedAt?: string;
   scheduledPublishAt?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
 }
 
 // ============================================
@@ -3559,7 +3648,7 @@ export type ScriptStatus =
   | 'published'
   | 'archived';
 
-export type FunnelStage =
+export type SalesFunnelStage =
   | 'awareness'
   | 'interest'
   | 'consideration'
@@ -3568,7 +3657,7 @@ export type FunnelStage =
   | 'retention'
   | 'advocacy';
 
-export type AudienceType =
+export type SalesAudienceType =
   | 'prospect'
   | 'lead'
   | 'opportunity'
@@ -3669,8 +3758,8 @@ export interface SalesScript extends BaseEntity {
   serviceIds?: string[];
 
   // Audience & Targeting
-  funnelStage: FunnelStage;
-  audienceType: AudienceType;
+  funnelStage: SalesFunnelStage;
+  audienceType: SalesAudienceType;
   targetIndustry?: string;
   targetPersona?: string;
 
@@ -3745,4 +3834,78 @@ export interface SalesScript extends BaseEntity {
   // Tags & Categories
   tags?: string[];
   category?: string;
+}
+
+// ============================================
+// BLOG STRUCTURE
+// ============================================
+
+export type StructureType =
+  | 'seo'
+  | 'technical'
+  | 'thought-leadership'
+  | 'comparison'
+  | 'listicle'
+  | 'case-study'
+  | 'product-focused';
+
+export type StructureSectionType =
+  | 'intro'
+  | 'problem'
+  | 'explanation'
+  | 'benefits'
+  | 'steps'
+  | 'examples'
+  | 'conclusion'
+  | 'cta'
+  | 'custom';
+
+export type StructureStatus = 'draft' | 'generated' | 'edited' | 'approved';
+
+export interface StructureSection {
+  id: string;
+  order: number;
+  type: StructureSectionType;
+  title: string;
+  description?: string;
+  headingLevel?: 1 | 2 | 3 | 4;
+  targetWordCount?: number;
+  keywords?: string[];
+  aiInstructions?: string;
+  generateContent: boolean;
+  required: boolean;
+  contentGenerated?: boolean;
+  contentId?: string;
+}
+
+export interface BlogStructure extends BaseEntity {
+  strategyId: string;
+  postId?: string;
+  titleId?: string;
+  calendarItemId?: string;
+  scheduledDate?: string;
+  name: string;
+  type: StructureType;
+  aiGenerated: boolean;
+  editable: boolean;
+  totalWordCount: number;
+  status: StructureStatus;
+  sections: StructureSection[];
+}
+
+// ============================================
+// BLOG CONTENT SECTION
+// ============================================
+
+export interface BlogContentSection extends BaseEntity {
+  structureId: string;
+  structureSectionId: string;
+  title: string;
+  order: number;
+  type: string;
+  content: string;
+  generated: boolean;
+  aiGenerated: boolean;
+  manuallyEdited: boolean;
+  lastGeneratedAt?: string;
 }

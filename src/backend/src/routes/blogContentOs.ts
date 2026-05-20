@@ -192,6 +192,99 @@ router.delete('/calendars/:id', requireRole('admin'), async (req: Request, res: 
   }
 });
 
+// ============== SEO CONFIGS ==============
+
+router.get('/seo-configs/:companyId', async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.params;
+    if (!req.user!.companyIds.includes(companyId) && req.user!.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    const data = await getCompanyData(companyId);
+    res.json(data.seoConfigs || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get SEO configs' });
+  }
+});
+
+router.get('/seo-configs/detail/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'seoConfigs.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'SEO config not found' });
+      return;
+    }
+    const seoConfig = data.seoConfigs.find((s: any) => s.id === id);
+    res.json(seoConfig);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get SEO config' });
+  }
+});
+
+router.post('/seo-configs', requireRole('admin', 'editor'), async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.body;
+    if (!req.user!.companyIds.includes(companyId) && req.user!.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    const data = await getCompanyData(companyId);
+    const seoConfig = {
+      ...req.body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    data.seoConfigs.push(seoConfig);
+    await data.save();
+    res.status(201).json(seoConfig);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create SEO config' });
+  }
+});
+
+router.put('/seo-configs/:id', requireRole('admin', 'editor'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'seoConfigs.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'SEO config not found' });
+      return;
+    }
+    const index = data.seoConfigs.findIndex((s: any) => s.id === id);
+    if (index === -1) {
+      res.status(404).json({ error: 'SEO config not found' });
+      return;
+    }
+    data.seoConfigs[index] = {
+      ...data.seoConfigs[index],
+      ...req.body,
+      updatedAt: new Date().toISOString(),
+    };
+    await data.save();
+    res.json(data.seoConfigs[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update SEO config' });
+  }
+});
+
+router.delete('/seo-configs/:id', requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'seoConfigs.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'SEO config not found' });
+      return;
+    }
+    data.seoConfigs = data.seoConfigs.filter((s: any) => s.id !== id);
+    await data.save();
+    res.json({ message: 'SEO config deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete SEO config' });
+  }
+});
+
 // ============== TITLES ==============
 
 router.get('/titles/:companyId', async (req: Request, res: Response) => {
@@ -529,6 +622,176 @@ router.delete('/exports/:id', requireRole('admin'), async (req: Request, res: Re
     res.json({ message: 'Export deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete export' });
+  }
+});
+
+// ============== STRUCTURES ==============
+
+router.get('/structures/:companyId', async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.params;
+    if (!req.user!.companyIds.includes(companyId) && req.user!.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    const data = await getCompanyData(companyId);
+    res.json(data.structures || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get structures' });
+  }
+});
+
+router.get('/structures/detail/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'structures.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'Structure not found' });
+      return;
+    }
+    const structure = data.structures.find((s: any) => s.id === id);
+    res.json(structure);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get structure' });
+  }
+});
+
+router.post('/structures', requireRole('admin', 'editor'), async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.body;
+    if (!req.user!.companyIds.includes(companyId) && req.user!.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    const data = await getCompanyData(companyId);
+    const structure = { ...req.body, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    data.structures.push(structure);
+    await data.save();
+    res.status(201).json(structure);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create structure' });
+  }
+});
+
+router.put('/structures/:id', requireRole('admin', 'editor'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'structures.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'Structure not found' });
+      return;
+    }
+    const index = data.structures.findIndex((s: any) => s.id === id);
+    if (index === -1) {
+      res.status(404).json({ error: 'Structure not found' });
+      return;
+    }
+    data.structures[index] = { ...data.structures[index], ...req.body, updatedAt: new Date().toISOString() };
+    await data.save();
+    res.json(data.structures[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update structure' });
+  }
+});
+
+router.delete('/structures/:id', requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'structures.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'Structure not found' });
+      return;
+    }
+    data.structures = data.structures.filter((s: any) => s.id !== id);
+    await data.save();
+    res.json({ message: 'Structure deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete structure' });
+  }
+});
+
+// ============== CONTENT SECTIONS ==============
+
+router.get('/content-sections/:companyId', async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.params;
+    if (!req.user!.companyIds.includes(companyId) && req.user!.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    const data = await getCompanyData(companyId);
+    res.json(data.contentSections || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get content sections' });
+  }
+});
+
+router.get('/content-sections/detail/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'contentSections.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'Content section not found' });
+      return;
+    }
+    const section = data.contentSections.find((s: any) => s.id === id);
+    res.json(section);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get content section' });
+  }
+});
+
+router.post('/content-sections', requireRole('admin', 'editor'), async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.body;
+    if (!req.user!.companyIds.includes(companyId) && req.user!.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    const data = await getCompanyData(companyId);
+    const section = { ...req.body, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    data.contentSections.push(section);
+    await data.save();
+    res.status(201).json(section);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create content section' });
+  }
+});
+
+router.put('/content-sections/:id', requireRole('admin', 'editor'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'contentSections.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'Content section not found' });
+      return;
+    }
+    const index = data.contentSections.findIndex((s: any) => s.id === id);
+    if (index === -1) {
+      res.status(404).json({ error: 'Content section not found' });
+      return;
+    }
+    data.contentSections[index] = { ...data.contentSections[index], ...req.body, updatedAt: new Date().toISOString() };
+    await data.save();
+    res.json(data.contentSections[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update content section' });
+  }
+});
+
+router.delete('/content-sections/:id', requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await BlogContentOS.findOne({ 'contentSections.id': id });
+    if (!data) {
+      res.status(404).json({ error: 'Content section not found' });
+      return;
+    }
+    data.contentSections = data.contentSections.filter((s: any) => s.id !== id);
+    await data.save();
+    res.json({ message: 'Content section deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete content section' });
   }
 });
 
