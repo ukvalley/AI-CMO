@@ -504,6 +504,16 @@ export const blogCalendarApi = {
   delete: (id: string) => apiRequest(`/blog-content-os/calendars/${id}`, { method: 'DELETE' }),
 };
 
+// ============== BLOG SEO CONFIG API ==============
+
+export const blogSeoApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/seo-configs/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/seo-configs/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/seo-configs', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/seo-configs/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/seo-configs/${id}`, { method: 'DELETE' }),
+};
+
 export const blogTitleApi = {
   getAll: (companyId: string) => apiRequest(`/blog-content-os/titles/${companyId}`),
   getById: (id: string) => apiRequest(`/blog-content-os/titles/detail/${id}`),
@@ -534,6 +544,24 @@ export const blogExportApi = {
   create: (data: any) => apiRequest('/blog-content-os/exports', { method: 'POST', body: data }),
   update: (id: string, data: any) => apiRequest(`/blog-content-os/exports/${id}`, { method: 'PUT', body: data }),
   delete: (id: string) => apiRequest(`/blog-content-os/exports/${id}`, { method: 'DELETE' }),
+};
+
+// ============== BLOG STRUCTURE API ==============
+
+export const blogStructureApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/structures/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/structures/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/structures', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/structures/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/structures/${id}`, { method: 'DELETE' }),
+};
+
+export const blogContentSectionApi = {
+  getAll: (companyId: string) => apiRequest(`/blog-content-os/content-sections/${companyId}`),
+  getById: (id: string) => apiRequest(`/blog-content-os/content-sections/detail/${id}`),
+  create: (data: any) => apiRequest('/blog-content-os/content-sections', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiRequest(`/blog-content-os/content-sections/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/blog-content-os/content-sections/${id}`, { method: 'DELETE' }),
 };
 
 // ============== NEWSLETTER CONTENT OS API ==============
@@ -761,7 +789,7 @@ export const taskApi = {
 // ============== AI API ==============
 
 export const aiApi = {
-  generate: (data: { prompt: string; context?: any; maxTokens?: number }) =>
+  generate: (data: { prompt: string; context?: any; maxTokens?: number; noCache?: boolean }) =>
     apiRequest('/ai/generate', { method: 'POST', body: data }),
 
   generateBulk: (data: { items: any[]; template: string; context?: any }) =>

@@ -23,8 +23,8 @@ import {
 import { useAuthStore, useCompanyStore } from '@/stores';
 import { salesScriptApi, productApi } from '@/services/api';
 import type {
-  SalesScript, ScriptType, ScriptStatus, FunnelStage,
-  AudienceType, CommunicationChannel, ScriptPriority,
+  SalesScript, ScriptType, ScriptStatus, SalesFunnelStage,
+  SalesAudienceType, CommunicationChannel, ScriptPriority,
   IScriptSection, IQualificationQuestion, IObjectionResponse,
   IConversationBranch,
 } from '@/types/entities';
@@ -66,7 +66,7 @@ const SCRIPT_STATUSES: { value: ScriptStatus; label: string; color: string }[] =
   { value: 'archived', label: 'Archived', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
 ];
 
-const FUNNEL_STAGES: { value: FunnelStage; label: string }[] = [
+const FUNNEL_STAGES: { value: SalesFunnelStage; label: string }[] = [
   { value: 'awareness', label: 'Awareness' },
   { value: 'interest', label: 'Interest' },
   { value: 'consideration', label: 'Consideration' },
@@ -76,7 +76,7 @@ const FUNNEL_STAGES: { value: FunnelStage; label: string }[] = [
   { value: 'advocacy', label: 'Advocacy' },
 ];
 
-const AUDIENCE_TYPES: { value: AudienceType; label: string }[] = [
+const AUDIENCE_TYPES: { value: SalesAudienceType; label: string }[] = [
   { value: 'prospect', label: 'Prospect' },
   { value: 'lead', label: 'Lead' },
   { value: 'opportunity', label: 'Opportunity' },
@@ -248,7 +248,7 @@ export default function SalesScriptsModule() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<ScriptType | ''>('');
-  const [filterFunnel, setFilterFunnel] = useState<FunnelStage | ''>('');
+  const [filterFunnel, setFilterFunnel] = useState<SalesFunnelStage | ''>('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState<SalesScript | null>(null);
@@ -481,7 +481,7 @@ export default function SalesScriptsModule() {
           <option value="">All Types</option>
           {SCRIPT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
-        <select value={filterFunnel} onChange={(e) => setFilterFunnel(e.target.value as FunnelStage | '')} className={selectClass + ' w-44'}>
+        <select value={filterFunnel} onChange={(e) => setFilterFunnel(e.target.value as SalesFunnelStage | '')} className={selectClass + ' w-44'}>
           <option value="">All Stages</option>
           {FUNNEL_STAGES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
