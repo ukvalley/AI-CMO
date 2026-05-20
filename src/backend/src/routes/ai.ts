@@ -402,16 +402,6 @@ router.post(
         return;
       }
 
-      const { prompt, context = {}, maxTokens = 4000 } = req.body;
-
-      // Check cache (skip if Redis unavailable)
-      let cached: string | null = null;
-      try {
-        const cacheKey = `ai:${crypto.createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
-        cached = await cacheGet(cacheKey);
-        if (cached) {
-          res.json({ content: cached, cached: true, provider: 'cache' });
-          return;
       const { prompt, context = {}, maxTokens = 4000, noCache = false } = req.body;
 
       // Check cache (skip if Redis unavailable or noCache is true)
@@ -435,16 +425,10 @@ router.post(
       const systemPrompt = context.systemPrompt || 'You are an expert marketing assistant helping create content for a business. Always respond with valid JSON when asked to.';
       const result = await generateWithAI(prompt, systemPrompt, maxTokens);
 
-      // Cache result (5 minutes)
-      try {
-        const cacheKey = `ai:${crypto.createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
-        await cacheSet(cacheKey, result.content, 300);
-      } catch {
-        // Cache unavailable, continue without it
       // Cache result (5 minutes) - only if noCache is not set
       if (!noCache) {
         try {
-          const cacheKey = `ai:${Buffer.from(prompt).toString('base64').slice(0, 50)}`;
+          const cacheKey = `ai:${crypto.createHash('sha256').update(prompt).digest('hex').slice(0, 24)}`;
           await cacheSet(cacheKey, result.content, 300);
         } catch {
           // Cache unavailable, continue without it
