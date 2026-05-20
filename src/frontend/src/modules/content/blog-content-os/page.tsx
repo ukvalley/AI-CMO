@@ -30,14 +30,17 @@ import {
   Type,
   Sparkles,
   Layout,
+  Database,
   Image,
   CheckCircle,
   Download,
   Settings,
   Plus,
+  Edit2,
   Trash2,
   GripVertical,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Copy,
   Check,
@@ -88,17 +91,26 @@ import {
   Package,
   Swords,
   PanelTop,
+  UserCircle,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { useDataStore, useCompanyStore, useTaskStore } from '@/stores';
+import { useDataStore, useCompanyStore, useTaskStore, useAuthStore } from '@/stores';
 import {
   blogStrategyApi,
   blogCalendarApi,
+  blogSeoApi,
   blogTitleApi,
   blogPostApi,
   blogContentChunkApi,
   blogExportApi,
+  blogStructureApi,
+  blogContentSectionApi,
   aiApi,
+  businessProfileApi,
+  icpApi,
+  personaApi,
+  competitorApi,
+  moduleDataApi,
 } from '@/services/api';
 import type {
   BlogStrategy,
@@ -137,6 +149,13 @@ import type {
   Persona,
   Product,
   Competitor,
+  BlogSEOConfig,
+  BlogStructure,
+  StructureSection,
+  StructureType,
+  StructureSectionType,
+  StructureStatus,
+  BlogContentSection,
 } from '@/types/entities';
 
 // ============================================
@@ -205,6 +224,27 @@ const BLOG_STATUS_CONFIG: Record<BlogContentStatus, { label: string; color: stri
 // UTILITY FUNCTIONS
 // ============================================
 
+// Transform MongoDB _id to id for consistency
+function transformMongoIds(obj: any): any {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) return obj.map(transformMongoIds);
+  if (typeof obj !== 'object') return obj;
+
+  const result = { ...obj };
+  if (result._id && !result.id) {
+    result.id = result._id;
+  }
+
+  // Recursively transform nested objects
+  for (const key of Object.keys(result)) {
+    if (typeof result[key] === 'object' && result[key] !== null) {
+      result[key] = transformMongoIds(result[key]);
+    }
+  }
+
+  return result;
+}
+
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
@@ -222,7 +262,9 @@ function getEstimatedReadTime(wordCount: number): number {
 // ============================================
 
 export default function BlogContentOSModule() {
-  const companyId = useCompanyStore(s => s.activeCompanyId);
+  const user = useAuthStore(s => s.user);
+  const storeCompanyId = useCompanyStore(s => s.activeCompanyId);
+  const companyId = user?.activeCompanyId || storeCompanyId;
   const getItems = useDataStore(s => s.getItems);
   const addItem = useDataStore(s => s.addItem);
   const updateItem = useDataStore(s => s.updateItem);
@@ -246,15 +288,18 @@ export default function BlogContentOSModule() {
   const calendars = useMemo(() => (getItems('blogCalendars') as BlogCalendar[]) || [], [getItems, data, activeCompanyId]);
   const titles = useMemo(() => (getItems('blogTitles') as BlogTitle[]) || [], [getItems, data, activeCompanyId]);
   const posts = useMemo(() => (getItems('blogPosts') as BlogPost[]) || [], [getItems, data, activeCompanyId]);
+  const seoConfigs = useMemo(() => (getItems('blogSEOConfigs') as BlogSEOConfig[]) || [], [getItems, data, activeCompanyId]);
   const chunks = useMemo(() => (getItems('blogContentChunks') as BlogContentChunk[]) || [], [getItems, data, activeCompanyId]);
+  const structures = useMemo(() => (getItems('blogStructures') as BlogStructure[]) || [], [getItems, data, activeCompanyId]);
+  const contentSections = useMemo(() => (getItems('blogContentSections') as BlogContentSection[]) || [], [getItems, data, activeCompanyId]);
 
-  // Linked data
-  const brand = useMemo(() => getItems('brand') as Brand | null, [getItems]);
-  const businessProfile = useMemo(() => (getItems('businessProfiles') as BusinessProfile[])[0], [getItems]);
-  const icps = useMemo(() => (getItems('icps') as ICP[]) || [], [getItems]);
-  const personas = useMemo(() => (getItems('personas') as Persona[]) || [], [getItems]);
+  // Foundational data from API
+  const [brand, setBrand] = useState<Brand | null | undefined>(undefined);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null | undefined>(undefined);
+  const [icps, setIcps] = useState<ICP[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const products = useMemo(() => (getItems('products') as Product[]) || [], [getItems]);
-  const competitors = useMemo(() => (getItems('competitors') as Competitor[]) || [], [getItems]);
 
   // Load data from API on mount / company change
   const [isLoading, setIsLoading] = useState(true);
@@ -266,27 +311,48 @@ export default function BlogContentOSModule() {
 
     const loadFromApi = async () => {
       setIsLoading(true);
-      const [sRes, cRes, tRes, pRes, chRes, eRes] = await Promise.all([
+      const [sRes, cRes, seoRes, tRes, pRes, chRes, eRes, stRes, csRes, bpRes, icpRes, personaRes, competitorRes, brandRes] = await Promise.all([
         blogStrategyApi.getAll(companyId),
         blogCalendarApi.getAll(companyId),
+        blogSeoApi.getAll(companyId),
         blogTitleApi.getAll(companyId),
         blogPostApi.getAll(companyId),
         blogContentChunkApi.getAll(companyId),
         blogExportApi.getAll(companyId),
+        blogStructureApi.getAll(companyId),
+        blogContentSectionApi.getAll(companyId),
+        businessProfileApi.getByCompany(companyId),
+        icpApi.getAll(companyId),
+        personaApi.getAll(companyId),
+        competitorApi.getAll(companyId),
+        moduleDataApi.get('brand-strategy', companyId),
       ]);
 
-      // Log API errors for debugging
+      // Log API responses for debugging
       const responses = [
         { name: 'strategies', res: sRes },
         { name: 'calendars', res: cRes },
+        { name: 'seoConfigs', res: seoRes },
         { name: 'titles', res: tRes },
         { name: 'posts', res: pRes },
         { name: 'chunks', res: chRes },
         { name: 'exports', res: eRes },
+        { name: 'structures', res: stRes },
+        { name: 'contentSections', res: csRes },
+        { name: 'businessProfile', res: bpRes },
+        { name: 'icps', res: icpRes },
+        { name: 'personas', res: personaRes },
+        { name: 'competitors', res: competitorRes },
+        { name: 'brand', res: brandRes },
       ];
       responses.forEach(({ name, res }) => {
         if (res.error) {
           console.error(`[BlogContentOS] API load failed for ${name}:`, res.error, `(status: ${res.status})`);
+        } else if (res.data) {
+          const dataInfo = Array.isArray(res.data) ? `${res.data.length} items` : 'object';
+          console.log(`[BlogContentOS] Loaded ${name}:`, dataInfo);
+        } else {
+          console.warn(`[BlogContentOS] No data for ${name} (status: ${res.status})`);
         }
       });
 
@@ -308,6 +374,10 @@ export default function BlogContentOSModule() {
         const local = (getItems('blogCalendars') as BlogCalendar[]) || [];
         setItems('blogCalendars', mergeById(local, cRes.data as BlogCalendar[]));
       }
+      if (seoRes.data && Array.isArray(seoRes.data) && seoRes.data.length > 0) {
+        const local = (getItems('blogSEOConfigs') as BlogSEOConfig[]) || [];
+        setItems('blogSEOConfigs', mergeById(local, seoRes.data as BlogSEOConfig[]));
+      }
       if (tRes.data && Array.isArray(tRes.data) && tRes.data.length > 0) {
         const local = (getItems('blogTitles') as BlogTitle[]) || [];
         setItems('blogTitles', mergeById(local, tRes.data as BlogTitle[]));
@@ -324,6 +394,43 @@ export default function BlogContentOSModule() {
         const local = (getItems('blogExports') as BlogExport[]) || [];
         setItems('blogExports', mergeById(local, eRes.data as BlogExport[]));
       }
+      if (stRes.data && Array.isArray(stRes.data) && stRes.data.length > 0) {
+        const local = (getItems('blogStructures') as BlogStructure[]) || [];
+        setItems('blogStructures', mergeById(local, stRes.data as BlogStructure[]));
+      }
+      if (csRes.data && Array.isArray(csRes.data) && csRes.data.length > 0) {
+        const local = (getItems('blogContentSections') as BlogContentSection[]) || [];
+        setItems('blogContentSections', mergeById(local, csRes.data as BlogContentSection[]));
+      }
+
+      // Foundational data
+      if (bpRes.data) {
+        const profile = transformMongoIds((bpRes.data as any).data || bpRes.data);
+        console.log('[BlogContentOS] Business profile loaded:', profile);
+        setBusinessProfile(profile);
+      }
+      if (icpRes.data) {
+        const icpData = Array.isArray(icpRes.data) ? icpRes.data : [];
+        console.log('[BlogContentOS] ICPs loaded:', icpData.length, 'items');
+        setIcps(transformMongoIds(icpData));
+      }
+      if (personaRes.data) {
+        const personaData = Array.isArray(personaRes.data) ? personaRes.data : [];
+        console.log('[BlogContentOS] Personas loaded:', personaData.length, 'items');
+        setPersonas(transformMongoIds(personaData));
+      }
+      if (competitorRes.data) {
+        const competitorData = Array.isArray(competitorRes.data) ? competitorRes.data : [];
+        console.log('[BlogContentOS] Competitors loaded:', competitorData.length, 'items');
+        setCompetitors(transformMongoIds(competitorData));
+      }
+      if (brandRes.data) {
+        const brandData = (brandRes.data as any).data || brandRes.data;
+        if (brandData && typeof brandData === 'object' && Object.keys(brandData).length > 0) {
+          console.log('[BlogContentOS] Brand loaded:', brandData);
+          setBrand(transformMongoIds(brandData));
+        }
+      }
 
       setIsLoading(false);
     };
@@ -338,7 +445,7 @@ export default function BlogContentOSModule() {
 
   // Active selections
   const [activeStrategyId, setActiveStrategyId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'strategy' | 'types' | 'calendar' | 'titles' | 'content' | 'assets' | 'review' | 'export'>('strategy');
+  const [activeTab, setActiveTab] = useState<'strategy' | 'dataSource' | 'types' | 'calendar' | 'structure' | 'titles' | 'content' | 'seo' | 'assets' | 'review' | 'export'>('strategy');
   const [showCreateStrategyModal, setShowCreateStrategyModal] = useState(false);
   const [autoMapEnabled, setAutoMapEnabled] = useState(true);
 
@@ -409,6 +516,57 @@ export default function BlogContentOSModule() {
     const funnelLabel = activeStrategy.funnelStage || 'tofu';
     const audienceLabel = activeStrategy.targetAudience || 'general professionals';
 
+    // Get linked data from Data Sources tab
+    const linkedData = activeStrategy.linkedData || {};
+    const linkedIcpIds = (linkedData as any).icpIds || [];
+    const linkedPersonaIds = (linkedData as any).personaIds || [];
+    const linkedCompetitorIds = (linkedData as any).competitorIds || [];
+    const linkedProductIds = (linkedData as any).productIds || [];
+
+    // Filter linked items
+    const linkedIcps = icps.filter((icp) => linkedIcpIds.includes(icp.id));
+    const linkedPersonas = personas.filter((p) => linkedPersonaIds.includes(p.id));
+    const linkedCompetitors = competitors.filter((c) => linkedCompetitorIds.includes(c.id));
+    const linkedProducts = products.filter((p) => linkedProductIds.includes(p.id));
+
+    // Build ICP context
+    let icpContext = '';
+    if (linkedIcps.length > 0) {
+      icpContext = linkedIcps.map((icp, i) => {
+        const pains = (icp as any).painPoints?.slice(0, 3).join(', ') || 'No pain points defined';
+        const goals = (icp as any).goals?.slice(0, 3).join(', ') || 'No goals defined';
+        return `ICP ${i + 1}: ${icp.name} - Pain Points: ${pains}. Goals: ${goals}`;
+      }).join('\n');
+    }
+
+    // Build Persona context
+    let personaContext = '';
+    if (linkedPersonas.length > 0) {
+      personaContext = linkedPersonas.map((p, i) => {
+        const challenges = (p as any).challenges?.slice(0, 3).join(', ') || 'No challenges defined';
+        return `Persona ${i + 1}: ${p.name} (${(p as any).jobTitle || 'No title'}) - Challenges: ${challenges}`;
+      }).join('\n');
+    }
+
+    // Build Competitor context
+    let competitorContext = '';
+    if (linkedCompetitors.length > 0) {
+      competitorContext = linkedCompetitors.map((c, i) => {
+        const strengths = (c as any).strengths?.slice(0, 2).join(', ') || 'No strengths defined';
+        const weaknesses = (c as any).weaknesses?.slice(0, 2).join(', ') || 'No weaknesses defined';
+        return `Competitor ${i + 1}: ${c.name} - Strengths: ${strengths}. Weaknesses: ${weaknesses}`;
+      }).join('\n');
+    }
+
+    // Build Product context
+    let productContext = '';
+    if (linkedProducts.length > 0) {
+      productContext = linkedProducts.map((p, i) => {
+        const features = (p as any).features?.slice(0, 3).join(', ') || 'No features defined';
+        return `Product ${i + 1}: ${(p as any).name} - Key Features: ${features}`;
+      }).join('\n');
+    }
+
     const prompt = `You are an expert blog content strategist. Generate exactly ${count} blog post titles for a business blog.
 
 Strategy context:
@@ -419,6 +577,11 @@ ${brandContext ? '- ' + brandContext : ''}
 ${businessContext ? '- ' + businessContext : ''}
 
 Content types to cover: ${typeNames}
+
+${icpContext ? `Target ICPs:\n${icpContext}\n` : ''}
+${personaContext ? `Buyer Personas:\n${personaContext}\n` : ''}
+${competitorContext ? `Competitor Landscape:\n${competitorContext}\n` : ''}
+${productContext ? `Products/Services to Feature:\n${productContext}\n` : ''}
 
 Title style: ${style}
 ${style === 'seo' ? 'Use keyword-rich, search-optimized titles that rank well.' : ''}
@@ -551,7 +714,7 @@ Generate ${count} diverse, creative titles now:`;
       await Promise.all(titlesToCreate.map((t) => blogTitleApi.create(t).catch(() => {})));
       taskStore.completeBatch(taskId, 0, Array(count).fill('title'));
     }
-  }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, addItem, taskStore, companyId]);
+  }, [activeStrategyId, activeStrategy, contentTypes, brand, businessProfile, icps, personas, competitors, products, addItem, taskStore, companyId]);
 
   if (!companyId) {
     return (
@@ -609,10 +772,13 @@ Generate ${count} diverse, creative titles now:`;
         <div className="flex gap-0 border-t border-slate-800 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {[
             { id: 'strategy', label: 'Strategy', icon: Target },
+            { id: 'dataSource', label: 'Data Sources', icon: Database },
             // { id: 'types', label: 'Types', icon: Layout },
             { id: 'titles', label: 'Titles', icon: Type },
-            { id: 'content', label: 'Content', icon: FileEdit },
+            { id: 'seo', label: 'SEO', icon: Search },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
+            { id: 'structure', label: 'Structure', icon: Layers },
+            { id: 'content', label: 'Content', icon: FileEdit },
             { id: 'assets', label: 'Assets', icon: Image },
             { id: 'review', label: 'Review', icon: CheckCircle },
             { id: 'export', label: 'Export', icon: Download },
@@ -650,6 +816,18 @@ Generate ${count} diverse, creative titles now:`;
                 products={products}
                 competitors={competitors}
                 onUpdate={(updates) => handleUpdateStrategy(activeStrategy!.id, updates)}
+              />
+            )}
+
+            {activeTab === 'dataSource' && activeStrategy && (
+              <DataSourcesTab
+                strategy={activeStrategy}
+                brand={brand}
+                businessProfile={businessProfile}
+                icps={icps}
+                personas={personas}
+                competitors={competitors}
+                onUpdate={(updates) => handleUpdateStrategy(activeStrategy.id, updates)}
               />
             )}
 
@@ -691,6 +869,33 @@ Generate ${count} diverse, creative titles now:`;
               />
             )}
 
+            {activeTab === 'seo' && activeStrategy && (
+              <SEOTab
+                strategy={activeStrategy}
+                titles={titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected')}
+                brand={brand}
+                businessProfile={businessProfile}
+                icps={icps}
+                personas={personas}
+                competitors={competitors}
+                seoConfig={seoConfigs.find((c) => c.strategyId === activeStrategy.id) || null}
+                onSaveSEO={async (data) => {
+                  const existing = seoConfigs.find((c) => c.strategyId === activeStrategy.id);
+                  if (existing) {
+                    updateItem('blogSEOConfigs', existing.id, data);
+                    await blogSeoApi.update(existing.id, { ...data, companyId });
+                  } else {
+                    const localId = addItem('blogSEOConfigs', { ...data, id: `seo-${Date.now()}`, companyId } as any);
+                    await blogSeoApi.create({ ...data, id: localId, companyId });
+                  }
+                }}
+                onUpdateTitle={async (id, updates) => {
+                  updateItem('blogTitles', id, updates);
+                  await blogTitleApi.update(id, updates);
+                }}
+              />
+            )}
+
             {activeTab === 'content' && activeStrategy && (
               <ContentTab
                 strategy={activeStrategy}
@@ -698,8 +903,17 @@ Generate ${count} diverse, creative titles now:`;
                 titles={titles.filter((t) => t.strategyId === activeStrategy.id && t.status === 'selected')}
                 contentTypes={contentTypes.filter((t) => t.strategyId === activeStrategy.id)}
                 calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
+                structures={structures.filter((s) => s.strategyId === activeStrategy.id)}
+                contentSections={contentSections}
                 autoMapEnabled={autoMapEnabled}
                 onAutoMapToggle={() => setAutoMapEnabled(!autoMapEnabled)}
+                brand={brand}
+                businessProfile={businessProfile}
+                icps={icps}
+                personas={personas}
+                competitors={competitors}
+                products={products}
+                seoConfigs={seoConfigs}
                 onCreatePost={async (data) => {
                   const localId = addItem('blogPosts', data as any);
                   const res = await blogPostApi.create({ ...data, id: localId, companyId });
@@ -719,6 +933,17 @@ Generate ${count} diverse, creative titles now:`;
                   updateItem('blogCalendars', id, updates);
                   await blogCalendarApi.update(id, updates);
                 }}
+                onCreateContentSection={async (data) => {
+                  const localId = addItem('blogContentSections', data as any);
+                  const res = await blogContentSectionApi.create({ ...data, id: localId, companyId });
+                  if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
+                    updateItem('blogContentSections', localId, { id: (res.data as any).id });
+                  }
+                }}
+                onUpdateContentSection={async (id, updates) => {
+                  updateItem('blogContentSections', id, updates);
+                  await blogContentSectionApi.update(id, updates);
+                }}
               />
             )}
 
@@ -737,6 +962,70 @@ Generate ${count} diverse, creative titles now:`;
                 onUpdateCalendar={async (id, updates) => {
                   updateItem('blogCalendars', id, updates);
                   await blogCalendarApi.update(id, updates);
+                }}
+              />
+            )}
+
+            {activeTab === 'structure' && activeStrategy && (
+              <StructureTab
+                strategy={activeStrategy}
+                structures={structures.filter((s) => s.strategyId === activeStrategy.id)}
+                contentSections={contentSections}
+                titles={titles.filter((t) => t.strategyId === activeStrategy.id)}
+                calendars={calendars.filter((c) => c.strategyId === activeStrategy.id)}
+                seoConfig={seoConfigs.find((c) => c.strategyId === activeStrategy.id) || null}
+                brand={brand}
+                businessProfile={businessProfile}
+                icps={icps}
+                personas={personas}
+                competitors={competitors}
+                onCreateStructure={async (data) => {
+                  console.log('[Structure] Creating structure with data:', data);
+                  console.log('[Structure] companyId:', companyId, 'activeStrategy.id:', activeStrategy.id);
+                  try {
+                    if (!companyId) {
+                      throw new Error('No company selected');
+                    }
+                    const localId = addItem('blogStructures', { ...data, strategyId: activeStrategy.id } as any);
+                    console.log('[Structure] Local ID:', localId);
+                    if (!localId) {
+                      throw new Error('Failed to create local structure - activeCompanyId may not be set');
+                    }
+                    const res = await blogStructureApi.create({ ...data, strategyId: activeStrategy.id, id: localId, companyId });
+                    console.log('[Structure] API response:', res);
+                    if (res.error) {
+                      console.error('[Structure] API error:', res.error);
+                    }
+                    if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
+                      updateItem('blogStructures', localId, { id: (res.data as any).id });
+                    }
+                  } catch (error) {
+                    console.error('[Structure] Error creating structure:', error);
+                    throw error;
+                  }
+                }}
+                onUpdateStructure={async (id, updates) => {
+                  updateItem('blogStructures', id, updates);
+                  await blogStructureApi.update(id, updates);
+                }}
+                onDeleteStructure={async (id) => {
+                  deleteItem('blogStructures', id);
+                  await blogStructureApi.delete(id);
+                }}
+                onCreateSection={async (data) => {
+                  const localId = addItem('blogContentSections', data as any);
+                  const res = await blogContentSectionApi.create({ ...data, id: localId, companyId });
+                  if (res.data && (res.data as any).id && (res.data as any).id !== localId) {
+                    updateItem('blogContentSections', localId, { id: (res.data as any).id });
+                  }
+                }}
+                onUpdateSection={async (id, updates) => {
+                  updateItem('blogContentSections', id, updates);
+                  await blogContentSectionApi.update(id, updates);
+                }}
+                onDeleteSection={async (id) => {
+                  deleteItem('blogContentSections', id);
+                  await blogContentSectionApi.delete(id);
                 }}
               />
             )}
@@ -822,8 +1111,8 @@ function StrategyTab({
   onUpdate,
 }: {
   strategy: BlogStrategy;
-  brand: Brand | null;
-  businessProfile: BusinessProfile | undefined;
+  brand: Brand | null | undefined;
+  businessProfile: BusinessProfile | null | undefined;
   icps: ICP[];
   personas: Persona[];
   products: Product[];
@@ -2003,6 +2292,823 @@ function EditCalendarModal({
 }
 
 // ============================================
+// STRUCTURE TAB
+// ============================================
+
+const DEFAULT_STRUCTURE_SECTIONS: Omit<StructureSection, 'id'>[] = [
+  { order: 1, type: 'intro', title: 'Introduction', description: 'Hook the reader and introduce the topic with compelling context', generateContent: true, required: true, targetWordCount: 250, headingLevel: 2 },
+  { order: 2, type: 'problem', title: 'The Problem', description: 'Define the challenge or pain point with specific examples', generateContent: true, required: true, targetWordCount: 350, headingLevel: 2 },
+  { order: 3, type: 'explanation', title: 'Deep Dive: Understanding the Topic', description: 'Provide comprehensive context, background, and key concepts', generateContent: true, required: true, targetWordCount: 500, headingLevel: 2 },
+  { order: 4, type: 'benefits', title: 'Key Benefits and Advantages', description: 'Highlight the key advantages with specific examples and data', generateContent: true, required: true, targetWordCount: 400, headingLevel: 2 },
+  { order: 5, type: 'steps', title: 'How to Get Started: Step-by-Step Guide', description: 'Practical steps and implementation with actionable advice', generateContent: true, required: true, targetWordCount: 600, headingLevel: 2 },
+  { order: 6, type: 'examples', title: 'Real-World Examples and Case Studies', description: 'Real-world examples and case studies with lessons learned', generateContent: true, required: false, targetWordCount: 400, headingLevel: 2 },
+  { order: 7, type: 'conclusion', title: 'Conclusion and Next Steps', description: 'Summarise key points and provide clear call-to-action', generateContent: true, required: true, targetWordCount: 250, headingLevel: 2 },
+];
+
+const STRUCTURE_TYPES: { value: StructureType; label: string; description: string }[] = [
+  { value: 'seo', label: 'SEO Article', description: 'Optimised for search engines and organic traffic' },
+  { value: 'technical', label: 'Technical Guide', description: 'In-depth technical content with code examples' },
+  { value: 'thought-leadership', label: 'Thought Leadership', description: 'Industry insights and expert perspectives' },
+  { value: 'comparison', label: 'Comparison', description: 'Compare products, services, or approaches' },
+  { value: 'listicle', label: 'Listicle', description: 'Numbered list format for easy scanning' },
+  { value: 'case-study', label: 'Case Study', description: 'Real-world success story analysis' },
+  { value: 'product-focused', label: 'Product Focused', description: 'Feature highlights and product deep-dives' },
+];
+
+function StructureTab({
+  strategy,
+  structures,
+  contentSections,
+  titles,
+  calendars,
+  seoConfig,
+  brand,
+  businessProfile,
+  icps,
+  personas,
+  competitors,
+  onCreateStructure,
+  onUpdateStructure,
+  onDeleteStructure,
+  onCreateSection,
+  onUpdateSection,
+  onDeleteSection,
+}: {
+  strategy: BlogStrategy;
+  structures: BlogStructure[];
+  contentSections: BlogContentSection[];
+  titles: BlogTitle[];
+  calendars: BlogCalendar[];
+  seoConfig: BlogSEOConfig | null;
+  brand: Brand | null | undefined;
+  businessProfile: BusinessProfile | null | undefined;
+  icps: ICP[];
+  personas: Persona[];
+  competitors: Competitor[];
+  onCreateStructure: (data: Partial<BlogStructure>) => Promise<void>;
+  onUpdateStructure: (id: string, updates: Partial<BlogStructure>) => Promise<void>;
+  onDeleteStructure: (id: string) => Promise<void>;
+  onCreateSection: (data: Partial<BlogContentSection>) => Promise<void>;
+  onUpdateSection: (id: string, updates: Partial<BlogContentSection>) => Promise<void>;
+  onDeleteSection: (id: string) => Promise<void>;
+}) {
+  const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Debug: Log received props
+  console.log('[StructureTab] Received structures:', structures.length, structures);
+  console.log('[StructureTab] Received titles:', titles.length, titles);
+  console.log('[StructureTab] Strategy ID:', strategy.id);
+
+  const selectedStructure = useMemo(() =>
+    structures.find((s) => s.id === selectedStructureId) || null,
+    [structures, selectedStructureId]
+  );
+
+  // Get scheduled dates from calendar
+  const scheduledDates = useMemo(() => {
+    const dates: { date: string; titleId?: string; title?: string }[] = [];
+    calendars.forEach((cal) => {
+      cal.timeline.forEach((item) => {
+        if (item.scheduledDate) {
+          const title = titles.find((t) => t.id === item.titleId);
+          dates.push({
+            date: item.scheduledDate,
+            titleId: item.titleId,
+            title: title?.title,
+          });
+        }
+      });
+    });
+    return dates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [calendars, titles]);
+
+  // Build context for AI generation - filtered by linked data from Data Sources tab
+  const buildStructureContext = () => {
+    const context: string[] = [];
+    const linkedData = strategy.linkedData || {};
+
+    // Filter brand by linkedData.brandId
+    const linkedBrand = linkedData.brandId ? brand : null;
+    if (linkedBrand || brand) {
+      const b = linkedBrand || brand;
+      if (b) {
+        context.push(`Brand Voice: ${b.voice || 'professional'}`);
+        context.push(`Brand Personality: ${b.personality || 'friendly'}`);
+        if (b.tagline) context.push(`Brand Tagline: ${b.tagline}`);
+        if (b.purposeWhyExists) context.push(`Brand Purpose: ${b.purposeWhyExists}`);
+      }
+    }
+
+    // Filter business profile by linkedData.businessProfileId
+    const linkedProfile = linkedData.businessProfileId ? businessProfile : null;
+    const activeProfile = linkedProfile || businessProfile;
+    if (activeProfile) {
+      context.push(`Industry: ${activeProfile.primaryIndustry || 'general'}`);
+      context.push(`Company: ${activeProfile.name || 'our company'}`);
+      if (activeProfile.description) context.push(`Business Description: ${activeProfile.description.slice(0, 200)}`);
+    }
+
+    // Filter ICPs by linkedData.icpIds
+    const linkedIcpIds = linkedData.icpIds || [];
+    const filteredIcps = linkedIcpIds.length > 0
+      ? icps.filter((i) => linkedIcpIds.includes(i.id))
+      : icps;
+    if (filteredIcps.length > 0) {
+      context.push(`Target ICPs: ${filteredIcps.map((i) => `${i.name}${i.description ? ` (${i.description.slice(0, 50)}...)` : ''}`).join(', ')}`);
+    }
+
+    // Filter personas by linkedData.personaIds
+    const linkedPersonaIds = linkedData.personaIds || [];
+    const filteredPersonas = linkedPersonaIds.length > 0
+      ? personas.filter((p) => linkedPersonaIds.includes(p.id))
+      : personas;
+    if (filteredPersonas.length > 0) {
+      context.push(`Target Personas: ${filteredPersonas.map((p) => `${p.name}${p.jobTitle ? ` (${p.jobTitle})` : ''}`).join(', ')}`);
+    }
+
+    // Filter competitors by linkedData.competitorIds
+    const linkedCompetitorIds = linkedData.competitorIds || [];
+    const filteredCompetitors = linkedCompetitorIds.length > 0
+      ? competitors.filter((c) => linkedCompetitorIds.includes(c.id))
+      : competitors;
+    if (filteredCompetitors.length > 0) {
+      context.push(`Key Competitors: ${filteredCompetitors.map((c) => c.name).join(', ')}`);
+    }
+
+    if (seoConfig?.primaryKeywords?.length) {
+      context.push(`Primary Keywords: ${seoConfig.primaryKeywords.join(', ')}`);
+    }
+
+    if (seoConfig?.secondaryKeywords?.length) {
+      context.push(`Secondary Keywords: ${seoConfig.secondaryKeywords.join(', ')}`);
+    }
+
+    context.push(`Goals: ${strategy.goals?.join(', ') || 'SEO, Brand Awareness'}`);
+    context.push(`Target Audience: ${strategy.targetAudience || 'general professionals'}`);
+    context.push(`Funnel Stage: ${strategy.funnelStage || 'tofu'}`);
+    context.push(`Content Depth: ${strategy.contentDepth || 'standard'}`);
+
+    return context.join('\n');
+  };
+
+  // Generate structure from title/context
+  const handleGenerateStructure = async (title?: BlogTitle) => {
+    if (!title) return;
+
+    setIsGenerating(true);
+    try {
+      const context = buildStructureContext();
+
+      const prompt = `You are an expert content strategist creating blog article structures.
+
+BLOG TITLE: ${title.title}
+CONTENT TYPE: ${title.contentType || 'educational'}
+SEARCH INTENT: ${title.searchIntent || 'informational'}
+FUNNEL STAGE: ${title.funnelStage || 'tofu'}
+
+${context ? `CONTEXT:\n${context}` : ''}
+
+Create an optimal article structure for a COMPREHENSIVE, in-depth article. The total word count should be at least 2000 words.
+
+You MUST respond with ONLY a valid JSON array. No markdown, no explanation, no code fences. Each element must be an object with:
+- "type": one of "intro", "problem", "explanation", "benefits", "steps", "examples", "conclusion", "cta", "custom"
+- "title": string (the section heading - clear and engaging)
+- "description": string (detailed description of what this section covers - 1-2 sentences)
+- "headingLevel": number (1-4, where 1 is H1, 2 is H2, etc.)
+- "targetWordCount": number (recommended word count - be generous, aim for 200-500 words per section for in-depth content)
+- "keywords": array of 3-5 relevant keyword strings for this section
+- "aiInstructions": string (specific instructions for AI content generation - what to focus on, examples to include)
+- "generateContent": boolean (true for sections to auto-generate)
+- "required": boolean (true for essential sections)
+
+IMPORTANT GUIDELINES:
+- Each section should have at least 200-400 words for proper depth
+- Include 5-8 sections for a comprehensive article
+- Add specific AI instructions for each section about what examples or data to include
+- Assign 3-5 relevant keywords to each section for SEO optimization
+- Total word count should be 2000-4000 words for a deep-dive article
+
+Generate the optimal structure now:`;
+
+      console.log('[Structure] Calling AI API...');
+      const response = await aiApi.generate({ prompt, maxTokens: 4000, noCache: true });
+      console.log('[Structure] AI API response:', response);
+
+      // Check for API error
+      if (response.error) {
+        throw new Error(`AI API Error: ${response.error}`);
+      }
+
+      if (response.data) {
+        const content = (response.data as any).content || '';
+        console.log('[Structure] AI content:', content.substring(0, 500));
+
+        if (!content || content.trim().length === 0) {
+          throw new Error('AI returned empty content');
+        }
+
+        let parsed: any[] = [];
+
+        try {
+          let cleaned = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+          const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            parsed = JSON.parse(jsonMatch[0]);
+          } else {
+            parsed = JSON.parse(cleaned);
+          }
+          console.log('[Structure] Parsed sections:', parsed.length);
+        } catch (parseError) {
+          console.error('[Structure] Failed to parse AI response:', parseError);
+          // Use default sections on parse error
+          parsed = DEFAULT_STRUCTURE_SECTIONS.map((s, i) => ({
+            ...s,
+            id: `sec-${Date.now()}-${i}`,
+            keywords: title.suggestedKeywords?.slice(0, 3) || [],
+          }));
+        }
+
+        // Create structure with parsed sections
+        const sections: StructureSection[] = parsed.map((s: any, i: number) => ({
+          id: `sec-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+          order: i + 1,
+          type: s.type || 'custom',
+          title: s.title || `Section ${i + 1}`,
+          description: s.description || '',
+          headingLevel: s.headingLevel || 2,
+          targetWordCount: s.targetWordCount || 200,
+          keywords: Array.isArray(s.keywords) ? s.keywords : [],
+          aiInstructions: s.aiInstructions || '',
+          generateContent: s.generateContent !== false,
+          required: s.required !== false,
+          contentGenerated: false,
+        }));
+
+        const totalWordCount = sections.reduce((sum, s) => sum + (s.targetWordCount || 0), 0);
+
+        const structureData = {
+          strategyId: strategy.id,
+          titleId: title.id,
+          name: title.title,
+          type: (title.contentType as StructureType) || 'seo',
+          aiGenerated: true,
+          editable: true,
+          totalWordCount,
+          status: 'generated' as StructureStatus,
+          sections,
+          companyId: strategy.companyId,
+        };
+        console.log('[Structure] Creating structure with data:', structureData);
+
+        await onCreateStructure(structureData);
+        console.log('[Structure] Structure created successfully');
+      }
+    } catch (error) {
+      console.error('[Structure] Generation error:', error);
+      // Create with default structure on error
+      try {
+        const sections: StructureSection[] = DEFAULT_STRUCTURE_SECTIONS.map((s, i) => ({
+          ...s,
+          id: `sec-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+          keywords: [],
+          contentGenerated: false,
+        }));
+
+        const totalWordCount = sections.reduce((sum, s) => sum + (s.targetWordCount || 0), 0);
+
+        await onCreateStructure({
+          strategyId: strategy.id,
+          titleId: title?.id,
+          name: title?.title || 'New Structure',
+          type: 'seo',
+          aiGenerated: false,
+          editable: true,
+          totalWordCount,
+          status: 'draft' as StructureStatus,
+          sections,
+          companyId: strategy.companyId,
+        });
+        console.log('[Structure] Fallback structure created successfully');
+      } catch (fallbackError) {
+        console.error('[Structure] Fallback creation error:', fallbackError);
+        throw fallbackError;
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Reorder section
+  const handleReorderSection = (structureId: string, sectionId: string, direction: 'up' | 'down') => {
+    const structure = structures.find((s) => s.id === structureId);
+    if (!structure) return;
+
+    const sections = [...structure.sections];
+    const currentIndex = sections.findIndex((s) => s.id === sectionId);
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (newIndex < 0 || newIndex >= sections.length) return;
+
+    [sections[currentIndex], sections[newIndex]] = [sections[newIndex], sections[currentIndex]];
+    const updatedSections = sections.map((s, i) => ({ ...s, order: i + 1 }));
+
+    onUpdateStructure(structureId, { sections: updatedSections });
+  };
+
+  // Update section
+  const handleUpdateSection = (structureId: string, sectionId: string, updates: Partial<StructureSection>) => {
+    const structure = structures.find((s) => s.id === structureId);
+    if (!structure) return;
+
+    const updatedSections = structure.sections.map((s) =>
+      s.id === sectionId ? { ...s, ...updates } : s
+    );
+
+    onUpdateStructure(structureId, { sections: updatedSections });
+  };
+
+  // Add new section
+  const handleAddSection = (structureId: string) => {
+    const structure = structures.find((s) => s.id === structureId);
+    if (!structure) return;
+
+    const newSection: StructureSection = {
+      id: `sec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      order: structure.sections.length + 1,
+      type: 'custom',
+      title: 'New Section',
+      description: '',
+      headingLevel: 2,
+      targetWordCount: 200,
+      keywords: [],
+      aiInstructions: '',
+      generateContent: true,
+      required: false,
+      contentGenerated: false,
+    };
+
+    onUpdateStructure(structureId, { sections: [...structure.sections, newSection] });
+  };
+
+  // Delete section
+  const handleDeleteSection = (structureId: string, sectionId: string) => {
+    const structure = structures.find((s) => s.id === structureId);
+    if (!structure) return;
+
+    const updatedSections = structure.sections
+      .filter((s) => s.id !== sectionId)
+      .map((s, i) => ({ ...s, order: i + 1 }));
+
+    onUpdateStructure(structureId, { sections: updatedSections });
+  };
+
+  // Get structures without titles
+  const unstructuredTitles = useMemo(() =>
+    titles.filter((t) => !structures.some((s) => s.titleId === t.id)),
+    [titles, structures]
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary-400" />
+              Content Structures
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">
+              Plan and generate section-by-section blog outlines before writing content
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Create Structure
+          </button>
+        </div>
+      </div>
+
+      {/* Unstructured Titles - Titles without structures */}
+      {unstructuredTitles.length > 0 && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+          <h4 className="text-sm font-medium text-slate-300 mb-4">
+            Create Structure for Selected Titles ({unstructuredTitles.length})
+          </h4>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {unstructuredTitles.map((title) => (
+              <div
+                key={title.id}
+                className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-slate-200 truncate">{title.title}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-slate-500">{title.contentType}</span>
+                    <span className="text-xs text-slate-500">•</span>
+                    <span className="text-xs text-slate-500">{title.searchIntent}</span>
+                    {title.scheduledDate && (
+                      <>
+                        <span className="text-xs text-slate-500">•</span>
+                        <span className="text-xs text-green-400">
+                          {new Date(title.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleGenerateStructure(title)}
+                  disabled={isGenerating}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  {isGenerating ? 'Generating...' : 'Generate Structure'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Existing Structures */}
+      {structures.length === 0 && unstructuredTitles.length === 0 && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
+          <Layers className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-slate-200 mb-2">No Structures Yet</h3>
+          <p className="text-slate-400 mb-6 max-w-md mx-auto">
+            {titles.length === 0
+              ? 'Generate titles in the Titles tab first, then create structures for them.'
+              : 'All titles already have structures. Create more titles in the Titles tab to generate additional structures.'}
+          </p>
+        </div>
+      )}
+
+      {/* Structure List */}
+      {structures.length > 0 && (
+        <div className="space-y-4">
+          {structures.map((structure) => (
+            <div
+              key={structure.id}
+              className={cn(
+                'bg-slate-800/50 border rounded-xl overflow-hidden transition-all',
+                selectedStructureId === structure.id ? 'border-primary-500/50' : 'border-slate-700'
+              )}
+            >
+              {/* Structure Header */}
+              <div
+                className="p-4 flex items-center gap-4 cursor-pointer"
+                onClick={() => setSelectedStructureId(selectedStructureId === structure.id ? null : structure.id)}
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-slate-200">{structure.name}</div>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    <span
+                      className={cn(
+                        'text-xs px-2 py-0.5 rounded-full',
+                        structure.status === 'draft' && 'bg-slate-700 text-slate-400',
+                        structure.status === 'generated' && 'bg-blue-500/20 text-blue-400',
+                        structure.status === 'edited' && 'bg-amber-500/20 text-amber-400',
+                        structure.status === 'approved' && 'bg-green-500/20 text-green-400'
+                      )}
+                    >
+                      {structure.status}
+                    </span>
+                    <span className="text-xs text-slate-500">{structure.type}</span>
+                    <span className="text-xs text-slate-500">{structure.totalWordCount} words</span>
+                    <span className="text-xs text-slate-500">{structure.sections.length} sections</span>
+                    {structure.aiGenerated && (
+                      <span className="text-xs text-primary-400 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        AI Generated
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteStructure(structure.id);
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Expanded Structure Details */}
+              {selectedStructureId === structure.id && (
+                <div className="border-t border-slate-700 p-4 space-y-4">
+                  {/* Structure Meta */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-semibold text-slate-200">{structure.sections.length}</div>
+                      <div className="text-xs text-slate-500">Sections</div>
+                    </div>
+                    <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-semibold text-slate-200">{structure.totalWordCount}</div>
+                      <div className="text-xs text-slate-500">Target Words</div>
+                    </div>
+                    <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-semibold text-slate-200">
+                        {structure.sections.filter((s) => s.generateContent).length}
+                      </div>
+                      <div className="text-xs text-slate-500">AI Sections</div>
+                    </div>
+                    <div className="bg-slate-900/50 rounded-lg p-3 text-center">
+                      <div className="text-lg font-semibold text-slate-200">
+                        {structure.sections.filter((s) => s.required).length}
+                      </div>
+                      <div className="text-xs text-slate-500">Required</div>
+                    </div>
+                  </div>
+
+                  {/* Sections List */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-slate-300">Sections</h4>
+                      <button
+                        onClick={() => handleAddSection(structure.id)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add Section
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {structure.sections.map((section, index) => (
+                        <div
+                          key={section.id}
+                          className="bg-slate-900/50 rounded-lg p-4 border border-slate-700"
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Order Controls */}
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => handleReorderSection(structure.id, section.id, 'up')}
+                                disabled={index === 0}
+                                className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30 transition-colors"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleReorderSection(structure.id, section.id, 'down')}
+                                disabled={index === structure.sections.length - 1}
+                                className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30 transition-colors"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            {/* Section Content */}
+                            <div className="flex-1 min-w-0">
+                              {editingSectionId === section.id ? (
+                                <div className="space-y-3">
+                                  <input
+                                    type="text"
+                                    value={section.title}
+                                    onChange={(e) => handleUpdateSection(structure.id, section.id, { title: e.target.value })}
+                                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                                    placeholder="Section Title"
+                                  />
+                                  <textarea
+                                    value={section.description || ''}
+                                    onChange={(e) => handleUpdateSection(structure.id, section.id, { description: e.target.value })}
+                                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 resize-none"
+                                    placeholder="Section Description"
+                                    rows={2}
+                                  />
+                                  <textarea
+                                    value={section.aiInstructions || ''}
+                                    onChange={(e) => handleUpdateSection(structure.id, section.id, { aiInstructions: e.target.value })}
+                                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500 resize-none"
+                                    placeholder="AI Instructions (specific guidance for content generation)"
+                                    rows={2}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={section.keywords?.join(', ') || ''}
+                                    onChange={(e) => handleUpdateSection(structure.id, section.id, {
+                                      keywords: e.target.value.split(',').map((k) => k.trim()).filter(Boolean)
+                                    })}
+                                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                                    placeholder="Keywords (comma-separated)"
+                                  />
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-xs text-slate-500 mb-1">Word Count</label>
+                                      <input
+                                        type="number"
+                                        value={section.targetWordCount || 200}
+                                        onChange={(e) => handleUpdateSection(structure.id, section.id, { targetWordCount: parseInt(e.target.value) || 200 })}
+                                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-slate-500 mb-1">Heading Level</label>
+                                      <select
+                                        value={section.headingLevel || 2}
+                                        onChange={(e) => handleUpdateSection(structure.id, section.id, { headingLevel: parseInt(e.target.value) as 1 | 2 | 3 | 4 })}
+                                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-primary-500"
+                                      >
+                                        <option value={1}>H1</option>
+                                        <option value={2}>H2</option>
+                                        <option value={3}>H3</option>
+                                        <option value={4}>H4</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                                      <input
+                                        type="checkbox"
+                                        checked={section.generateContent}
+                                        onChange={(e) => handleUpdateSection(structure.id, section.id, { generateContent: e.target.checked })}
+                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary-500 focus:ring-primary-500"
+                                      />
+                                      Generate Content
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                                      <input
+                                        type="checkbox"
+                                        checked={section.required}
+                                        onChange={(e) => handleUpdateSection(structure.id, section.id, { required: e.target.checked })}
+                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary-500 focus:ring-primary-500"
+                                      />
+                                      Required
+                                    </label>
+                                  </div>
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => setEditingSectionId(null)}
+                                      className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
+                                    >
+                                      Done
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-500">H{section.headingLevel || 2}</span>
+                                    <span className="text-sm font-medium text-slate-200">{section.title}</span>
+                                    {section.required && (
+                                      <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">Required</span>
+                                    )}
+                                    {!section.generateContent && (
+                                      <span className="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded">No AI</span>
+                                    )}
+                                  </div>
+                                  {section.description && (
+                                    <p className="text-xs text-slate-400 mt-1">{section.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                    <span className="text-xs text-slate-500">{section.targetWordCount} words</span>
+                                    {section.keywords && section.keywords.length > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <Tag className="w-3 h-3 text-slate-500" />
+                                        <span className="text-xs text-slate-500">{section.keywords.slice(0, 3).join(', ')}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setEditingSectionId(editingSectionId === section.id ? null : section.id)}
+                                className="p-1.5 text-slate-400 hover:text-slate-200 transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSection(structure.id, section.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 pt-4 border-t border-slate-700">
+                    <button
+                      onClick={() => onUpdateStructure(structure.id, { status: 'approved' })}
+                      disabled={structure.status === 'approved'}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:bg-green-800 text-white rounded-lg text-sm transition-colors"
+                    >
+                      <CheckCircle className="w-3 h-3" />
+                      Approve Structure
+                    </button>
+                    <button
+                      onClick={() => onUpdateStructure(structure.id, { status: 'draft' })}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
+                    >
+                      <Save className="w-3 h-3" />
+                      Save as Draft
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Structure Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-800">
+              <h2 className="text-lg font-semibold text-slate-200">Create New Structure</h2>
+              <p className="text-sm text-slate-400">Start with a blank structure or use AI generation</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Select Title */}
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Select Title</label>
+                <select
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-primary-500"
+                  onChange={(e) => {
+                    const title = titles.find((t) => t.id === e.target.value);
+                    if (title) {
+                      handleGenerateStructure(title);
+                      setShowCreateModal(false);
+                    }
+                  }}
+                >
+                  <option value="">Choose a title...</option>
+                  {unstructuredTitles.map((title) => (
+                    <option key={title.id} value={title.id}>
+                      {title.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Or Create Blank */}
+              <div className="border-t border-slate-700 pt-4">
+                <p className="text-sm text-slate-400 mb-3">Or create a blank structure:</p>
+                <button
+                  onClick={async () => {
+                    const sections: StructureSection[] = DEFAULT_STRUCTURE_SECTIONS.map((s, i) => ({
+                      ...s,
+                      id: `sec-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 9)}`,
+                      contentGenerated: false,
+                    }));
+
+                    await onCreateStructure({
+                      strategyId: strategy.id,
+                      name: 'New Structure',
+                      type: 'seo',
+                      aiGenerated: false,
+                      editable: true,
+                      totalWordCount: sections.reduce((sum, s) => sum + (s.targetWordCount || 0), 0),
+                      status: 'draft' as StructureStatus,
+                      sections,
+                      companyId: strategy.companyId,
+                    });
+                    setShowCreateModal(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Blank Structure
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // TITLES TAB - AI Title Generation
 // ============================================
 
@@ -2530,28 +3636,77 @@ function ContentTab({
   titles,
   contentTypes,
   calendars,
+  structures,
+  contentSections,
   autoMapEnabled,
   onAutoMapToggle,
+  brand,
+  businessProfile,
+  icps,
+  personas,
+  competitors,
+  products,
+  seoConfigs,
   onCreatePost,
   onUpdatePost,
   onDeletePost,
   onUpdateCalendar,
+  onCreateContentSection,
+  onUpdateContentSection,
 }: {
   strategy: BlogStrategy;
   posts: BlogPost[];
   titles: BlogTitle[];
   contentTypes: BlogContentTypeConfig[];
   calendars: BlogCalendar[];
+  structures: BlogStructure[];
+  contentSections: BlogContentSection[];
   autoMapEnabled: boolean;
   onAutoMapToggle: () => void;
+  brand: Brand | null | undefined;
+  businessProfile: BusinessProfile | null | undefined;
+  icps: ICP[];
+  personas: Persona[];
+  competitors: Competitor[];
+  products: Product[];
+  seoConfigs: BlogSEOConfig[];
   onCreatePost: (data: Partial<BlogPost>) => void;
   onUpdatePost: (id: string, updates: Partial<BlogPost>) => void;
   onDeletePost: (id: string) => void;
   onUpdateCalendar: (id: string, updates: Partial<BlogCalendar>) => void;
+  onCreateContentSection: (data: Partial<BlogContentSection>) => void;
+  onUpdateContentSection: (id: string, updates: Partial<BlogContentSection>) => void;
 }) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingSectionId, setGeneratingSectionId] = useState<string | null>(null);
   const selectedPost = posts.find((p) => p.id === selectedPostId);
+
+  // Find structure for a post/title
+  const findStructureForTitle = (titleId: string): BlogStructure | undefined => {
+    return structures.find((s) => s.titleId === titleId);
+  };
+
+  // Find structure for a post
+  const findStructureForPost = (post: BlogPost): BlogStructure | undefined => {
+    if (post.titleId) {
+      return findStructureForTitle(post.titleId);
+    }
+    return undefined;
+  };
+
+  // Get content sections for a structure
+  const getSectionsForStructure = (structureId: string): BlogContentSection[] => {
+    return contentSections.filter((s) => s.structureId === structureId).sort((a, b) => a.order - b.order);
+  };
+
+  // Check if structure has all content generated
+  const isStructureContentComplete = (structure: BlogStructure): boolean => {
+    const sections = getSectionsForStructure(structure.id);
+    return structure.sections.every((section) =>
+      sections.some((s) => s.structureSectionId === section.id && s.generated)
+    );
+  };
 
   // Find the active calendar
   const activeCalendar = calendars[0];
@@ -2634,41 +3789,485 @@ function ContentTab({
     });
   };
 
+  // Build rich context from all linked data for AI generation - filtered by Data Sources tab selections
+  const buildContentContext = (seoConfigData?: BlogSEOConfig | null) => {
+    const contextParts: string[] = [];
+    const linkedData = strategy.linkedData || {};
+
+    // Strategy context
+    if (strategy.targetAudience) contextParts.push(`Target Audience: ${strategy.targetAudience}`);
+    if (strategy.funnelStage) contextParts.push(`Funnel Stage: ${strategy.funnelStage}`);
+    if (strategy.goals?.length) contextParts.push(`Content Goals: ${strategy.goals.join(', ')}`);
+    if (strategy.contentDepth) contextParts.push(`Content Depth: ${strategy.contentDepth}`);
+
+    // Brand context - filtered by linkedData.brandId
+    const linkedBrandId = linkedData.brandId;
+    const activeBrand = linkedBrandId ? brand : null;
+    const brandToUse = activeBrand || brand;
+    if (brandToUse) {
+      if (brandToUse.voice) contextParts.push(`Brand Voice: ${brandToUse.voice}`);
+      if (brandToUse.personality) contextParts.push(`Brand Personality: ${brandToUse.personality}`);
+      if (brandToUse.tagline) contextParts.push(`Brand Tagline: ${brandToUse.tagline}`);
+      if (brandToUse.purposeWhyExists) contextParts.push(`Brand Purpose: ${brandToUse.purposeWhyExists}`);
+      if (brandToUse.personalityPrimary?.length) contextParts.push(`Brand Personality Traits: ${brandToUse.personalityPrimary.slice(0, 3).join(', ')}`);
+    }
+
+    // Business context - filtered by linkedData.businessProfileId
+    const linkedProfileId = linkedData.businessProfileId;
+    const activeProfile = linkedProfileId ? businessProfile : null;
+    const profileToUse = activeProfile || businessProfile;
+    if (profileToUse) {
+      if (profileToUse.name) contextParts.push(`Company: ${profileToUse.name}`);
+      if (profileToUse.primaryIndustry) contextParts.push(`Industry: ${profileToUse.primaryIndustry}`);
+      if (profileToUse.description) contextParts.push(`Business Description: ${profileToUse.description.slice(0, 300)}`);
+    }
+
+    // ICP context - filtered by linkedData.icpIds
+    const linkedIcpIds = linkedData.icpIds || [];
+    const filteredIcps = linkedIcpIds.length > 0
+      ? icps.filter((i) => linkedIcpIds.includes(i.id))
+      : icps;
+    if (filteredIcps.length > 0) {
+      const icpInfo = filteredIcps.slice(0, 3).map(i =>
+        `${i.name}${i.description ? `: ${i.description.slice(0, 150)}` : ''}${i.challenges?.length ? ` [Challenges: ${i.challenges.slice(0, 3).join(', ')}]` : ''}`
+      ).join('; ');
+      contextParts.push(`Target ICPs: ${icpInfo}`);
+    }
+
+    // Persona context - filtered by linkedData.personaIds
+    const linkedPersonaIds = linkedData.personaIds || [];
+    const filteredPersonas = linkedPersonaIds.length > 0
+      ? personas.filter((p) => linkedPersonaIds.includes(p.id))
+      : personas;
+    if (filteredPersonas.length > 0) {
+      const personaInfo = filteredPersonas.slice(0, 3).map(p =>
+        `${p.name}${p.jobTitle ? ` (${p.jobTitle})` : ''}${p.painPoints?.length ? ` - Pain points: ${p.painPoints.slice(0, 3).join(', ')}` : ''}${p.goals?.length ? ` - Goals: ${p.goals.slice(0, 2).join(', ')}` : ''}`
+      ).join('; ');
+      contextParts.push(`Target Personas: ${personaInfo}`);
+    }
+
+    // Competitor context - filtered by linkedData.competitorIds
+    const linkedCompetitorIds = linkedData.competitorIds || [];
+    const filteredCompetitors = linkedCompetitorIds.length > 0
+      ? competitors.filter((c) => linkedCompetitorIds.includes(c.id))
+      : competitors;
+    if (filteredCompetitors.length > 0) {
+      const competitorInfo = filteredCompetitors.slice(0, 3).map(c =>
+        `${c.name}${c.strengths?.length ? ` (Strengths: ${c.strengths.slice(0, 2).join(', ')})` : ''}${c.weaknesses?.length ? ` [Weaknesses: ${c.weaknesses.slice(0, 2).join(', ')}]` : ''}`
+      ).join('; ');
+      contextParts.push(`Key Competitors: ${competitorInfo}`);
+    }
+
+    // Product context - filtered by linkedData.productIds
+    const linkedProductIds = linkedData.productIds || [];
+    const filteredProducts = linkedProductIds.length > 0
+      ? products.filter((p) => linkedProductIds.includes(p.id))
+      : products;
+    if (filteredProducts.length > 0) {
+      const productInfo = filteredProducts.slice(0, 3).map((p: Product) =>
+        `${p.name}${p.description ? `: ${p.description.slice(0, 100)}` : ''}${p.features?.length ? ` [Features: ${p.features.slice(0, 3).join(', ')}]` : ''}`
+      ).join('; ');
+      contextParts.push(`Key Products: ${productInfo}`);
+    }
+
+    // SEO Config context (passed parameter or fetched from state)
+    const seoToUse = seoConfigData || seoConfigs.find((s) => s.strategyId === strategy.id);
+    if (seoToUse) {
+      if (seoToUse.primaryKeywords?.length) contextParts.push(`Primary Keywords: ${seoToUse.primaryKeywords.slice(0, 5).join(', ')}`);
+      if (seoToUse.secondaryKeywords?.length) contextParts.push(`Secondary Keywords: ${seoToUse.secondaryKeywords.slice(0, 5).join(', ')}`);
+      if (seoToUse.longTailKeywords?.length) contextParts.push(`Long-tail Keywords: ${seoToUse.longTailKeywords.slice(0, 5).join(', ')}`);
+      if (seoToUse.searchIntent) contextParts.push(`Search Intent: ${seoToUse.searchIntent}`);
+      if (seoToUse.primaryGoal) contextParts.push(`Primary SEO Goal: ${seoToUse.primaryGoal}`);
+      if (seoToUse.seoRules) {
+        if (seoToUse.seoRules.minWordCount) contextParts.push(`Target Word Count: ${seoToUse.seoRules.minWordCount}+ words`);
+        if (seoToUse.seoRules.keywordDensityTarget) contextParts.push(`Keyword Density Target: ${seoToUse.seoRules.keywordDensityTarget}%`);
+      }
+    }
+
+    return contextParts.join('\n');
+  };
+
   const handleGenerateContent = async (post: BlogPost) => {
     setIsGenerating(true);
-    setTimeout(() => {
-      const sections: BlogSection[] = [
-        { id: `sec-${Date.now()}-1`, type: 'heading', content: `Introduction to ${post.title}`, order: 1, level: 1 },
+
+    try {
+      // Get the associated title for SEO context
+      const associatedTitle = titles.find((t) => t.id === post.titleId);
+
+      // Check if there's a structure for this title
+      const structure = findStructureForPost(post);
+
+      if (structure && structure.sections.length > 0 && structure.status === 'approved') {
+        // STRUCTURE-BASED CONTENT GENERATION
+        console.log('[Content] Using structure-based generation for post:', post.id);
+        console.log('[Content] Structure:', structure.name, 'Sections:', structure.sections.length);
+
+        // Get SEO config for this strategy
+        const seoConfig = seoConfigs.find((s) => s.strategyId === strategy.id);
+        // Pass SEO config to buildContentContext for richer context
+        const context = buildContentContext(seoConfig);
+        const brandVoice = brand?.voice || 'professional';
+        const contentDepth = strategy.contentDepth || 'standard';
+
+        // Calculate total target word count from structure
+        const totalTargetWords = structure.sections.reduce((sum, s) => sum + (s.targetWordCount || 0), 0);
+        console.log('[Content] Total target words:', totalTargetWords);
+
+        let combinedContent = '';
+        const allSections: BlogSection[] = [];
+        let totalWordCount = 0;
+
+        // Generate content for each section in the structure
+        for (const structureSection of structure.sections) {
+          if (!structureSection.generateContent) {
+            // Still add the heading for sections that shouldn't have content
+            const headingPrefix = '#'.repeat(structureSection.headingLevel || 2);
+            combinedContent += `\n\n${headingPrefix} ${structureSection.title}\n\n`;
+            allSections.push({
+              id: `sec-${Date.now()}-${allSections.length}`,
+              type: 'heading',
+              content: structureSection.title,
+              order: structureSection.order,
+              level: structureSection.headingLevel || 2,
+            });
+            continue;
+          }
+
+          setGeneratingSectionId(structureSection.id);
+          console.log('[Content] Generating section:', structureSection.title, 'Target words:', structureSection.targetWordCount || 200);
+
+          // Calculate appropriate token limit based on target word count (roughly 1.5 tokens per word + buffer)
+          const targetWords = structureSection.targetWordCount || 200;
+          const maxTokens = Math.max(targetWords * 3, 800); // At least 800 tokens for even small sections
+
+          // Build depth-specific instructions
+          const depthInstructions: Record<string, string> = {
+            'brief': 'Be concise but informative. Focus on key points.',
+            'standard': 'Provide a balanced explanation with examples and practical insights.',
+            'deep': 'Write a comprehensive, detailed analysis with multiple examples, data points, and actionable insights. Go deep into nuances.',
+            'comprehensive': 'Create an exhaustive, authoritative treatment of the topic. Include expert perspectives, case studies, detailed explanations, and practical frameworks. Aim for maximum depth and value.',
+          };
+
+          const sectionPrompt = `You are an expert content writer creating HIGH-QUALITY, DETAILED content for a blog post.
+
+ARTICLE TITLE: ${post.title}
+ARTICLE TYPE: ${post.contentType || 'article'}
+BRAND VOICE: ${brandVoice}
+CONTENT DEPTH: ${contentDepth} - ${depthInstructions[contentDepth] || depthInstructions['standard']}
+
+${context ? `BUSINESS & MARKETING CONTEXT:
+${context}
+
+` : ''}${associatedTitle?.metaDescription ? `META DESCRIPTION: ${associatedTitle.metaDescription}
+
+` : ''}${seoConfig?.primaryKeywords?.length ? `PRIMARY KEYWORDS TO INCORPORATE: ${seoConfig.primaryKeywords.slice(0, 3).join(', ')}
+
+` : ''}SECTION TO WRITE:
+- Section Type: ${structureSection.type}
+- Section Title: ${structureSection.title}
+${structureSection.description ? `- Section Purpose: ${structureSection.description}` : ''}
+- Target Word Count: **${targetWords} words minimum** - this is critical, write AT LEAST ${targetWords} words
+- Heading Level: H${structureSection.headingLevel || 2}
+${structureSection.keywords?.length ? `- Keywords for this section: ${structureSection.keywords.join(', ')}` : ''}
+${structureSection.aiInstructions ? `- Special Instructions: ${structureSection.aiInstructions}` : ''}
+
+CRITICAL REQUIREMENTS:
+1. Write AT LEAST ${targetWords} words - do not write less
+2. Use markdown formatting: **bold**, *italic*, bullet points, numbered lists
+3. Include specific examples, statistics, or case studies where relevant
+4. Make the content actionable with clear takeaways
+5. Maintain the ${brandVoice} brand voice throughout
+${structureSection.keywords?.length ? `6. Naturally incorporate the keywords: ${structureSection.keywords.join(', ')}` : ''}
+
+Write comprehensive, engaging content for this section. Focus on providing genuine value and depth.
+Write ONLY the content for this section - no section heading (that will be added separately).
+Do not include any explanations or meta-commentary. Start writing directly.`;
+
+          try {
+            const response = await aiApi.generate({
+              prompt: sectionPrompt,
+              maxTokens: maxTokens,
+              noCache: true
+            });
+
+            if (response.data) {
+              const sectionContent = (response.data as any).content || '';
+              const actualWordCount = sectionContent.split(/\s+/).length;
+              console.log('[Content] Section generated:', structureSection.title, 'Words:', actualWordCount, 'Target:', targetWords);
+
+              const headingPrefix = '#'.repeat(structureSection.headingLevel || 2);
+
+              combinedContent += `\n\n${headingPrefix} ${structureSection.title}\n\n${sectionContent}`;
+
+              allSections.push({
+                id: `sec-${Date.now()}-${allSections.length}`,
+                type: 'heading',
+                content: structureSection.title,
+                order: structureSection.order,
+                level: structureSection.headingLevel || 2,
+              });
+
+              allSections.push({
+                id: `sec-${Date.now()}-${allSections.length}`,
+                type: 'paragraph',
+                content: sectionContent,
+                order: structureSection.order + 0.5,
+              });
+
+              totalWordCount += actualWordCount;
+            }
+          } catch (sectionError) {
+            console.error('[Content] Section generation error:', sectionError);
+            // Continue with next section
+          }
+        }
+
+        setGeneratingSectionId(null);
+
+        // Calculate totals
+        const readingTime = Math.ceil(totalWordCount / 200);
+        console.log('[Content] Total words generated:', totalWordCount, 'Target:', totalTargetWords);
+
+        // Update post with generated content
+        onUpdatePost(post.id, {
+          status: 'draft',
+          content: combinedContent.trim(),
+          sections: allSections,
+          metaTitle: associatedTitle?.title?.slice(0, 60) || post.title.slice(0, 60),
+          metaDescription: associatedTitle?.metaDescription || '',
+          primaryKeyword: associatedTitle?.suggestedKeywords?.[0] || post.primaryKeyword,
+          secondaryKeywords: associatedTitle?.suggestedKeywords?.slice(1) || post.secondaryKeywords || [],
+          seoAnalysis: {
+            readabilityScore: 72,
+            readingTime,
+            keywordDensity: {},
+            headingStructureValid: true,
+            internalLinkCount: 0,
+            externalLinkCount: 0,
+            suggestedSchema: ['Article'],
+            wordCount: totalWordCount,
+            paragraphCount: allSections.filter(s => s.type === 'paragraph').length,
+            avgSentenceLength: 18,
+            passiveVoicePercentage: 12,
+          },
+        });
+
+        console.log('[Content] Structure-based content generated successfully');
+      } else {
+        // FALLBACK: FULL CONTENT GENERATION (NO STRUCTURE)
+        console.log('[Content] No approved structure found, using full content generation');
+        if (structure) {
+          console.log('[Content] Structure status:', structure.status, '(needs approval)');
+        }
+
+        // Get SEO config for this strategy
+        const seoConfig = seoConfigs.find((s) => s.strategyId === strategy.id);
+
+        // Build context with SEO config included
+        const context = buildContentContext(seoConfig);
+        const contentDepth = strategy.contentDepth || 'standard';
+
+        // Build SEO context from title and config
+        const seoContext: string[] = [];
+
+        // Use SEO optimized title if available
+        const seoTitle = associatedTitle?.title || post.title;
+        const seoKeywords = associatedTitle?.suggestedKeywords || post.secondaryKeywords || [];
+        const seoIntent = associatedTitle?.searchIntent || 'informational';
+
+        if (seoKeywords.length > 0) {
+          seoContext.push(`Primary Keywords: ${seoKeywords.slice(0, 3).join(', ')}`);
+        }
+        if (seoIntent) {
+          seoContext.push(`Search Intent: ${seoIntent}`);
+        }
+
+        // SEO config keywords
+        if (seoConfig?.primaryKeywords?.length) {
+          seoContext.push(`Strategy Primary Keywords: ${seoConfig.primaryKeywords.join(', ')}`);
+        }
+        if (seoConfig?.secondaryKeywords?.length) {
+          seoContext.push(`Strategy Secondary Keywords: ${seoConfig.secondaryKeywords.join(', ')}`);
+        }
+
+        // SEO rules from config
+        const seoRules = seoConfig?.seoRules;
+        const targetWordCount = seoRules?.minWordCount || 1500;
+        const includeTOC = seoRules?.includeTOC !== false;
+        const includeConclusion = seoRules?.includeConclusion !== false;
+        const includeCTA = seoRules?.includeCTA !== false;
+
+        // Get brand voice from brand or strategy
+        const brandVoice = brand?.voice || 'professional';
+
+        // Build depth-specific instructions
+        const depthInstructions: Record<string, string> = {
+          'brief': 'Keep content concise but informative. Focus on key points. Aim for 600-900 words.',
+          'standard': 'Provide balanced coverage with examples and practical insights. Aim for 1200-1800 words.',
+          'deep': 'Write comprehensive, detailed content with multiple examples, data points, and actionable insights. Aim for 2000-3000 words.',
+          'comprehensive': 'Create exhaustive, authoritative content with expert perspectives, case studies, detailed explanations, and practical frameworks. Aim for 3000+ words.',
+        };
+
+        const prompt = `You are an expert content writer and SEO specialist. Write a COMPREHENSIVE, DETAILED blog post that provides exceptional value to readers.
+
+BLOG POST TITLE: ${seoTitle}
+${post.excerpt ? `\nBRIEF/EXCERPT: ${post.excerpt}` : ''}
+${post.primaryKeyword ? `\nPRIMARY KEYWORD: ${post.primaryKeyword}` : ''}
+${post.secondaryKeywords?.length ? `\nSECONDARY KEYWORDS: ${post.secondaryKeywords.join(', ')}` : ''}
+
+CONTENT TYPE: ${post.contentType || 'article'}
+BRAND VOICE: ${brandVoice}
+CONTENT DEPTH: ${contentDepth} - ${depthInstructions[contentDepth] || depthInstructions['standard']}
+
+${context ? `\nBUSINESS & MARKETING CONTEXT:\n${context}` : ''}
+
+${seoContext.length ? `\nSEO REQUIREMENTS:\n${seoContext.join('\n')}` : ''}
+
+CONTENT REQUIREMENTS:
+- **MINIMUM WORD COUNT: ${targetWordCount} words** - this is critical, write at least ${targetWordCount} words
+- Include Table of Contents: ${includeTOC ? 'Yes' : 'No'}
+- Include Conclusion: ${includeConclusion ? 'Yes' : 'No'}
+- Include CTA: ${includeCTA ? 'Yes' : 'No'}
+- Write in a ${brandVoice} tone
+- Use clear headings (H2, H3) for structure
+- Include specific examples, statistics, and actionable insights
+- Optimise for readability and SEO
+- Make content genuinely valuable and comprehensive
+
+RESPOND WITH VALID JSON in this exact format:
+{
+  "metaTitle": "SEO-optimised title (50-60 characters)",
+  "metaDescription": "Compelling description for search results (150-160 characters)",
+  "slug": "url-friendly-slug",
+  "primaryKeyword": "main keyword from content",
+  "secondaryKeywords": ["keyword1", "keyword2", "keyword3"],
+  "sections": [
+    {"type": "heading", "content": "Introduction to [Topic]", "level": 2},
+    {"type": "paragraph", "content": "Opening paragraph content..."},
+    {"type": "heading", "content": "Section Title", "level": 2},
+    {"type": "paragraph", "content": "Section content..."},
+    {"type": "list", "content": "Item 1\\nItem 2\\nItem 3"},
+    {"type": "heading", "content": "Conclusion", "level": 2},
+    {"type": "paragraph", "content": "Conclusion content..."}
+  ],
+  "wordCount": 1234,
+  "readingTime": 6
+}
+
+CRITICAL INSTRUCTIONS:
+1. Write AT LEAST ${targetWordCount} words - do not write less
+2. Include detailed explanations, examples, and practical advice
+3. Use the keywords naturally throughout the content
+4. Structure the content with clear H2 and H3 headings
+5. Provide genuine value - do not write fluff or filler content
+6. Respond with ONLY valid JSON, no markdown code blocks, no explanations`;
+
+        const response = await aiApi.generate({
+          prompt,
+          maxTokens: 6000, // Higher limit for comprehensive content generation
+          noCache: true
+        });
+
+        if (response.data) {
+          const content = (response.data as any).content || '';
+          let parsed: any = null;
+
+          // Parse AI response
+          try {
+            let cleaned = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              parsed = JSON.parse(jsonMatch[0]);
+            } else {
+              parsed = JSON.parse(cleaned);
+            }
+          } catch (parseError) {
+            console.error('[Content] Failed to parse AI response:', parseError);
+            throw new Error('Failed to parse AI response');
+          }
+
+          if (parsed && parsed.sections) {
+            // Build sections array
+            const sections: BlogSection[] = parsed.sections.map((s: any, i: number) => ({
+              id: `sec-${Date.now()}-${i}`,
+              type: s.type || 'paragraph',
+              content: s.content,
+              order: i + 1,
+              level: s.level,
+            }));
+
+            // Combine all content
+            const fullContent = sections.map((s) => s.content).join('\n\n');
+            const wordCount = parsed.wordCount || fullContent.split(/\s+/).length;
+            const readingTime = Math.ceil(wordCount / 200);
+
+            // Update post with generated content
+            onUpdatePost(post.id, {
+              status: 'draft',
+              content: fullContent,
+              sections,
+              metaTitle: parsed.metaTitle || post.title.slice(0, 60),
+              metaDescription: parsed.metaDescription || '',
+              slug: parsed.slug || post.slug,
+              primaryKeyword: parsed.primaryKeyword || post.primaryKeyword,
+              secondaryKeywords: parsed.secondaryKeywords || post.secondaryKeywords,
+              seoAnalysis: {
+                readabilityScore: 72,
+                readingTime: getEstimatedReadTime(wordCount),
+                keywordDensity: { [parsed.primaryKeyword || 'marketing']: 2.4 },
+                headingStructureValid: true,
+                internalLinkCount: 0,
+                externalLinkCount: 0,
+                suggestedSchema: ['Article', 'FAQPage'],
+                wordCount,
+                paragraphCount: sections.filter((s) => s.type === 'paragraph').length,
+                avgSentenceLength: 18,
+                passiveVoicePercentage: 12,
+              },
+            });
+          } else {
+            throw new Error('Invalid AI response structure');
+          }
+        } else {
+          throw new Error(response.error || 'AI generation failed');
+        }
+      }
+    } catch (error) {
+      console.error('[Content] Generation error:', error);
+
+      // Fallback to mock content if AI fails
+      const fallbackSections: BlogSection[] = [
+        { id: `sec-${Date.now()}-1`, type: 'heading', content: `Introduction to ${post.title}`, order: 1, level: 2 },
         { id: `sec-${Date.now()}-2`, type: 'paragraph', content: `In today's competitive landscape, understanding ${post.title.toLowerCase()} is essential for businesses looking to grow. This comprehensive guide explores everything you need to know.`, order: 2 },
         { id: `sec-${Date.now()}-3`, type: 'heading', content: 'Key Strategies and Best Practices', order: 3, level: 2 },
         { id: `sec-${Date.now()}-4`, type: 'paragraph', content: 'Successful implementation requires a structured approach. Start by analysing your current position, then identify gaps and opportunities for improvement.', order: 4 },
         { id: `sec-${Date.now()}-5`, type: 'list', content: 'Research your target audience thoroughly\nDevelop a clear value proposition\nCreate consistent, high-quality content\nMeasure and optimise continuously', order: 5 },
-        { id: `sec-${Date.now()}-6`, type: 'heading', content: 'Common Mistakes to Avoid', order: 6, level: 2 },
-        { id: `sec-${Date.now()}-7`, type: 'paragraph', content: 'Many businesses fail because they lack patience and consistency. Avoid shortcuts and focus on building sustainable systems that compound over time.', order: 7 },
-        { id: `sec-${Date.now()}-8`, type: 'heading', content: 'Conclusion', order: 8, level: 2 },
-        { id: `sec-${Date.now()}-9`, type: 'paragraph', content: `${post.title} is not just a tactic—it is a strategic imperative. By following the frameworks outlined in this article, you can drive meaningful results for your business.`, order: 9 },
+        { id: `sec-${Date.now()}-6`, type: 'heading', content: 'Conclusion', order: 6, level: 2 },
+        { id: `sec-${Date.now()}-7`, type: 'paragraph', content: `${post.title} is not just a tactic—it is a strategic imperative. By following the frameworks outlined in this article, you can drive meaningful results for your business.`, order: 7 },
       ];
 
       onUpdatePost(post.id, {
         status: 'draft',
-        content: sections.map((s) => s.content).join('\n\n'),
-        sections,
+        content: fallbackSections.map((s) => s.content).join('\n\n'),
+        sections: fallbackSections,
         seoAnalysis: {
           readabilityScore: 72,
-          readingTime: getEstimatedReadTime(1200),
+          readingTime: getEstimatedReadTime(800),
           keywordDensity: { [post.primaryKeyword || 'marketing']: 2.4 },
           headingStructureValid: true,
           internalLinkCount: 0,
           externalLinkCount: 0,
-          suggestedSchema: ['Article', 'FAQPage'],
-          wordCount: 1200,
-          paragraphCount: 6,
+          suggestedSchema: ['Article'],
+          wordCount: 800,
+          paragraphCount: 4,
           avgSentenceLength: 18,
           passiveVoicePercentage: 12,
         },
       });
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+      setGeneratingSectionId(null);
+    }
   };
 
   return (
@@ -2774,6 +4373,24 @@ function ContentTab({
                         {post.scheduledTime && <span className="text-slate-400">@ {post.scheduledTime}</span>}
                       </span>
                     )}
+                    {(() => {
+                      const postStructure = findStructureForPost(post);
+                      if (postStructure) {
+                        return (
+                          <span className={cn(
+                            'text-xs px-2 py-0.5 rounded-full flex items-center gap-1',
+                            postStructure.status === 'approved' && 'bg-green-500/20 text-green-400',
+                            postStructure.status === 'draft' && 'bg-yellow-500/20 text-yellow-400',
+                            postStructure.status === 'generated' && 'bg-blue-500/20 text-blue-400',
+                            postStructure.status === 'edited' && 'bg-purple-500/20 text-purple-400'
+                          )}>
+                            <Layers className="w-3 h-3" />
+                            Structure: {postStructure.status}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -3284,6 +4901,1060 @@ function ExportTab({
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// SEO TAB
+// ============================================
+
+function SEOTab({
+  strategy,
+  titles,
+  brand,
+  businessProfile,
+  icps,
+  personas,
+  competitors,
+  seoConfig,
+  onSaveSEO,
+  onUpdateTitle,
+}: {
+  strategy: BlogStrategy;
+  titles: BlogTitle[];
+  brand: Brand | null | undefined;
+  businessProfile: BusinessProfile | null | undefined;
+  icps: ICP[];
+  personas: Persona[];
+  competitors: Competitor[];
+  seoConfig: BlogSEOConfig | null;
+  onSaveSEO: (data: Partial<BlogSEOConfig>) => void;
+  onUpdateTitle: (id: string, updates: Partial<BlogTitle>) => void;
+}) {
+  // Define type for generated SEO data
+  type TitleSEOData = {
+    originalTitle: string;
+    optimizedTitle: string;
+    metaDescription: string;
+    keywords: string[];
+    trendingKeywords: string[];
+    slug: string;
+    searchIntent: string;
+    funnelStage: string;
+    imagePrompt: string;
+    imageAlt: string;
+    ogImageDescription: string;
+  };
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingTitleId, setGeneratingTitleId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [titleSEO, setTitleSEO] = useState<Record<string, TitleSEOData>>({});
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+
+  // Initialize titleSEO from existing title data
+  useEffect(() => {
+    const existingSEO: Record<string, TitleSEOData> = {};
+    titles.forEach((title) => {
+      if (title.metaDescription || (title.suggestedKeywords && title.suggestedKeywords.length > 0)) {
+        existingSEO[title.id] = {
+          originalTitle: title.title,
+          optimizedTitle: title.title,
+          metaDescription: title.metaDescription || '',
+          keywords: title.suggestedKeywords || [],
+          trendingKeywords: title.trendingKeywords || [],
+          slug: title.slug || '',
+          searchIntent: title.searchIntent || 'informational',
+          funnelStage: title.funnelStage || 'tofu',
+          imagePrompt: title.imagePrompt || '',
+          imageAlt: title.imageAlt || '',
+          ogImageDescription: title.ogImageDescription || '',
+        };
+      }
+    });
+    if (Object.keys(existingSEO).length > 0) {
+      setTitleSEO((prev) => ({ ...existingSEO, ...prev }));
+    }
+  }, [titles]);
+
+  // Build rich context from all linked data
+  const buildContext = () => {
+    const contextParts: string[] = [];
+
+    // Strategy context
+    if (strategy.targetAudience) contextParts.push(`Target Audience: ${strategy.targetAudience}`);
+    if (strategy.funnelStage) contextParts.push(`Funnel Stage: ${strategy.funnelStage}`);
+    if (strategy.goals?.length) contextParts.push(`Goals: ${strategy.goals.join(', ')}`);
+
+    // Brand context
+    if (brand?.voice) contextParts.push(`Brand Voice: ${brand.voice}`);
+    if (brand?.personality) contextParts.push(`Brand Personality: ${brand.personality}`);
+    if (brand?.tagline) contextParts.push(`Brand Tagline: ${brand.tagline}`);
+
+    // Business context
+    if (businessProfile?.name) contextParts.push(`Company: ${businessProfile.name}`);
+    if (businessProfile?.primaryIndustry) contextParts.push(`Industry: ${businessProfile.primaryIndustry}`);
+    if (businessProfile?.description) contextParts.push(`Business Description: ${businessProfile.description}`);
+
+    // ICP context
+    if (icps.length > 0) {
+      const icpNames = icps.slice(0, 2).map(i => i.name).join(', ');
+      contextParts.push(`Target ICPs: ${icpNames}`);
+    }
+
+    // Persona context
+    if (personas.length > 0) {
+      const personaInfo = personas.slice(0, 2).map(p => `${p.name}${p.jobTitle ? ` (${p.jobTitle})` : ''}`).join(', ');
+      contextParts.push(`Target Personas: ${personaInfo}`);
+    }
+
+    // Competitor context
+    if (competitors.length > 0) {
+      const competitorNames = competitors.slice(0, 3).map(c => c.name).join(', ');
+      contextParts.push(`Key Competitors: ${competitorNames}`);
+    }
+
+    return contextParts.join('\n');
+  };
+
+  // Parse AI response safely
+  const parseAIResponse = (content: string): Record<string, any> | null => {
+    try {
+      let cleaned = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return JSON.parse(cleaned);
+    } catch (e) {
+      console.error('[SEO] Failed to parse AI response:', e);
+      return null;
+    }
+  };
+
+  // Generate SEO for all selected titles
+  const handleGenerateAllSEO = async () => {
+    if (titles.length === 0) {
+      setError('No titles selected. Please select titles in the Titles tab first.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    const context = buildContext();
+    const seoResults: Record<string, TitleSEOData> = {};
+
+    for (let i = 0; i < titles.length; i++) {
+      const title = titles[i];
+      setGeneratingTitleId(title.id);
+
+      try {
+        const prompt = `You are an expert SEO specialist. Generate comprehensive SEO metadata for this blog title.
+
+BLOG TITLE: ${title.title}
+${title.excerpt ? `\nDESCRIPTION: ${title.excerpt}` : ''}
+${title.suggestedKeywords?.length ? `\nSUGGESTED KEYWORDS: ${title.suggestedKeywords.join(', ')}` : ''}
+${title.contentType ? `\nCONTENT TYPE: ${title.contentType}` : ''}
+${context ? `\n\nBUSINESS CONTEXT:\n${context}` : ''}
+
+Generate SEO metadata in this exact JSON format:
+{
+  "optimizedTitle": "SEO-optimized version of the title (50-60 characters, include primary keyword)",
+  "metaDescription": "Compelling description for search results (150-160 characters) - MANDATORY",
+  "keywords": ["primary keyword", "secondary keyword 1", "secondary keyword 2", "long-tail keyword", "related keyword"],
+  "trendingKeywords": ["current trending keyword 1", "current trending keyword 2", "current trending keyword 3"],
+  "slug": "url-friendly-slug-lowercase-with-hyphens",
+  "searchIntent": "informational|commercial|transactional|navigational",
+  "funnelStage": "tofu|mofu|bofu",
+  "imagePrompt": "Detailed prompt for AI image generation (describe the visual scene, style, mood, colors for a featured image)",
+  "imageAlt": "Descriptive alt text for accessibility and SEO (describe what the image shows)",
+  "ogImageDescription": "Open Graph image description for social sharing (compelling summary of the visual)"
+}
+
+IMPORTANT:
+- The optimizedTitle should be better for SEO while maintaining the original intent
+- metaDescription is MANDATORY - must be 150-160 characters and compelling
+- Keywords should be highly relevant and searchable
+- TrendingKeywords should be current popular search terms
+- Search intent should match the content type
+- imagePrompt should describe a professional, brand-appropriate featured image for the blog post
+- imageAlt should be concise and describe the image for screen readers
+- ogImageDescription should entice social media clicks
+- Respond with ONLY valid JSON, no markdown, no explanations`;
+
+        const response = await aiApi.generate({
+          prompt,
+          maxTokens: 800,
+          noCache: true
+        });
+
+        if (response.data) {
+          const parsed = parseAIResponse((response.data as any).content || '');
+
+          if (parsed) {
+            seoResults[title.id] = {
+              originalTitle: title.title,
+              optimizedTitle: parsed.optimizedTitle || title.title,
+              // MANDATORY: Always provide a meta description
+              metaDescription: parsed.metaDescription || `Explore ${title.title} - insights and strategies for your business.`,
+              keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+              trendingKeywords: Array.isArray(parsed.trendingKeywords) ? parsed.trendingKeywords : [],
+              slug: parsed.slug || title.slug,
+              searchIntent: parsed.searchIntent || 'informational',
+              funnelStage: parsed.funnelStage || 'tofu',
+              // MANDATORY: Image fields
+              imagePrompt: parsed.imagePrompt || `Professional illustration for blog post about ${title.title}`,
+              imageAlt: parsed.imageAlt || `Featured image for ${title.title}`,
+              ogImageDescription: parsed.ogImageDescription || `Visual representation of ${title.title}`,
+            };
+
+            // Auto-save SEO to title
+            onUpdateTitle(title.id, {
+              title: parsed.optimizedTitle || title.title,
+              slug: parsed.slug || title.slug,
+              metaDescription: parsed.metaDescription || '',
+              suggestedKeywords: [...(parsed.keywords || []), ...(parsed.trendingKeywords || [])],
+              trendingKeywords: parsed.trendingKeywords || [],
+              searchIntent: (parsed.searchIntent || 'informational') as any,
+              funnelStage: (parsed.funnelStage || 'tofu') as any,
+              imagePrompt: parsed.imagePrompt || '',
+              imageAlt: parsed.imageAlt || '',
+              ogImageDescription: parsed.ogImageDescription || '',
+            });
+          } else {
+            const fallback = createFallbackTitleSEO(title);
+            seoResults[title.id] = fallback;
+            // Auto-save fallback
+            onUpdateTitle(title.id, {
+              title: fallback.optimizedTitle,
+              slug: fallback.slug,
+              metaDescription: fallback.metaDescription,
+              suggestedKeywords: fallback.keywords,
+              trendingKeywords: fallback.trendingKeywords,
+              searchIntent: fallback.searchIntent as any,
+              funnelStage: fallback.funnelStage as any,
+              imagePrompt: fallback.imagePrompt,
+              imageAlt: fallback.imageAlt,
+              ogImageDescription: fallback.ogImageDescription,
+            });
+          }
+        } else {
+          const fallback = createFallbackTitleSEO(title);
+          seoResults[title.id] = fallback;
+          // Auto-save fallback
+          onUpdateTitle(title.id, {
+            title: fallback.optimizedTitle,
+            slug: fallback.slug,
+            metaDescription: fallback.metaDescription,
+            suggestedKeywords: fallback.keywords,
+            trendingKeywords: fallback.trendingKeywords,
+            searchIntent: fallback.searchIntent as any,
+            funnelStage: fallback.funnelStage as any,
+            imagePrompt: fallback.imagePrompt,
+            imageAlt: fallback.imageAlt,
+            ogImageDescription: fallback.ogImageDescription,
+          });
+        }
+      } catch (err) {
+        console.error(`[SEO] Error generating for title ${title.id}:`, err);
+        const fallback = createFallbackTitleSEO(title);
+        seoResults[title.id] = fallback;
+      }
+    }
+
+    setTitleSEO(seoResults);
+    setGeneratingTitleId(null);
+    setIsGenerating(false);
+  };
+
+  // Generate SEO for single title
+  const handleGenerateSingleSEO = async (title: BlogTitle) => {
+    setGeneratingTitleId(title.id);
+    setIsGenerating(true);
+    setError(null);
+
+    const context = buildContext();
+
+    try {
+      const prompt = `You are an expert SEO specialist. Generate comprehensive SEO metadata for this blog title.
+
+BLOG TITLE: ${title.title}
+${title.excerpt ? `\nDESCRIPTION: ${title.excerpt}` : ''}
+${title.suggestedKeywords?.length ? `\nSUGGESTED KEYWORDS: ${title.suggestedKeywords.join(', ')}` : ''}
+${title.contentType ? `\nCONTENT TYPE: ${title.contentType}` : ''}
+${context ? `\n\nBUSINESS CONTEXT:\n${context}` : ''}
+
+Generate SEO metadata in this exact JSON format:
+{
+  "optimizedTitle": "SEO-optimized version of the title (50-60 characters, include primary keyword)",
+  "metaDescription": "Compelling description for search results (150-160 characters) - MANDATORY",
+  "keywords": ["primary keyword", "secondary keyword 1", "secondary keyword 2", "long-tail keyword", "related keyword"],
+  "trendingKeywords": ["current trending keyword 1", "current trending keyword 2", "current trending keyword 3"],
+  "slug": "url-friendly-slug-lowercase-with-hyphens",
+  "searchIntent": "informational|commercial|transactional|navigational",
+  "funnelStage": "tofu|mofu|bofu",
+  "imagePrompt": "Detailed prompt for AI image generation (describe the visual scene, style, mood, colors for a featured image)",
+  "imageAlt": "Descriptive alt text for accessibility and SEO (describe what the image shows)",
+  "ogImageDescription": "Open Graph image description for social sharing (compelling summary of the visual)"
+}
+
+IMPORTANT:
+- The optimizedTitle should be better for SEO while maintaining the original intent
+- metaDescription is MANDATORY - must be 150-160 characters and compelling
+- Keywords should be highly relevant and searchable
+- TrendingKeywords should be current popular search terms
+- Search intent should match the content type
+- imagePrompt should describe a professional, brand-appropriate featured image for the blog post
+- imageAlt should be concise and describe the image for screen readers
+- ogImageDescription should entice social media clicks
+- Respond with ONLY valid JSON, no markdown, no explanations`;
+
+      const response = await aiApi.generate({
+        prompt,
+        maxTokens: 800,
+        noCache: true
+      });
+
+      if (response.data) {
+        const parsed = parseAIResponse((response.data as any).content || '');
+
+        if (parsed) {
+          const seoData: TitleSEOData = {
+            originalTitle: title.title,
+            optimizedTitle: parsed.optimizedTitle || title.title,
+            // MANDATORY: Always provide a meta description
+            metaDescription: parsed.metaDescription || `Explore ${title.title} - insights and strategies for your business.`,
+            keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+            trendingKeywords: Array.isArray(parsed.trendingKeywords) ? parsed.trendingKeywords : [],
+            slug: parsed.slug || title.slug,
+            searchIntent: parsed.searchIntent || 'informational',
+            funnelStage: parsed.funnelStage || 'tofu',
+            // MANDATORY: Image fields
+            imagePrompt: parsed.imagePrompt || `Professional illustration for blog post about ${title.title}`,
+            imageAlt: parsed.imageAlt || `Featured image for ${title.title}`,
+            ogImageDescription: parsed.ogImageDescription || `Visual representation of ${title.title}`,
+          };
+
+          setTitleSEO((prev) => ({
+            ...prev,
+            [title.id]: seoData,
+          }));
+
+          // Auto-save SEO to title
+          onUpdateTitle(title.id, {
+            title: seoData.optimizedTitle,
+            slug: seoData.slug,
+            metaDescription: seoData.metaDescription,
+            suggestedKeywords: [...seoData.keywords, ...seoData.trendingKeywords],
+            trendingKeywords: seoData.trendingKeywords,
+            searchIntent: seoData.searchIntent as any,
+            funnelStage: seoData.funnelStage as any,
+            imagePrompt: seoData.imagePrompt,
+            imageAlt: seoData.imageAlt,
+            ogImageDescription: seoData.ogImageDescription,
+          });
+        } else {
+          const fallbackSeo = createFallbackTitleSEO(title);
+          setTitleSEO((prev) => ({
+            ...prev,
+            [title.id]: fallbackSeo,
+          }));
+          // Auto-save fallback
+          onUpdateTitle(title.id, {
+            title: fallbackSeo.optimizedTitle,
+            slug: fallbackSeo.slug,
+            metaDescription: fallbackSeo.metaDescription,
+            suggestedKeywords: fallbackSeo.keywords,
+            trendingKeywords: fallbackSeo.trendingKeywords,
+            searchIntent: fallbackSeo.searchIntent as any,
+            funnelStage: fallbackSeo.funnelStage as any,
+            imagePrompt: fallbackSeo.imagePrompt,
+            imageAlt: fallbackSeo.imageAlt,
+            ogImageDescription: fallbackSeo.ogImageDescription,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[SEO] Single generation error:', err);
+      setError('Failed to generate SEO. Please try again.');
+      const fallbackSeo = createFallbackTitleSEO(title);
+      setTitleSEO((prev) => ({
+        ...prev,
+        [title.id]: fallbackSeo,
+      }));
+    } finally {
+      setGeneratingTitleId(null);
+      setIsGenerating(false);
+    }
+  };
+
+  // Create fallback SEO data with mandatory metaDescription and image fields
+  const createFallbackTitleSEO = (title: BlogTitle): TitleSEOData => ({
+    originalTitle: title.title,
+    optimizedTitle: title.title.slice(0, 60),
+    // MANDATORY: Always provide a meta description
+    metaDescription: (title.metaDescription || title.excerpt || `Explore ${title.title} - insights and strategies for your business.`).slice(0, 160),
+    keywords: title.suggestedKeywords || [],
+    trendingKeywords: title.trendingKeywords || [],
+    slug: title.slug || title.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+    searchIntent: title.searchIntent || 'informational',
+    funnelStage: title.funnelStage || 'tofu',
+    // MANDATORY: Image fields for SEO
+    imagePrompt: title.imagePrompt || `Professional illustration for blog post about ${title.title}`,
+    imageAlt: title.imageAlt || `Featured image for ${title.title}`,
+    ogImageDescription: title.ogImageDescription || `Visual representation of ${title.title}`,
+  });
+
+  // Apply SEO to title (auto-save)
+  const applySEOToTitle = (titleId: string) => {
+    const seo = titleSEO[titleId];
+    const title = titles.find((t) => t.id === titleId);
+    if (!seo || !title) return;
+
+    onUpdateTitle(titleId, {
+      title: seo.optimizedTitle,
+      slug: seo.slug,
+      metaDescription: seo.metaDescription,
+      suggestedKeywords: [...seo.keywords, ...seo.trendingKeywords],
+      trendingKeywords: seo.trendingKeywords,
+      searchIntent: seo.searchIntent as any,
+      funnelStage: seo.funnelStage as any,
+      imagePrompt: seo.imagePrompt,
+      imageAlt: seo.imageAlt,
+      ogImageDescription: seo.ogImageDescription,
+    });
+    setEditingTitle(null);
+  };
+
+  // Check if title has saved SEO
+  const hasSavedSEO = (title: BlogTitle) => {
+    return title.metaDescription || (title.suggestedKeywords && title.suggestedKeywords.length > 0);
+  };
+
+  // Save all SEO to config
+  const saveAllSEO = async () => {
+    const allKeywords = Object.values(titleSEO).flatMap(seo => [...seo.keywords, ...seo.trendingKeywords]);
+    const uniqueKeywords = [...new Set(allKeywords)];
+
+    onSaveSEO({
+      strategyId: strategy.id,
+      seoName: strategy.name,
+      primaryKeywords: uniqueKeywords.slice(0, 5),
+      secondaryKeywords: uniqueKeywords.slice(5, 10),
+      longTailKeywords: uniqueKeywords.slice(10, 20),
+      searchIntent: 'informational',
+      targetAudience: strategy.targetAudience || '',
+      primaryGoal: 'traffic',
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Search className="w-6 h-6 text-primary-400" />
+            SEO Optimization
+          </h2>
+          <p className="text-slate-400 mt-1">
+            Optimize your selected titles for SEO. These will be used when generating content.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleGenerateAllSEO}
+            disabled={isGenerating || titles.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isGenerating ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate SEO for All
+              </>
+            )}
+          </button>
+          {Object.keys(titleSEO).length > 0 && (
+            <button
+              onClick={saveAllSEO}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              Save SEO Config
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-primary-400">{titles.length}</div>
+          <div className="text-xs text-slate-400">Selected Titles</div>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-green-400">{Object.keys(titleSEO).length}</div>
+          <div className="text-xs text-slate-400">SEO Generated</div>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-amber-400">{titles.length - Object.keys(titleSEO).length}</div>
+          <div className="text-xs text-slate-400">Pending</div>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-blue-400">
+            {[...new Set(Object.values(titleSEO).flatMap(s => s.keywords))].length}
+          </div>
+          <div className="text-xs text-slate-400">Total Keywords</div>
+        </div>
+      </div>
+
+      {/* Title List */}
+      <div className="space-y-4">
+        {titles.length === 0 ? (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
+            <Type className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+            <p className="text-slate-400">No titles selected.</p>
+            <p className="text-sm text-slate-500 mt-1">Select titles in the Titles tab first to generate SEO.</p>
+          </div>
+        ) : (
+          titles.map((title) => {
+            const seo = titleSEO[title.id];
+            const isEditing = editingTitle === title.id;
+            const isThisGenerating = generatingTitleId === title.id;
+
+            return (
+              <div key={title.id} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="text-xs text-slate-500 mb-1">
+                      {title.contentType} • {title.style} style
+                    </div>
+                    {seo && !isThisGenerating ? (
+                      <h3 className="font-medium text-slate-200">{seo.optimizedTitle}</h3>
+                    ) : (
+                      <h3 className="font-medium text-slate-200">{title.title}</h3>
+                    )}
+                    {seo && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs">
+                          {seo.searchIntent}
+                        </span>
+                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded text-xs">
+                          {seo.funnelStage}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {isThisGenerating ? (
+                      <span className="px-3 py-1.5 text-sm bg-primary-500/20 text-primary-300 rounded-lg flex items-center gap-1">
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        Generating...
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleGenerateSingleSEO(title)}
+                          disabled={isGenerating}
+                          className="px-3 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          {seo ? 'Re-generate SEO' : 'Generate SEO'}
+                        </button>
+                        {seo && !isEditing && (
+                          <>
+                            <button
+                              onClick={() => setEditingTitle(title.id)}
+                              className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg"
+                            >
+                              Edit
+                            </button>
+                            {hasSavedSEO(title) && (
+                              <span className="px-3 py-1.5 text-sm bg-green-500/20 text-green-300 rounded-lg flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                Saved
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* SEO Details */}
+                {seo ? (
+                  <div className="space-y-3">
+                    {/* Original vs Optimized */}
+                    {seo.originalTitle !== seo.optimizedTitle && (
+                      <div className="text-xs">
+                        <span className="text-slate-500">Original: </span>
+                        <span className="text-slate-400 line-through">{seo.originalTitle}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-xs text-slate-500 block mb-1">Optimized Title</label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={seo.optimizedTitle}
+                          onChange={(e) => setTitleSEO((prev) => ({
+                            ...prev,
+                            [title.id]: { ...seo, optimizedTitle: e.target.value },
+                          }))}
+                          className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                          maxLength={60}
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-200">{seo.optimizedTitle}</p>
+                      )}
+                      <p className="text-xs text-slate-600 mt-0.5">{seo.optimizedTitle.length}/60</p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-500 block mb-1">Meta Description</label>
+                      {isEditing ? (
+                        <textarea
+                          value={seo.metaDescription}
+                          onChange={(e) => setTitleSEO((prev) => ({
+                            ...prev,
+                            [title.id]: { ...seo, metaDescription: e.target.value },
+                          }))}
+                          className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                          rows={2}
+                          maxLength={160}
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-400">{seo.metaDescription}</p>
+                      )}
+                      <p className="text-xs text-slate-600 mt-0.5">{seo.metaDescription.length}/160</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-500 block mb-1">Keywords</label>
+                        <div className="flex flex-wrap gap-1">
+                          {seo.keywords.map((kw, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 block mb-1">Trending Keywords</label>
+                        <div className="flex flex-wrap gap-1">
+                          {seo.trendingKeywords?.length > 0 ? (
+                            seo.trendingKeywords.map((kw, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs">
+                                🔥 {kw}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-500">None</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-500 block mb-1">URL Slug</label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={seo.slug}
+                            onChange={(e) => setTitleSEO((prev) => ({
+                              ...prev,
+                              [title.id]: { ...seo, slug: e.target.value },
+                            }))}
+                            className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                          />
+                        ) : (
+                          <p className="text-sm text-slate-400 font-mono">{seo.slug}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 block mb-1">Search Intent</label>
+                        {isEditing ? (
+                          <select
+                            value={seo.searchIntent}
+                            onChange={(e) => setTitleSEO((prev) => ({
+                              ...prev,
+                              [title.id]: { ...seo, searchIntent: e.target.value },
+                            }))}
+                            className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                          >
+                            <option value="informational">Informational</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="transactional">Transactional</option>
+                            <option value="navigational">Navigational</option>
+                          </select>
+                        ) : (
+                          <p className="text-sm text-slate-400 capitalize">{seo.searchIntent}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Image SEO Fields */}
+                    <div className="mt-4 pt-4 border-t border-slate-700">
+                      <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                        <Image className="w-4 h-4" />
+                        Image SEO
+                      </h4>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Image Generation Prompt</label>
+                          {isEditing ? (
+                            <textarea
+                              value={seo.imagePrompt || ''}
+                              onChange={(e) => setTitleSEO((prev) => ({
+                                ...prev,
+                                [title.id]: { ...seo, imagePrompt: e.target.value },
+                              }))}
+                              className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                              rows={2}
+                              placeholder="Describe the visual scene for AI image generation..."
+                            />
+                          ) : (
+                            <p className="text-sm text-slate-400">{seo.imagePrompt || 'No image prompt generated'}</p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-500 block mb-1">Image Alt Text</label>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={seo.imageAlt || ''}
+                                onChange={(e) => setTitleSEO((prev) => ({
+                                  ...prev,
+                                  [title.id]: { ...seo, imageAlt: e.target.value },
+                                }))}
+                                className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                                placeholder="Alt text for accessibility"
+                              />
+                            ) : (
+                              <p className="text-sm text-slate-400">{seo.imageAlt || 'No alt text'}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-500 block mb-1">OG Image Description</label>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={seo.ogImageDescription || ''}
+                                onChange={(e) => setTitleSEO((prev) => ({
+                                  ...prev,
+                                  [title.id]: { ...seo, ogImageDescription: e.target.value },
+                                }))}
+                                className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-slate-200 text-sm"
+                                placeholder="Description for social sharing"
+                              />
+                            ) : (
+                              <p className="text-sm text-slate-400">{seo.ogImageDescription || 'No OG description'}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isEditing && (
+                      <div className="flex gap-2 pt-3 border-t border-slate-700">
+                        <button
+                          onClick={() => {
+                            applySEOToTitle(title.id);
+                          }}
+                          className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-1"
+                        >
+                          <Save className="w-3 h-3" />
+                          Save Changes
+                        </button>
+                        <button
+                          onClick={() => setEditingTitle(null)}
+                          className="px-4 py-2 text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : isThisGenerating ? (
+                  <div className="text-center py-4">
+                    <RefreshCw className="w-6 h-6 text-primary-400 mx-auto animate-spin mb-2" />
+                    <p className="text-sm text-slate-400">Generating SEO...</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">Click "Generate SEO" to optimize this title.</p>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// DATA SOURCES TAB
+// ============================================
+
+function DataSourcesTab({
+  strategy,
+  brand,
+  businessProfile,
+  icps,
+  personas,
+  competitors,
+  onUpdate,
+}: {
+  strategy: BlogStrategy;
+  brand: Brand | null | undefined;
+  businessProfile: BusinessProfile | null | undefined;
+  icps: ICP[];
+  personas: Persona[];
+  competitors: Competitor[];
+  onUpdate: (updates: Partial<BlogStrategy>) => void;
+}) {
+  const linkedData = strategy.linkedData || {};
+
+  const toggleLinkedId = (type: string, id: string) => {
+    const key = `${type}Ids` as keyof typeof linkedData;
+    const currentIds = (linkedData[key] as string[]) || [];
+    const newIds = currentIds.includes(id)
+      ? currentIds.filter((i) => i !== id)
+      : [...currentIds, id];
+    onUpdate({
+      linkedData: { ...linkedData, [key]: newIds },
+    });
+  };
+
+  const toggleSingleLink = (type: string, id: string) => {
+    const key = `${type}Id` as keyof typeof linkedData;
+    const currentId = linkedData[key] as string | undefined;
+    onUpdate({
+      linkedData: { ...linkedData, [key]: currentId === id ? undefined : id },
+    });
+  };
+
+  const DataSection = ({
+    title,
+    icon: Icon,
+    items,
+    type,
+    single = false,
+    renderItem,
+    emptyMessage,
+  }: {
+    title: string;
+    icon: any;
+    items: any[];
+    type: string;
+    single?: boolean;
+    renderItem: (item: any) => React.ReactNode;
+    emptyMessage?: string;
+  }) => {
+    if (!items || items.length === 0) {
+      return (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 opacity-60">
+          <div className="flex items-center gap-2 mb-3">
+            <Icon className="w-5 h-5 text-slate-500" />
+            <h3 className="text-lg font-semibold text-slate-400">{title}</h3>
+          </div>
+          <p className="text-sm text-slate-500">{emptyMessage || `No ${title.toLowerCase()} available. Add data in the ${title} module first.`}</p>
+        </div>
+      );
+    }
+
+    const isLinked = (item: any) => {
+      if (single) {
+        return (linkedData as any)[`${type}Id`] === item.id;
+      }
+      const ids = (linkedData as any)[`${type}Ids`] || [];
+      return ids.includes(item.id);
+    };
+
+    return (
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Icon className="w-5 h-5 text-primary-400" />
+          <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
+          <span className="text-xs text-slate-500 ml-auto">
+            {single ? 'Single selection' : 'Multiple selection'}
+          </span>
+        </div>
+        <div className="space-y-2">
+          {items.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => single ? toggleSingleLink(type, item.id) : toggleLinkedId(type, item.id)}
+              className={cn(
+                'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
+                isLinked(item)
+                  ? 'bg-primary-500/10 border-primary-500/50 text-white'
+                  : 'bg-slate-900/50 border-slate-700 text-slate-300 hover:border-slate-600'
+              )}
+            >
+              {renderItem(item)}
+              <div className="ml-auto">
+                <div className={cn(
+                  'w-5 h-5 rounded-full border-2 flex items-center justify-center',
+                  isLinked(item)
+                    ? 'bg-primary-500 border-primary-500'
+                    : 'border-slate-600'
+                )}>
+                  {isLinked(item) && <Check className="w-3 h-3 text-white" />}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Database className="w-6 h-6 text-primary-400" />
+          Data Sources
+        </h2>
+        <p className="text-slate-400 mt-1">
+          Link your foundational data to enrich AI-generated content with brand voice, ICPs, and competitor insights.
+        </p>
+      </div>
+
+      {/* Data Sources Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Business Profile */}
+        <DataSection
+          title="Business Profile"
+          icon={Building2}
+          items={businessProfile ? [businessProfile] : []}
+          type="businessProfile"
+          single
+          renderItem={(bp: BusinessProfile) => (
+            <div className="flex-1">
+              <div className="font-medium">{bp.name || 'Unnamed Business'}</div>
+              <div className="text-xs text-slate-400">{bp.primaryIndustry || 'No industry'}</div>
+            </div>
+          )}
+          emptyMessage="No business profile configured. Create one in the Business Profile module."
+        />
+
+        {/* Brand Strategy */}
+        <DataSection
+          title="Brand Strategy"
+          icon={Palette}
+          items={brand ? [brand] : []}
+          type="brand"
+          single
+          renderItem={(b: Brand) => (
+            <div className="flex-1">
+              <div className="font-medium">{b.tagline || 'Brand Strategy'}</div>
+              <div className="text-xs text-slate-400">{b.voice || 'No brand voice defined'}</div>
+            </div>
+          )}
+          emptyMessage="No brand strategy configured. Create one in the Brand module."
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* ICPs */}
+        <DataSection
+          title="ICPs"
+          icon={Users}
+          items={icps}
+          type="icp"
+          renderItem={(icp: ICP) => (
+            <div className="flex-1">
+              <div className="font-medium">{icp.name}</div>
+              <div className="text-xs text-slate-400">{icp.description?.slice(0, 50) || 'No description'}...</div>
+            </div>
+          )}
+          emptyMessage="No ICPs available. Create them in the ICPs module."
+        />
+
+        {/* Personas */}
+        <DataSection
+          title="Personas"
+          icon={UserCircle}
+          items={personas}
+          type="persona"
+          renderItem={(persona: Persona) => (
+            <div className="flex-1">
+              <div className="font-medium">{persona.name}</div>
+              <div className="text-xs text-slate-400">{persona.jobTitle || 'No title'}</div>
+            </div>
+          )}
+          emptyMessage="No personas available. Create them in the Personas module."
+        />
+
+        {/* Competitors */}
+        <DataSection
+          title="Competitors"
+          icon={Swords}
+          items={competitors}
+          type="competitor"
+          renderItem={(comp: Competitor) => (
+            <div className="flex-1">
+              <div className="font-medium">{comp.name}</div>
+              <div className="text-xs text-slate-400">{comp.website || 'No website'}</div>
+            </div>
+          )}
+          emptyMessage="No competitors available. Add them in the Competitors module."
+        />
+      </div>
+
+      {/* Summary */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">Linked Data Summary</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary-400">
+              {(linkedData as any).brandId ? 1 : 0}
+            </div>
+            <div className="text-xs text-slate-400">Brand</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary-400">
+              {((linkedData as any).icpIds || []).length}
+            </div>
+            <div className="text-xs text-slate-400">ICPs</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary-400">
+              {((linkedData as any).personaIds || []).length}
+            </div>
+            <div className="text-xs text-slate-400">Personas</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary-400">
+              {((linkedData as any).competitorIds || []).length}
+            </div>
+            <div className="text-xs text-slate-400">Competitors</div>
+          </div>
+        </div>
       </div>
     </div>
   );
