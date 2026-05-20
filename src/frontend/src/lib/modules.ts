@@ -644,18 +644,18 @@ export const GROUPS: GroupConfig[] = [
     color: '#F59E0B',
   },
   {
-    id: 'marketing',
-    name: 'Marketing',
-    description: 'Marketing campaigns and assets',
-    icon: 'Target',
-    color: '#3B82F6',
-  },
-  {
     id: 'programs',
     name: 'Programs',
     description: 'Loyalty, membership, and SOPs',
     icon: 'Zap',
     color: '#8B5CF6',
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing',
+    description: 'Marketing campaigns and assets',
+    icon: 'Target',
+    color: '#3B82F6',
   },
   {
     id: 'ops',
