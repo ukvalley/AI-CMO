@@ -1069,6 +1069,75 @@ export const courseAiApi = {
     apiRequest('/courses/ai/enhance-content', { method: 'POST', body: data }),
 };
 
+// ============== EVENT CATEGORY API ==============
+
+export const eventCategoryApi = {
+  getAll: (companyId: string) => apiRequest(`/events/categories/${companyId}`),
+  getById: (id: string) => apiRequest(`/events/categories/detail/${id}`),
+  create: (data: Record<string, unknown>) => apiRequest('/events/categories', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) => apiRequest(`/events/categories/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/events/categories/${id}`, { method: 'DELETE' }),
+};
+
+// ============== EVENT API ==============
+
+export const eventApi = {
+  getAll: (companyId: string, params?: Record<string, string>) => {
+    const searchParams = new URLSearchParams(params);
+    const query = searchParams.toString();
+    return apiRequest(`/events/events/${companyId}${query ? `?${query}` : ''}`);
+  },
+  getById: (id: string) => apiRequest(`/events/events/detail/${id}`),
+  create: (data: Record<string, unknown>) => apiRequest('/events/events', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) => apiRequest(`/events/events/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/events/events/${id}`, { method: 'DELETE' }),
+};
+
+// ============== EVENT SESSION API ==============
+
+export const eventSessionApi = {
+  getAll: (eventId: string) => apiRequest(`/events/sessions/${eventId}`),
+  getById: (id: string) => apiRequest(`/events/sessions/detail/${id}`),
+  create: (data: Record<string, unknown>) => apiRequest('/events/sessions', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) => apiRequest(`/events/sessions/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/events/sessions/${id}`, { method: 'DELETE' }),
+  reorder: (eventId: string, orders: { id: string; order: number }[]) =>
+    apiRequest(`/events/sessions/reorder/${eventId}`, { method: 'PUT', body: { orders } }),
+  updateChecklist: (id: string, checklistItems: any[]) =>
+    apiRequest(`/events/sessions/${id}/checklist`, { method: 'PUT', body: { checklistItems } }),
+};
+
+// ============== EVENT RESOURCE API ==============
+
+export const eventResourceApi = {
+  getAll: (eventId: string) => apiRequest(`/events/resources/${eventId}`),
+  getById: (id: string) => apiRequest(`/events/resources/detail/${id}`),
+  create: (data: Record<string, unknown>) => apiRequest('/events/resources', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) => apiRequest(`/events/resources/${id}`, { method: 'PUT', body: data }),
+  delete: (id: string) => apiRequest(`/events/resources/${id}`, { method: 'DELETE' }),
+  reorder: (sessionId: string, orders: { id: string; order: number }[]) =>
+    apiRequest(`/events/resources/reorder/${sessionId}`, { method: 'PUT', body: { orders } }),
+};
+
+// ============== EVENT AI API ==============
+
+export const eventAiApi = {
+  generateDescription: (data: Record<string, unknown>) =>
+    apiRequest('/events/ai/generate-description', { method: 'POST', body: data }),
+
+  generateAgenda: (data: Record<string, unknown>) =>
+    apiRequest('/events/ai/generate-agenda', { method: 'POST', body: data }),
+
+  generateChecklist: (data: Record<string, unknown>) =>
+    apiRequest('/events/ai/generate-checklist', { method: 'POST', body: data }),
+
+  generateMom: (data: Record<string, unknown>) =>
+    apiRequest('/events/ai/generate-mom', { method: 'POST', body: data }),
+
+  enhanceContent: (data: Record<string, unknown>) =>
+    apiRequest('/events/ai/enhance-content', { method: 'POST', body: data }),
+};
+
 // ============== FILE UPLOAD API ==============
 
 export const uploadApi = {

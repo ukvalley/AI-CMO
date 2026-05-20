@@ -467,14 +467,15 @@ export const MODULES: ModuleDefinition[] = [
   {
     id: 'events',
     name: 'Events',
-    description: 'Event planning and promotion',
+    description: 'Event management with sessions, resources, categories, and AI generation',
     group: 'marketing',
     icon: 'Calendar',
     path: '/events',
     status: 'active',
     permissions: ['admin', 'editor'],
     hasAI: true,
-    hasBulkGeneration: false,
+    hasBulkGeneration: true,
+    badge: 'AI',
   },
   {
     id: 'social-media-os',
